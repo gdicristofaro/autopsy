@@ -19,9 +19,15 @@
 package org.sleuthkit.autopsy.datamodel;
 
 import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.lang.ref.WeakReference;
+import java.util.concurrent.Future;
+import java.util.logging.Level;
+import org.apache.commons.io.FilenameUtils;
+import org.sleuthkit.autopsy.coreutils.Logger;
+import org.sleuthkit.autopsy.datamodel.utils.BackgroundTaskRunner;
 import org.sleuthkit.autopsy.events.AutopsyEvent;
+import org.sleuthkit.autopsy.texttranslation.NoServiceProviderException;
+import org.sleuthkit.autopsy.texttranslation.TextTranslationService;
+import org.sleuthkit.autopsy.texttranslation.TranslationException;
 
 /**
  * Completes the tasks needed to populate the Translation columns in the
@@ -29,31 +35,77 @@ import org.sleuthkit.autopsy.events.AutopsyEvent;
  * translation service. Once the event is done, it fires a PropertyChangeEvent
  * to let the AbstractAbstractFileNode know it's time to update.
  */
-class TranslationTask implements Runnable {
+class TranslationTask implements BackgroundTaskRunner.NodeTask {
+    private static final Logger logger = Logger.getLogger(TranslationTask.class.getName());
+    
+    private final String origString;
+    private final String eventName;
+    private final TextTranslationService tts;
 
-    private final WeakReference<AbstractAbstractFileNode<?>> weakNodeRef;
-    private final PropertyChangeListener listener;
-
-    public TranslationTask(WeakReference<AbstractAbstractFileNode<?>> weakContentRef, PropertyChangeListener listener) {
-        this.weakNodeRef = weakContentRef;
-        this.listener = listener;
+    public TranslationTask(String origString, String eventName) {
+        this(origString, eventName, TextTranslationService.getInstance());
+    }
+        
+    public TranslationTask(String origString, String eventName, TextTranslationService tts) {
+        this.origString = origString;
+        this.eventName = eventName;
+        this.tts = tts;
     }
 
-    @Override
-    public void run() {
-        AbstractAbstractFileNode<?> fileNode = weakNodeRef.get();
-        //Check for stale reference
-        if (fileNode == null) {
-            return;
+    
+    private String translate(Future<?> future, String orig) {
+        //If already in complete English, don't translate.
+        if (orig.matches("^\\p{ASCII}+$")) {
+            return "";
         }
 
-        String translatedFileName = fileNode.getTranslatedFileName();
-        if (!translatedFileName.isEmpty() && listener != null) {
+        if (tts.hasProvider()) {
+            //Seperate out the base and ext from the contents file name.
+            String base = FilenameUtils.getBaseName(orig);
+            try {
+                if (future.isCancelled())
+                    return null;
+                        
+                String translation = tts.translate(base);
+                if (future.isCancelled())
+                    return null;
+                
+                String ext = FilenameUtils.getExtension(orig);
+
+                //If we have no extension, then we shouldn't add the .
+                String extensionDelimiter = (ext.isEmpty()) ? "" : ".";
+
+                //Talk directly to this nodes pcl, fire an update when the translation
+                //is complete. 
+                if (!translation.isEmpty()) {
+                    return translation + extensionDelimiter + ext;
+                }
+            } catch (NoServiceProviderException noServiceEx) {
+                logger.log(Level.WARNING, "Translate unsuccessful because no TextTranslator "
+                        + "implementation was provided.", noServiceEx.getMessage());
+            } catch (TranslationException noTranslationEx) {
+                logger.log(Level.WARNING, "Could not successfully translate file name "
+                        + orig, noTranslationEx.getMessage());
+            }
+        }
+        return "";
+    }
+    
+    
+    @Override
+    public PropertyChangeEvent run(Future<?> future) throws Exception {
+        if (future.isCancelled())
+            return null;
+
+        String translatedFileName = translate(future, origString);
+        if (!translatedFileName.isEmpty()) {
             //Only fire if the result is meaningful and the listener is not a stale reference
-            listener.propertyChange(new PropertyChangeEvent(
-                    AutopsyEvent.SourceType.LOCAL.toString(),
-                    AbstractAbstractFileNode.NodeSpecificEvents.TRANSLATION_AVAILABLE.toString(),
-                    null, translatedFileName));
+            
+            return new PropertyChangeEvent(AutopsyEvent.SourceType.LOCAL.toString(), 
+                    eventName, null, translatedFileName);
+        }
+        else {
+            return null;
         }
     }
 }

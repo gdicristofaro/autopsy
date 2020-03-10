@@ -26,11 +26,14 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.openide.nodes.NodeAdapter;
+import org.openide.nodes.NodeEvent;
 import org.openide.nodes.Sheet;
 import org.openide.util.NbBundle;
 import org.openide.util.WeakListeners;
@@ -66,6 +69,7 @@ import org.sleuthkit.datamodel.Tag;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskData;
 import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepository;
+import org.sleuthkit.autopsy.datamodel.utils.BackgroundTaskRunner;
 
 /**
  * An abstract node that encapsulates AbstractFile data
@@ -80,6 +84,10 @@ public abstract class AbstractAbstractFileNode<T extends AbstractFile> extends A
             Case.Events.CONTENT_TAG_ADDED, Case.Events.CONTENT_TAG_DELETED, Case.Events.CR_COMMENT_CHANGED);
     private static final Set<IngestManager.IngestModuleEvent> INGEST_MODULE_EVENTS_OF_INTEREST = EnumSet.of(CONTENT_CHANGED);
 
+    
+    private final Future<?> translationFuture;
+    private Future<?> getScoFuture = null;
+        
     /**
      * @param abstractFile file to wrap
      */
@@ -106,15 +114,36 @@ public abstract class AbstractAbstractFileNode<T extends AbstractFile> extends A
         }
 
         if (TextTranslationService.getInstance().hasProvider() && UserPreferences.displayTranslatedFileNames()) {
-            backgroundTasksPool.submit(new TranslationTask(
-                    new WeakReference<>(this), weakPcl));
+            translationFuture = BackgroundTaskRunner.submitTask(
+                this,
+                new TranslationTask(
+                    content.getName(), 
+                    AbstractAbstractFileNode.NodeSpecificEvents.TRANSLATION_AVAILABLE.toString()), 
+                pcl);
         }
+        else {
+            translationFuture = null;
+        }
+        
+        this.addNodeListener(new NodeAdapter() {
+            @Override
+            public void nodeDestroyed(NodeEvent ev) {
+                if (translationFuture != null)
+                    translationFuture.cancel(true);
+                
+                if (getScoFuture != null)
+                    getScoFuture.cancel(true);
+            }    
+        });
 
         // Listen for case events so that we can detect when the case is closed
         // or when tags are added.
         Case.addEventTypeSubscriber(CASE_EVENTS_OF_INTEREST, weakPcl);
     }
-
+    
+    
+    
+    
     /**
      * The finalizer removes event listeners as the BlackboardArtifactNode is
      * being garbage collected. Yes, we know that finalizers are considered to
@@ -319,6 +348,7 @@ public abstract class AbstractAbstractFileNode<T extends AbstractFile> extends A
             return displayString;
         }
     }
+    
 
     /**
      * Creates and populates a list of properties for this nodes property sheet.
@@ -343,8 +373,7 @@ public abstract class AbstractAbstractFileNode<T extends AbstractFile> extends A
                 properties.add(new NodeProperty<>(OCCURRENCES.toString(), OCCURRENCES.toString(), VALUE_LOADING, ""));
             }
             // Get the SCO columns data in a background task
-            backgroundTasksPool.submit(new GetSCOTask(
-                    new WeakReference<>(this), weakPcl));
+            getScoFuture = BackgroundTaskRunner.submitTask(this, new GetSCOTask(new WeakReference<>(this)), pcl);
         }
 
         properties.add(new NodeProperty<>(MOD_TIME.toString(), MOD_TIME.toString(), NO_DESCR, ContentUtils.getStringTime(content.getMtime(), content)));
@@ -489,41 +518,6 @@ public abstract class AbstractAbstractFileNode<T extends AbstractFile> extends A
         return status;
     }
 
-    /**
-     * Translates this nodes content name. Doesn't attempt translation if the
-     * name is in english or if there is now translation service available.
-     */
-    String getTranslatedFileName() {
-        //If already in complete English, don't translate.
-        if (content.getName().matches("^\\p{ASCII}+$")) {
-            return "";
-        }
-        TextTranslationService tts = TextTranslationService.getInstance();
-        if (tts.hasProvider()) {
-            //Seperate out the base and ext from the contents file name.
-            String base = FilenameUtils.getBaseName(content.getName());
-            try {
-                String translation = tts.translate(base);
-                String ext = FilenameUtils.getExtension(content.getName());
-
-                //If we have no extension, then we shouldn't add the .
-                String extensionDelimiter = (ext.isEmpty()) ? "" : ".";
-
-                //Talk directly to this nodes pcl, fire an update when the translation
-                //is complete. 
-                if (!translation.isEmpty()) {
-                    return translation + extensionDelimiter + ext;
-                }
-            } catch (NoServiceProviderException noServiceEx) {
-                logger.log(Level.WARNING, "Translate unsuccessful because no TextTranslator "
-                        + "implementation was provided.", noServiceEx.getMessage());
-            } catch (TranslationException noTranslationEx) {
-                logger.log(Level.WARNING, "Could not successfully translate file name "
-                        + content.getName(), noTranslationEx.getMessage());
-            }
-        }
-        return "";
-    }
 
     /**
      * Get all tags from the case database that are associated with the file

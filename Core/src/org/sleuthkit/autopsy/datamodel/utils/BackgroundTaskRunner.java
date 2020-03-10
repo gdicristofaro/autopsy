@@ -44,7 +44,7 @@ import org.sleuthkit.autopsy.datamodel.AbstractContentNode;
  */
 public final class BackgroundTaskRunner {
 
-    private static final Logger logger = Logger.getLogger(AbstractContentNode.class.getName());
+    private static final Logger logger = Logger.getLogger(BackgroundTaskRunner.class.getName());
     private static final Integer THREAD_POOL_SIZE = 10;
     private static final ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE, new ThreadFactoryBuilder().setNameFormat("node-background-task-%d").build());
 

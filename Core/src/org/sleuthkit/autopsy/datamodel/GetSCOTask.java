@@ -19,9 +19,9 @@
 package org.sleuthkit.autopsy.datamodel;
 
 import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.lang.ref.WeakReference;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import org.openide.util.NbBundle.Messages;
 import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationAttributeInstance;
@@ -36,35 +36,44 @@ import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.Tag;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepository;
+import org.sleuthkit.autopsy.datamodel.utils.BackgroundTaskRunner;
 
 /**
  * Background task to get Score, Comment and Occurrences values for an Abstract
  * content node.
  *
  */
-class GetSCOTask implements Runnable {
-
-    private final WeakReference<AbstractContentNode<?>> weakNodeRef;
-    private final PropertyChangeListener listener;
+class GetSCOTask implements BackgroundTaskRunner.NodeTask {
     private static final Logger logger = Logger.getLogger(GetSCOTask.class.getName());
 
-    GetSCOTask(WeakReference<AbstractContentNode<?>> weakContentRef, PropertyChangeListener listener) {
+    private final WeakReference<AbstractContentNode<?>> weakNodeRef;
+
+
+    GetSCOTask(WeakReference<AbstractContentNode<?>> weakContentRef) {
         this.weakNodeRef = weakContentRef;
-        this.listener = listener;
     }
+
 
     @Messages({"GetSCOTask.occurrences.defaultDescription=No correlation properties found",
         "GetSCOTask.occurrences.multipleProperties=Multiple different correlation properties exist for this result"})
     @Override
-    public void run() {
-        AbstractContentNode<?> contentNode = weakNodeRef.get();
+    public PropertyChangeEvent run(Future<?> future) throws Exception {
+        if (UserPreferences.getHideSCOColumns())
+            return null;
 
-         //Check for stale reference or if columns are disabled
-        if (contentNode == null || UserPreferences.getHideSCOColumns()) {
-            return;
-        }
+        if (future.isCancelled())
+            return null;
+                
+        AbstractContentNode<?> contentNode = weakNodeRef.get();  
+        if (contentNode == null)
+            return null;
+        
         // get the SCO  column values
         List<Tag> tags = contentNode.getAllTagsFromDatabase();
+        
+        if (future.isCancelled())
+            return null;
+        
 
         SCOData scoData = new SCOData();
         scoData.setScoreAndDescription(contentNode.getScorePropertyAndDescription(tags));
@@ -118,14 +127,14 @@ class GetSCOTask implements Runnable {
             }
             scoData.setCountAndDescription(contentNode.getCountPropertyAndDescription(type, value, description));
         }
+        
+        if (future.isCancelled())
+            return null;
 
         // signal SCO data is available.
-        if (listener
-                != null) {
-            listener.propertyChange(new PropertyChangeEvent(
+        return new PropertyChangeEvent(
                     AutopsyEvent.SourceType.LOCAL.toString(),
                     AbstractAbstractFileNode.NodeSpecificEvents.SCO_AVAILABLE.toString(),
-                    null, scoData));
-        }
+                    null, scoData);
     }
 }

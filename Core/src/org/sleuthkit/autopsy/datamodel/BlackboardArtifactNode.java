@@ -33,12 +33,15 @@ import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import javax.swing.Action;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.openide.nodes.NodeAdapter;
+import org.openide.nodes.NodeEvent;
 import org.openide.nodes.Sheet;
 import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
@@ -77,6 +80,7 @@ import org.sleuthkit.datamodel.Tag;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskData;
 import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepository;
+import org.sleuthkit.autopsy.datamodel.utils.BackgroundTaskRunner;
 
 /**
  * Node wrapping a blackboard artifact object. This is generated from several
@@ -176,6 +180,7 @@ public class BlackboardArtifactNode extends AbstractContentNode<BlackboardArtifa
      * unregistering of the listener in removeListeners() below.
      */
     private final PropertyChangeListener weakPcl = WeakListeners.propertyChange(pcl, null);
+    private Future<?> getScoFuture = null;
 
     /**
      * Construct blackboard artifact node from an artifact, overriding the
@@ -212,6 +217,15 @@ public class BlackboardArtifactNode extends AbstractContentNode<BlackboardArtifa
         this.setDisplayName();
         this.setIconBaseWithExtension(iconPath);
         Case.addEventTypeSubscriber(CASE_EVENTS_OF_INTEREST, weakPcl);
+        
+        
+        this.addNodeListener(new NodeAdapter() {
+            @Override
+            public void nodeDestroyed(NodeEvent ev) {     
+                if (getScoFuture != null)
+                    getScoFuture.cancel(true);
+            }    
+        });
     }
 
     /**
@@ -385,8 +399,7 @@ public class BlackboardArtifactNode extends AbstractContentNode<BlackboardArtifa
                 sheetSet.put(new NodeProperty<>(Bundle.BlackboardArtifactNode_createSheet_count_name(), Bundle.BlackboardArtifactNode_createSheet_count_displayName(), VALUE_LOADING, ""));
             }
             // Get the SCO columns data in a background task
-            backgroundTasksPool.submit(new GetSCOTask(
-                    new WeakReference<>(this), weakPcl));
+            getScoFuture = BackgroundTaskRunner.submitTask(this, new GetSCOTask(new WeakReference<>(this)), pcl);
         }
 
         if (artifact.getArtifactTypeID() == ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT.getTypeID()) {
