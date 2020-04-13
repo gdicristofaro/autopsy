@@ -23,10 +23,13 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import org.openide.DialogDisplayer;
@@ -47,18 +50,96 @@ import org.sleuthkit.autopsy.report.GeneralReportModule;
  * Python scripting language.
  */
 public final class JythonModuleLoader {
+    
+    /**
+     * Contains a record of a Jython module including the last modified time and path for caching purposes.
+     * @param <T>   The type of Jython module.
+     */
+    private static class ModuleRecord<T> {
+        private final String filePath;
+        private final long lastModified;
+        private final T factory;
 
+        /**
+         * Main constructor for a module record.
+         * @param filePath      The path for the Jython file.
+         * @param lastModified  The date in milliseconds from epoch.
+         * @param factory       The in-memory Jython module.
+         */
+        public ModuleRecord(String filePath, long lastModified, T factory) {
+            this.filePath = filePath;
+            this.lastModified = lastModified;
+            this.factory = factory;
+        }
+
+        /**
+         * Retrieves the path for the Jython file.
+         * @return  The path for the Jython file.
+         */
+        public String getFilePath() {
+            return filePath;
+        }
+
+        /**
+         * Retrieves the last modified time as milliseconds from epoch.
+         * @return  The last modified time as milliseconds from epoch.
+         */
+        public long getLastModified() {
+            return lastModified;
+        }
+
+        /**
+         * Retrieves the in-memory Jython module.
+         * @return      The in-memory Jython module.
+         */
+        public T getFactory() {
+            return factory;
+        }
+    }
+
+    
     private static final Logger logger = Logger.getLogger(JythonModuleLoader.class.getName());
 
+
+    /**
+     * Checks the cache to see if file exists in cache and the file has not been modified since last cache. 
+     * If file is not cached or should be refreshed, the converter is used to load the file.
+     * 
+     * @param <T>           The module type.
+     * @param cache         The object cache.
+     * @param scriptFile    The file to be checked in the cache.
+     * @param loader        If file is not cached or file's last modified date is not the 
+     *                      same as cached, then this will create a new module from the file.
+     * @return              The generated module record.
+     * @throws Exception    If the loader throws an exception.  
+     */
+    private static <T> ModuleRecord<T> getCachedOrNew(Map<String, ModuleRecord<T>> cache, File scriptFile, Callable<T> loader) throws Exception {
+        String absPath = scriptFile.getAbsolutePath();
+        long lastModified = scriptFile.lastModified();
+        ModuleRecord<T> cachedItem = cache.get(absPath);
+        if (cachedItem != null && scriptFile.lastModified() == cachedItem.getLastModified()) {
+            return cachedItem;
+        }
+        else {
+            return new ModuleRecord(absPath, lastModified, loader.call());
+        }
+    }
+
+    
+    private static Map<String, ModuleRecord<IngestModuleFactory>> CACHED_INGEST_MODULES = new HashMap<>();
+    
     /**
      * Get ingest module factories implemented using Jython.
      *
      * @return A list of objects that implement the IngestModuleFactory
      *         interface.
      */
-    public static List<IngestModuleFactory> getIngestModuleFactories() {
-        return getInterfaceImplementations(new IngestModuleFactoryDefFilter(), IngestModuleFactory.class);
+    public static synchronized List<IngestModuleFactory> getIngestModuleFactories() {
+        CACHED_INGEST_MODULES = getInterfaceImplementations(CACHED_INGEST_MODULES, new IngestModuleFactoryDefFilter(), IngestModuleFactory.class);
+        return new ArrayList(CACHED_INGEST_MODULES.values());
     }
+    
+    private static Map<String, ModuleRecord<GeneralReportModule>> CACHED_REPORT_MODULES = new HashMap<>();
 
     /**
      * Get general report modules implemented using Jython.
@@ -66,18 +147,20 @@ public final class JythonModuleLoader {
      * @return A list of objects that implement the GeneralReportModule
      *         interface.
      */
-    public static List<GeneralReportModule> getGeneralReportModules() {
-        return getInterfaceImplementations(new GeneralReportModuleDefFilter(), GeneralReportModule.class);
+    public static synchronized List<GeneralReportModule> getGeneralReportModules() {
+        CACHED_REPORT_MODULES = getInterfaceImplementations(CACHED_REPORT_MODULES, new GeneralReportModuleDefFilter(), GeneralReportModule.class);
+        return new ArrayList(CACHED_REPORT_MODULES.values());
     }
+    
     @Messages({"JythonModuleLoader.pythonInterpreterError.title=Python Modules",
                 "JythonModuleLoader.pythonInterpreterError.msg=Failed to load python modules, See log for more details"})
-    private static <T> List<T> getInterfaceImplementations(LineFilter filter, Class<T> interfaceClass) {
-        List<T> objects = new ArrayList<>();
+    private static <T> Map<String, ModuleRecord<T>> getInterfaceImplementations(Map<String, ModuleRecord<T>> cache, LineFilter filter, final Class<T> interfaceClass) {
+        Map<String, ModuleRecord<T>> objects = new HashMap<>();
         Set<File> pythonModuleDirs = new HashSet<>();
-        PythonInterpreter interpreter = null;
+        PythonInterpreter interpreterLoader = null;
         // This method has previously thrown unchecked exceptions when it could not load because of non-latin characters.
         try {
-            interpreter = new PythonInterpreter();
+            interpreterLoader = new PythonInterpreter();
         } catch (Exception ex) {
             logger.log(Level.SEVERE, "Failed to load python Intepreter. Cannot load python modules", ex);
             if(RuntimeProperties.runningWithGUI()){
@@ -85,6 +168,9 @@ public final class JythonModuleLoader {
             }
             return objects;
         }
+        
+        final PythonInterpreter interpreter = interpreterLoader;
+        
         // add python modules from 'autospy/build/cluster/InternalPythonModules' folder
         // which are copied from 'autopsy/*/release/InternalPythonModules' folders.
         for (File f : InstalledFileLocator.getDefault().locateAll("InternalPythonModules", "org.sleuthkit.autopsy.core", false)) { //NON-NLS
@@ -101,9 +187,11 @@ public final class JythonModuleLoader {
                         while (fileScanner.hasNextLine()) {
                             String line = fileScanner.nextLine();
                             if (line.startsWith("class ") && filter.accept(line)) { //NON-NLS
-                                String className = line.substring(6, line.indexOf("("));
+                                final String className = line.substring(6, line.indexOf("("));
                                 try {
-                                    objects.add(createObjectFromScript(interpreter, script, className, interfaceClass));
+                                    Callable<T> converter = () -> createObjectFromScript(interpreter, script, className, interfaceClass);
+                                    ModuleRecord<T> jythonScript = getCachedOrNew(cache, script, converter);
+                                    objects.put(jythonScript.getFilePath(), jythonScript);
                                 } catch (Exception ex) {
                                     logger.log(Level.SEVERE, String.format("Failed to load %s from %s", className, script.getAbsolutePath()), ex); //NON-NLS
                                     // NOTE: using ex.toString() because the current version is always returning null for ex.getMessage().
