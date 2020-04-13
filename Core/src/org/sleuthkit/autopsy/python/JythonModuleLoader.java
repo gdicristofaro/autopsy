@@ -126,7 +126,7 @@ public final class JythonModuleLoader {
     }
 
     
-    private static Map<String, ModuleRecord<IngestModuleFactory>> CACHED_INGEST_MODULES = new HashMap<>();
+    private static Map<String, ModuleRecord<IngestModuleFactory>> cacheIngestModules = new HashMap<>();
     
     /**
      * Get ingest module factories implemented using Jython.
@@ -134,12 +134,14 @@ public final class JythonModuleLoader {
      * @return A list of objects that implement the IngestModuleFactory
      *         interface.
      */
-    public static synchronized List<IngestModuleFactory> getIngestModuleFactories() {
-        CACHED_INGEST_MODULES = getInterfaceImplementations(CACHED_INGEST_MODULES, new IngestModuleFactoryDefFilter(), IngestModuleFactory.class);
-        return new ArrayList(CACHED_INGEST_MODULES.values());
+    public static List<IngestModuleFactory> getIngestModuleFactories() {
+        synchronized (cacheIngestModules) {
+            cacheIngestModules = getInterfaceImplementations(cacheIngestModules, new IngestModuleFactoryDefFilter(), IngestModuleFactory.class);
+            return new ArrayList(cacheIngestModules.values());
+        }
     }
     
-    private static Map<String, ModuleRecord<GeneralReportModule>> CACHED_REPORT_MODULES = new HashMap<>();
+    private static Map<String, ModuleRecord<GeneralReportModule>> cacheReportModules = new HashMap<>();
 
     /**
      * Get general report modules implemented using Jython.
@@ -147,9 +149,11 @@ public final class JythonModuleLoader {
      * @return A list of objects that implement the GeneralReportModule
      *         interface.
      */
-    public static synchronized List<GeneralReportModule> getGeneralReportModules() {
-        CACHED_REPORT_MODULES = getInterfaceImplementations(CACHED_REPORT_MODULES, new GeneralReportModuleDefFilter(), GeneralReportModule.class);
-        return new ArrayList(CACHED_REPORT_MODULES.values());
+    public static List<GeneralReportModule> getGeneralReportModules() {
+        synchronized (cacheReportModules) {
+            cacheReportModules = getInterfaceImplementations(cacheReportModules, new GeneralReportModuleDefFilter(), GeneralReportModule.class);
+            return new ArrayList(cacheReportModules.values());   
+        }
     }
     
     @Messages({"JythonModuleLoader.pythonInterpreterError.title=Python Modules",
