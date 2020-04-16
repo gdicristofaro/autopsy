@@ -249,11 +249,40 @@ final public class Accounts implements AutopsyVisitableItem {
             return getClass().getName();
         }
     }
+    
+    /**
+     * A record for an account type.
+     */
+    private class AccountTypeRecord {
+        private final long count;
+        private final String type;
+
+        public AccountTypeRecord(String type, long count) {
+            this.count = count;
+            this.type = type;
+        }
+
+        /**
+         * Retrieves the total count of how many of these type were found.
+         * @return  The total count of how many of these type were found.
+         */
+        public long getCount() {
+            return count;
+        }
+
+        /**
+         * Retrieves the account type.
+         * @return      The account type.
+         */
+        public String getType() {
+            return type;
+        }
+    }
 
     /**
      * Creates child nodes for each account type in the db.
      */
-    private class AccountTypeFactory extends ObservingChildren<String> {
+    private class AccountTypeFactory extends ObservingChildren<AccountTypeRecord> {
 
         /*
          * The pcl is in this class because it has the easiest mechanisms to add
@@ -323,20 +352,20 @@ final public class Accounts implements AutopsyVisitableItem {
         }
 
         @Override
-        protected boolean createKeys(List<String> list) {
+        protected boolean createKeys(List<AccountTypeRecord> list) {
             String accountTypesInUseQuery
-                    = "SELECT DISTINCT blackboard_attributes.value_text as account_type "
+                    = "SELECT blackboard_attributes.value_text as account_type, COUNT(*) as count "
                     + " FROM blackboard_artifacts " //NON-NLS
                     + "      JOIN blackboard_attributes ON blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id " //NON-NLS
                     + " WHERE blackboard_artifacts.artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID() //NON-NLS
                     + " AND blackboard_attributes.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE.getTypeID() //NON-NLS
-                    + getFilterByDataSourceClause();
+                    + getFilterByDataSourceClause()
+                    + " GROUP BY blackboard_attributes.value_text ";
 
             try (SleuthkitCase.CaseDbQuery executeQuery = skCase.executeQuery(accountTypesInUseQuery);
                     ResultSet resultSet = executeQuery.getResultSet()) {
                 while (resultSet.next()) {
-                    String accountType = resultSet.getString("account_type");
-                    list.add(accountType);
+                    list.add(new AccountTypeRecord(resultSet.getString("account_type"), resultSet.getLong("count")));
                 }
             } catch (TskCoreException | SQLException ex) {
                 LOGGER.log(Level.SEVERE, "Error querying for account_types", ex);
@@ -346,15 +375,15 @@ final public class Accounts implements AutopsyVisitableItem {
         }
 
         @Override
-        protected Node[] createNodesForKey(String acountTypeName) {
+        protected Node[] createNodesForKey(AccountTypeRecord accountTypeRecord) {
 
-            if (Account.Type.CREDIT_CARD.getTypeName().equals(acountTypeName)) {
+            if (Account.Type.CREDIT_CARD.getTypeName().equals(accountTypeRecord.getType())) {
                 return new Node[]{new CreditCardNumberAccountTypeNode()};
             } else {
 
                 try {
-                    Account.Type accountType = skCase.getCommunicationsManager().getAccountType(acountTypeName);
-                    return new Node[]{new DefaultAccountTypeNode(accountType)};
+                    Account.Type accountType = skCase.getCommunicationsManager().getAccountType(accountTypeRecord.getType());
+                    return new Node[]{new DefaultAccountTypeNode(accountType, accountTypeRecord.getCount())};
                 } catch (TskCoreException ex) {
                     LOGGER.log(Level.SEVERE, "Error getting display name for account type. ", ex);
                 }
@@ -510,9 +539,14 @@ final public class Accounts implements AutopsyVisitableItem {
      */
     final public class DefaultAccountTypeNode extends DisplayableItemNode {
 
-        private DefaultAccountTypeNode(Account.Type accountType) {
+        /**
+         * Main constructor for account type displayable node.
+         * @param accountType   The account type.
+         * @param count         The number of matches found for this account type.
+         */
+        private DefaultAccountTypeNode(Account.Type accountType, long count) {
             super(Children.create(new DefaultAccountFactory(accountType), true), Lookups.singleton(accountType));
-            setName(accountType.getDisplayName());
+            setName(String.format("%s (%d)", accountType.getDisplayName(), count));
             this.setIconBaseWithExtension(getIconFilePath(accountType));   //NON-NLS
         }
 
