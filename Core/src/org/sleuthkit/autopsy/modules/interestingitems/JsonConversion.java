@@ -202,8 +202,8 @@ final class JsonConversion {
         @Override
         public Rule deserialize(JsonElement je, Type type, JsonDeserializationContext jdc) throws JsonParseException {
             JsonObject jsonObject = je.getAsJsonObject();
-            String ruleName = jsonObject.get(RULENAME_FIELD).toString();
-            String uuid = jsonObject.get(UUID_FIELD).toString();
+            String ruleName = jsonObject.get(RULENAME_FIELD).getAsString();
+            String uuid = jsonObject.get(UUID_FIELD).getAsString();
             
             FileNameCondition fileNameCondition = jdc.deserialize(jsonObject.get(FILENAME_FIELD), FileNameCondition.class);
             MetaTypeCondition metaTypeCondition = jdc.deserialize(jsonObject.get(META_FIELD), MetaTypeCondition.class);
@@ -222,12 +222,12 @@ final class JsonConversion {
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty(RULENAME_FIELD, r.getName());
             jsonObject.addProperty(UUID_FIELD, r.getUuid());
-            jsonObject.add(FILENAME_FIELD, jsc.serialize(r.getFileNameCondition()));
-            jsonObject.add(META_FIELD, jsc.serialize(r.getFileNameCondition()));
-            jsonObject.add(PATH_FIELD, jsc.serialize(r.getFileNameCondition()));
-            jsonObject.add(SIZE_FIELD, jsc.serialize(r.getFileNameCondition()));
-            jsonObject.add(DATE_FIELD, jsc.serialize(r.getFileNameCondition()));
-            jsonObject.add(MIME_FIELD, jsc.serialize(r.getFileNameCondition()));
+            jsonObject.add(FILENAME_FIELD, jsc.serialize(r.getFileNameCondition(), FileNameCondition.class));
+            jsonObject.add(META_FIELD, jsc.serialize(r.getMetaTypeCondition(), MetaTypeCondition.class));
+            jsonObject.add(PATH_FIELD, jsc.serialize(r.getPathCondition(), ParentPathCondition.class));
+            jsonObject.add(SIZE_FIELD, jsc.serialize(r.getFileSizeCondition(), FileSizeCondition.class));
+            jsonObject.add(DATE_FIELD, jsc.serialize(r.getDateCondition(), DateCondition.class));
+            jsonObject.add(MIME_FIELD, jsc.serialize(r.getMimeTypeCondition(), MimeTypeCondition.class));
 
             return jsonObject;
         }
@@ -239,9 +239,9 @@ final class JsonConversion {
         if (DEFAULT_DESERIALIZER == null) {
             return new GsonBuilder()
                 .setPrettyPrinting()
-                .registerTypeAdapter(Rule.class, RULE_CONVERTER)
                 .registerTypeAdapter(ParentPathCondition.class, PARENT_PATH_CONVERTER)
                 .registerTypeAdapter(FileNameCondition.class, FILE_NAME_CONVERTER)
+                .registerTypeAdapter(Rule.class, RULE_CONVERTER)
                 .create();
         }
         return DEFAULT_DESERIALIZER;
