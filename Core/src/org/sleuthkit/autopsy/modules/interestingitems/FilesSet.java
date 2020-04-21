@@ -18,22 +18,13 @@
  */
 package org.sleuthkit.autopsy.modules.interestingitems;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
 import java.io.Serializable;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 import org.openide.util.NbBundle;
 import org.sleuthkit.datamodel.AbstractFile;
@@ -166,12 +157,12 @@ public final class FilesSet implements Serializable {
         return this.name;
     }
 
-
     /**
      * A set membership rule for an interesting files set. The immutability of a
      * rule object allows it to be safely published to multiple threads.
      */
-    public final static class Rule implements Serializable {    
+    public final static class Rule implements Serializable {
+
         private static final long serialVersionUID = 1L;
         private final String uuid;
         private final String ruleName;
@@ -196,8 +187,25 @@ public final class FilesSet implements Serializable {
          *                          may be null
          */
         public Rule(String ruleName, FileNameCondition fileNameCondition, MetaTypeCondition metaTypeCondition, ParentPathCondition pathCondition, MimeTypeCondition mimeTypeCondition, FileSizeCondition fileSizeCondition, DateCondition dateCondition) {
+            this(UUID.randomUUID().toString(), ruleName, fileNameCondition, metaTypeCondition, pathCondition, mimeTypeCondition, fileSizeCondition, dateCondition);
+        }
+        
+            /**
+         * Construct an interesting files set membership rule.
+         *
+         * @param uuid              The unique identifier for this rule;
+         * @param ruleName          The name of the rule. Can be empty string.
+         * @param fileNameCondition A file name condition, may be null.
+         * @param metaTypeCondition A file meta-type condition.
+         * @param pathCondition     A file path condition, may be null.
+         * @param mimeTypeCondition A file mime type condition, may be null.
+         * @param fileSizeCondition A file size condition, may be null.
+         * @param dateCondition     A file date created or modified condition,
+         *                          may be null
+         */
+        public Rule(String uuid, String ruleName, FileNameCondition fileNameCondition, MetaTypeCondition metaTypeCondition, ParentPathCondition pathCondition, MimeTypeCondition mimeTypeCondition, FileSizeCondition fileSizeCondition, DateCondition dateCondition) {
             // since ruleName is optional, ruleUUID can be used to uniquely identify a rule.
-            this.uuid = UUID.randomUUID().toString();
+            this.uuid = uuid;
             if (metaTypeCondition == null) {
                 throw new IllegalArgumentException("Interesting files set rule meta-type condition cannot be null");
             }
@@ -342,7 +350,7 @@ public final class FilesSet implements Serializable {
          * An interface for the file attribute conditions of which interesting
          * files set membership rules are composed.
          */
-        static interface FileAttributeCondition extends Serializable, JsonConvertible {
+        static interface FileAttributeCondition extends Serializable {
 
             /**
              * Tests whether or not a file satisfies the condition.
@@ -357,7 +365,8 @@ public final class FilesSet implements Serializable {
         /**
          * A class for checking files based upon their MIME types.
          */
-        public static final class MimeTypeCondition implements FileAttributeCondition {           
+        public static final class MimeTypeCondition implements FileAttributeCondition {
+
             private static final long serialVersionUID = 1L;
             private final String mimeType;
 
@@ -383,6 +392,7 @@ public final class FilesSet implements Serializable {
             public String getMimeType() {
                 return this.mimeType;
             }
+
         }
 
         /**
@@ -390,7 +400,6 @@ public final class FilesSet implements Serializable {
          * specifications given (i.e. < N Bytes).
          */
         public static final class FileSizeCondition implements FileAttributeCondition {
-            public static final String TYPE = "FileSizeCondition";
 
             private static final long serialVersionUID = 1L;
 
@@ -594,7 +603,7 @@ public final class FilesSet implements Serializable {
         /**
          * An interface for file attribute conditions that do textual matching.
          */
-        static interface TextCondition extends FileAttributeCondition, JsonConvertible {
+        static interface TextCondition extends FileAttributeCondition {
 
             /**
              * Gets the text the condition matches.
@@ -621,6 +630,11 @@ public final class FilesSet implements Serializable {
              */
             boolean textMatches(String textToMatch);
 
+            /**
+             * Retrieves the list of values to match.
+             * @return  The list of values to match.
+             */
+            List<String> getValuesToMatch();
         }
 
         /**
@@ -666,6 +680,15 @@ public final class FilesSet implements Serializable {
             AbstractTextCondition(List<String> values) {
                 this.textMatcher = new FilesSet.Rule.CaseInsensitiveMultiValueStringComparisionMatcher(values);
             }
+
+            @Override
+            public List<String> getValuesToMatch() {
+                if (this.textMatcher instanceof CaseInsensitiveMultiValueStringComparisionMatcher)
+                    return ((CaseInsensitiveMultiValueStringComparisionMatcher) this.textMatcher).getValuesToMatch();
+                else
+                    return Arrays.asList(this.textMatcher.getTextToMatch());
+            }
+            
 
             /**
              * Get the text the condition matches.
@@ -745,7 +768,14 @@ public final class FilesSet implements Serializable {
          * separately from path conditions for type safety when constructing
          * rules.
          */
-        static interface FileNameCondition extends TextCondition, JsonConvertible {
+        static interface FileNameCondition extends TextCondition {
+            
+            /**
+             * Specifies the implementation type of this FileNameCondition for
+             * serialization / deserialization purposes.
+             * @return      The json serializable type.
+             */
+            String getType();
         }
 
         /**
@@ -754,6 +784,8 @@ public final class FilesSet implements Serializable {
          * safely published to multiple threads.
          */
         public static final class FullNameCondition extends AbstractTextCondition implements FileNameCondition {
+            public static final String TYPE = "Full Name";
+            
             private static final long serialVersionUID = 1L;
 
             /**
@@ -778,6 +810,12 @@ public final class FilesSet implements Serializable {
             public boolean passes(AbstractFile file) {
                 return this.textMatches(file.getName());
             }
+
+            @Override
+            public String getType() {
+                return TYPE;
+            }
+
         }
 
         /**
@@ -828,7 +866,8 @@ public final class FilesSet implements Serializable {
          * object allows it to be safely published to multiple threads.
          */
         public static final class ExtensionCondition extends AbstractTextCondition implements FileNameCondition {
-           
+            public static final String TYPE = "Extension";
+            
             private static final long serialVersionUID = 1L;
 
             /**
@@ -897,13 +936,19 @@ public final class FilesSet implements Serializable {
             private static String normalize(String extension) {
                 return extension.startsWith(".") ? extension.substring(1) : extension;
             }
+
+            
+            @Override
+            public String getType() {
+                return TYPE;
+            }
         }
 
         /**
          * An interface for objects that do textual matches, used to compose a
          * text condition.
          */
-        static interface TextMatcher extends Serializable, JsonConvertible {
+        static interface TextMatcher extends Serializable {
 
             /**
              * Get the text the matcher examines.
@@ -935,7 +980,7 @@ public final class FilesSet implements Serializable {
         /**
          * A text matcher that does a case-insensitive string comparison.
          */
-        private static class CaseInsensitiveStringComparisionMatcher implements TextMatcher {
+        static class CaseInsensitiveStringComparisionMatcher implements TextMatcher {
 
             private static final long serialVersionUID = 1L;
             private final String textToMatch;
@@ -970,7 +1015,7 @@ public final class FilesSet implements Serializable {
         /**
          * A text matcher that does a case-insensitive string comparison.
          */
-        private static class CaseInsensitivePartialStringComparisionMatcher implements TextMatcher {
+        static class CaseInsensitivePartialStringComparisionMatcher implements TextMatcher {
 
             private static final long serialVersionUID = 1L;
             private final String textToMatch;
@@ -1007,7 +1052,7 @@ public final class FilesSet implements Serializable {
          * A text matcher that looks for a single case-insensitive string match
          * in a multi-value list.
          */
-        private static class CaseInsensitiveMultiValueStringComparisionMatcher implements TextMatcher {
+        static class CaseInsensitiveMultiValueStringComparisionMatcher implements TextMatcher {
 
             private static final long serialVersionUID = 1L;
             private final List<String> valuesToMatch;
@@ -1021,6 +1066,10 @@ public final class FilesSet implements Serializable {
              */
             CaseInsensitiveMultiValueStringComparisionMatcher(List<String> valuesToMatch) {
                 this.valuesToMatch = valuesToMatch;
+            }
+            
+            List<String> getValuesToMatch() {
+                return new ArrayList<String>(valuesToMatch);
             }
 
             @Override
@@ -1048,7 +1097,7 @@ public final class FilesSet implements Serializable {
         /**
          * A text matcher that does regular expression matching.
          */
-        private static class RegexMatcher implements TextMatcher {
+        static class RegexMatcher implements TextMatcher {
 
             private static final long serialVersionUID = 1L;
             private final Pattern regex;
