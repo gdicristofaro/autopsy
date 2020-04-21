@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.autopsy.modules.interestingitems;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -163,59 +165,13 @@ public final class FilesSet implements Serializable {
         // javax.swing.DefaultListModel<E>.
         return this.name;
     }
-    
-    public interface JsonConvertable {
-        String getType();
-    }
-    
+
 
     /**
      * A set membership rule for an interesting files set. The immutability of a
      * rule object allows it to be safely published to multiple threads.
      */
-    public final static class Rule implements Serializable {
-
-        /**
-         * Provides means of conversion for FileSet's to and from json.
-         */
-        final static class JsonConversion {            
-            private static class DefaultDeserializer<T extends Object> implements JsonDeserializer<T> {                
-                public T deserialize(final JsonElement jsonElement, final Type type,
-                     final JsonDeserializationContext deserializationContext
-                    ) throws JsonParseException {
-                    return deserializationContext.deserialize(jsonElement.getAsJsonObject(), type);
-                }
-
-            }
-
-            
-            private class FileNameConditionDeserializer implements JsonDeserializer<FileNameCondition> {
-
-                private static final String CLASSNAME = "type";
-
-                public T deserialize(final JsonElement jsonElement, final Type type,
-                                     final JsonDeserializationContext deserializationContext
-                                    ) throws JsonParseException {
-
-                    final JsonObject jsonObject = jsonElement.getAsJsonObject();
-                    final JsonPrimitive prim = (JsonPrimitive) jsonObject.get(CLASSNAME);
-                    final String className = prim.getAsString();
-                    final Class<?> clazz = getClassInstance(className);
-                    return deserializationContext.deserialize(jsonObject, clazz);
-                }
-
-                @SuppressWarnings("unchecked")
-                public Class<?> getClassInstance(String className) {
-                    switch (className) {
-                        case FullNameCondition.TYPE: return FullNameCondition.class;
-                        case ExtensionCondition.TYPE: return ExtensionCondition.class;
-                        default: throw new IllegalStateException("Unknown type: " + className);
-                    }
-                }
-
-            }
-        }
-    
+    public final static class Rule implements Serializable {    
         private static final long serialVersionUID = 1L;
         private final String uuid;
         private final String ruleName;
@@ -386,7 +342,7 @@ public final class FilesSet implements Serializable {
          * An interface for the file attribute conditions of which interesting
          * files set membership rules are composed.
          */
-        static interface FileAttributeCondition extends Serializable, JsonConvertable {
+        static interface FileAttributeCondition extends Serializable, JsonConvertible {
 
             /**
              * Tests whether or not a file satisfies the condition.
@@ -401,9 +357,7 @@ public final class FilesSet implements Serializable {
         /**
          * A class for checking files based upon their MIME types.
          */
-        public static final class MimeTypeCondition implements FileAttributeCondition {
-            public static final String TYPE = "MimeTypeCondition";
-            
+        public static final class MimeTypeCondition implements FileAttributeCondition {           
             private static final long serialVersionUID = 1L;
             private final String mimeType;
 
@@ -429,12 +383,6 @@ public final class FilesSet implements Serializable {
             public String getMimeType() {
                 return this.mimeType;
             }
-
-            @Override
-            public String getType() {
-                return TYPE;
-            }
-
         }
 
         /**
@@ -646,7 +594,7 @@ public final class FilesSet implements Serializable {
         /**
          * An interface for file attribute conditions that do textual matching.
          */
-        static interface TextCondition extends FileAttributeCondition {
+        static interface TextCondition extends FileAttributeCondition, JsonConvertible {
 
             /**
              * Gets the text the condition matches.
@@ -797,7 +745,7 @@ public final class FilesSet implements Serializable {
          * separately from path conditions for type safety when constructing
          * rules.
          */
-        static interface FileNameCondition extends TextCondition, JsonConvertable {
+        static interface FileNameCondition extends TextCondition, JsonConvertible {
         }
 
         /**
@@ -806,8 +754,6 @@ public final class FilesSet implements Serializable {
          * safely published to multiple threads.
          */
         public static final class FullNameCondition extends AbstractTextCondition implements FileNameCondition {
-            public static final String TYPE = "FullNameCondition";
-
             private static final long serialVersionUID = 1L;
 
             /**
@@ -832,12 +778,6 @@ public final class FilesSet implements Serializable {
             public boolean passes(AbstractFile file) {
                 return this.textMatches(file.getName());
             }
-
-            @Override
-            public String getType() {
-                return TYPE;
-            }
-
         }
 
         /**
@@ -888,8 +828,7 @@ public final class FilesSet implements Serializable {
          * object allows it to be safely published to multiple threads.
          */
         public static final class ExtensionCondition extends AbstractTextCondition implements FileNameCondition {
-            public static final String TYPE = "ExtensionCondition";
-            
+           
             private static final long serialVersionUID = 1L;
 
             /**
@@ -958,19 +897,13 @@ public final class FilesSet implements Serializable {
             private static String normalize(String extension) {
                 return extension.startsWith(".") ? extension.substring(1) : extension;
             }
-
-            @Override
-            public String getType() {
-                return TYPE;
-            }
-
         }
 
         /**
          * An interface for objects that do textual matches, used to compose a
          * text condition.
          */
-        private static interface TextMatcher extends Serializable {
+        static interface TextMatcher extends Serializable, JsonConvertible {
 
             /**
              * Get the text the matcher examines.
