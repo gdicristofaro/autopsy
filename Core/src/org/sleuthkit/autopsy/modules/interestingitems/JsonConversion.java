@@ -1,7 +1,20 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Autopsy Forensic Browser
+ *
+ * Copyright 2020 Basis Technology Corp.
+ * Contact: carrier <at> sleuthkit <dot> org
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.sleuthkit.autopsy.modules.interestingitems;
 
@@ -25,7 +38,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,179 +58,221 @@ import org.sleuthkit.autopsy.modules.interestingitems.FilesSetsManager.FilesSets
 /**
  * Provides means of conversion for FileSet's to and from json.
  */
-final class JsonConversion {            
-    static interface Converter<T extends Object> extends JsonDeserializer<T>, JsonSerializer<T> {} 
-    
-    private static final String VALUE_KEY = "patternToMatch";
-    private static final String VALUES_KEY = "patternsToMatch";
-    private static final String REGEX_KEY = "isRegex";
-    private static final String TYPE_KEY = "type";
-    
-    private static void setTextMatchFields(JsonObject jObject, TextCondition textCondition) {       
-        List<String> values = textCondition.getValuesToMatch();
-        
-        if (values != null) {
-            JsonArray valueArr = new JsonArray();
-            values.forEach((v) -> valueArr.add(v));
-            jObject.add(VALUES_KEY, valueArr);
-        }
-        else {
-            jObject.addProperty(REGEX_KEY, textCondition.isRegex());
-            jObject.addProperty(VALUE_KEY, textCondition.getTextToMatch()); 
-        }
-    }
-    
+final class JsonConversion {
+    /**
+     * A Gson serializer and deserializer in one interface.
+     * @param <T>   The type to convert.
+     */
+    static interface Converter<T extends Object> extends JsonDeserializer<T>, JsonSerializer<T> {}
+
+    /**
+     * Represents the arguments to construct a TextCondition as determined from the json object.
+     */
     private static class TextConditionArgs {
+
+        /**
+         * Returns an object based on a list of string values.  In this case,
+         * regex will not be applied.
+         * 
+         * @param values    The values to use for the arguments.
+         * @return          A TextConditionArgs object based on the values parameter.
+         */
         static TextConditionArgs fromValues(List<String> values) {
             return new TextConditionArgs(values, null, false);
         }
-        
+
+        /**
+         * Returns a TextConditionArgs object based on the value and whether or not it is regex.
+         * @param value     The value to use for arguments.
+         * @param isRegex   Whether or not it is regex.
+         * @return          The corresponding TextConditionArgs object.
+         */
         static TextConditionArgs fromValue(String value, boolean isRegex) {
             return new TextConditionArgs(null, value, isRegex);
         }
-        
+
         private final List<String> values;
         private final String value;
         private final boolean regex;
-        
+
         private TextConditionArgs(List<String> values, String value, boolean isRegex) {
             this.values = values;
             this.value = value;
             this.regex = isRegex;
         }
 
+        /**
+         * The values to be used.  If this is non-null, regex should also be false since
+         * CaseInsensitiveMultiValueStringComparisionMatcher is the only TextMatcher returning
+         * a list of strings and regex is also false in that object.  This or getValue should
+         * be null.
+         * 
+         * @return  The values list.
+         */
         List<String> getValues() {
             return values;
         }
 
+        /**
+         * The value to use for this text condition.  This or getValues should return null.
+         * @return      The value to use for arguments.
+         */
         String getValue() {
             return value;
         }
 
+        /**
+         * Whether or not this value is regex.
+         * @return  Whether or not this value is regex.
+         */
         boolean isRegex() {
             return regex;
         }
     }
-    
-    
-    private static List<String> getValuesOrNull(JsonObject jObject) {
-        JsonElement jArrEl = jObject.get(VALUES_KEY);
-        if (jArrEl == null || !jArrEl.isJsonArray())
-            return null;
-        
-        JsonArray jArr = jArrEl.getAsJsonArray();
-        List<String> toRet = new ArrayList<>();
-        jArr.forEach((val) -> {
-            if (!val.isJsonNull())
-                toRet.add(val.getAsString());
-        });
-        return toRet;
+
+    /**
+     * Within the JsonObject, creates fields based on the common fields found in the TextCondition.
+     * @param jObject           The json object to receive fields.
+     * @param textCondition     The text condition where values will be extracted.
+     */
+    private static void setTextMatchFields(JsonObject jObject, TextCondition textCondition) {
+        List<String> values = textCondition.getValuesToMatch();
+
+        if (values != null) {
+            JsonArray valueArr = new JsonArray();
+            values.forEach((v) -> valueArr.add(v));
+            jObject.add(VALUES_KEY, valueArr);
+        } else {
+            jObject.addProperty(REGEX_KEY, textCondition.isRegex());
+            jObject.addProperty(VALUE_KEY, textCondition.getTextToMatch());
+        }
     }
-    
-    private static TextConditionArgs getTextConditionArgs(JsonObject jObject) {
-        List<String> values = getValuesOrNull(jObject);
-        if (values != null)
-            return TextConditionArgs.fromValues(values);
-        
-        String value = jObject.get(VALUE_KEY).getAsString();
-        boolean isRegex = jObject.get(REGEX_KEY).getAsBoolean();
-        return TextConditionArgs.fromValue(value, isRegex);
+
+    private static boolean isNull(JsonElement el) {
+        return (el == null || el.isJsonNull());
     }
-       
+
+    /**
+     * Used to deserialize / serialize a FileNameCondition as FileNameCondition has multiple implementations
+     * and parameters for TextCondition's are not automatically determined.
+     */
     static final Converter<FileNameCondition> FILE_NAME_CONVERTER = new Converter<FileNameCondition>() {
         @Override
         public FileNameCondition deserialize(JsonElement je, Type type, JsonDeserializationContext jdc) throws JsonParseException {
+            if (isNull(je))
+                return null;
+
             final JsonObject jsonObject = je.getAsJsonObject();
-            String stringType = jsonObject.get(TYPE_KEY).getAsString();
-            TextConditionArgs args = getTextConditionArgs(jsonObject);
-            
+            String stringType = jdc.deserialize(jsonObject.get(TYPE_KEY), String.class);
+            TextConditionArgs args = getTextConditionArgs(jdc, jsonObject);
+
             switch (stringType) {
                 case FullNameCondition.TYPE:
-                    if (args.isRegex())
+                    if (args.isRegex()) {
                         return new FullNameCondition(Pattern.compile(args.getValue()));
-                    else
+                    } else {
                         return new FullNameCondition(args.getValue());
-                    
+                    }
+
                 case ExtensionCondition.TYPE:
-                    if (args.getValues() != null)
+                    if (args.getValues() != null) {
                         return new ExtensionCondition(args.getValues());
-                    else if (args.isRegex())
+                    } else if (args.isRegex()) {
                         return new ExtensionCondition(Pattern.compile(args.getValue()));
-                    else
+                    } else {
                         return new ExtensionCondition(args.getValue());
-                    
-                default: throw new JsonParseException("Unknown type while deserializing a FileNameCondition: " + stringType);
+                    }
+
+                default:
+                    throw new JsonParseException("Unknown type while deserializing a FileNameCondition: " + stringType);
             }
         }
 
         @Override
         public JsonElement serialize(FileNameCondition t, Type type, JsonSerializationContext jsc) {
-            if (t == null)
+            if (t == null) {
                 return null;
-            
+            }
+
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty(TYPE_KEY, t.getType());
             setTextMatchFields(jsonObject, t);
-            
+
             return jsonObject;
         }
     };
-    
+
+    /**
+     * Used to deserialize / serialize a ParentPathCondition.  ParentPathCondition cannot be determined automatically because 
+     * parameters for TextCondition's are not automatically determined.
+     */
     static final Converter<ParentPathCondition> PARENT_PATH_CONVERTER = new Converter<ParentPathCondition>() {
         @Override
         public ParentPathCondition deserialize(JsonElement je, Type type, JsonDeserializationContext jdc) throws JsonParseException {
+            if (isNull(je))
+                return null;
+
             final JsonObject jsonObject = je.getAsJsonObject();
-            TextConditionArgs args = getTextConditionArgs(jsonObject);
-            
-            if (args.isRegex())
+            TextConditionArgs args = getTextConditionArgs(jdc, jsonObject);
+
+            if (args.isRegex()) {
                 return new ParentPathCondition(Pattern.compile(args.getValue()));
-            else
+            } else {
                 return new ParentPathCondition(args.getValue());
+            }
         }
 
         @Override
         public JsonElement serialize(ParentPathCondition t, Type type, JsonSerializationContext jsc) {
-            if (t == null)
+            if (t == null) {
                 return null;
-            
+            }
+
             JsonObject jsonObject = new JsonObject();
             setTextMatchFields(jsonObject, t);
             return jsonObject;
         }
     };
-    
-    
-        static final Converter<Rule> RULE_CONVERTER = new Converter<Rule>() {
-            private static final String RULENAME_FIELD = "ruleName";
-            private static final String UUID_FIELD = "uuid";
-            private static final String FILENAME_FIELD = "fileNameCondition";
-            private static final String META_FIELD = "metaTypeCondition";
-            private static final String PATH_FIELD = "pathCondition";
-            private static final String SIZE_FIELD = "fileSizeCondition";
-            private static final String DATE_FIELD = "dateCondition";
-            private static final String MIME_FIELD = "mimeCondition";
-            
-            
+
+    /**
+     * Used to deserialize / serialize a Rule.  Rule cannot be determined automatically because 
+     * Rule constructor is not called during deserialization causing problems with caching variables.
+     */
+    static final Converter<Rule> RULE_CONVERTER = new Converter<Rule>() {
+        private static final String RULENAME_FIELD = "ruleName";
+        private static final String UUID_FIELD = "uuid";
+        private static final String FILENAME_FIELD = "fileNameCondition";
+        private static final String META_FIELD = "metaTypeCondition";
+        private static final String PATH_FIELD = "pathCondition";
+        private static final String SIZE_FIELD = "fileSizeCondition";
+        private static final String DATE_FIELD = "dateCondition";
+        private static final String MIME_FIELD = "mimeCondition";
+
         @Override
         public Rule deserialize(JsonElement je, Type type, JsonDeserializationContext jdc) throws JsonParseException {
+            if (isNull(je)) {
+                return null;
+            }
+
             JsonObject jsonObject = je.getAsJsonObject();
-            String ruleName = jsonObject.get(RULENAME_FIELD).getAsString();
-            String uuid = jsonObject.get(UUID_FIELD).getAsString();
-            
+            String ruleName = jdc.deserialize(jsonObject.get(RULENAME_FIELD), String.class);
+            String uuid = jdc.deserialize(jsonObject.get(UUID_FIELD), String.class);
+
             FileNameCondition fileNameCondition = jdc.deserialize(jsonObject.get(FILENAME_FIELD), FileNameCondition.class);
             MetaTypeCondition metaTypeCondition = jdc.deserialize(jsonObject.get(META_FIELD), MetaTypeCondition.class);
             ParentPathCondition parentPathCondition = jdc.deserialize(jsonObject.get(PATH_FIELD), ParentPathCondition.class);
             MimeTypeCondition mimeTypeCondition = jdc.deserialize(jsonObject.get(MIME_FIELD), MimeTypeCondition.class);
             FileSizeCondition fileSizeCondition = jdc.deserialize(jsonObject.get(SIZE_FIELD), FileSizeCondition.class);
             DateCondition dateeCondition = jdc.deserialize(jsonObject.get(DATE_FIELD), DateCondition.class);
-            
+
             return new Rule(uuid, ruleName, fileNameCondition, metaTypeCondition, parentPathCondition, mimeTypeCondition, fileSizeCondition, dateeCondition);
         }
 
         @Override
         public JsonElement serialize(Rule r, Type type, JsonSerializationContext jsc) {
-            if (r == null)
+            if (r == null) {
                 return null;
+            }
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty(RULENAME_FIELD, r.getName());
             jsonObject.addProperty(UUID_FIELD, r.getUuid());
@@ -232,27 +286,83 @@ final class JsonConversion {
             return jsonObject;
         }
     };
-
+    
+    
+    /**
+     * Cached Gson instance.
+     */
     private static Gson DEFAULT_DESERIALIZER = null;
     
-    Gson getDeserializer() {
+    /**
+     * For text matching, the pattern to match.
+     */
+    private static final String VALUE_KEY = "patternToMatch";
+    
+    /**
+     * For text matching, the list of patterns to match.
+     */
+    private static final String VALUES_KEY = "patternsToMatch";
+    
+    /**
+     * For text matching, whether or not the pattern is regex.
+     */
+    private static final String REGEX_KEY = "isRegex";
+    
+    /**
+     * To distinguish interface implementations from each other, where they can not
+     * be distinguished purely by context or structure, this key is used.
+     */
+    private static final String TYPE_KEY = "type";
+    
+    /**
+     * Used with gson to determine type in the face of type erasure.
+     */
+    private static final Type STRING_LIST_TYPE = new TypeToken<List<String>>() {}.getType();
+    
+    /**
+     * Defines the type of the root map to deserialize.
+     */
+    private static final Type ROOT_MAP_TYPE = new TypeToken<Map<String, FilesSet>>() {}.getType();
+    
+    
+    /**
+     * Creates and caches a Gson instance for serialization and deserialization.
+     * @return 
+     */
+    static Gson getDeserializer() {
         if (DEFAULT_DESERIALIZER == null) {
             return new GsonBuilder()
-                .setPrettyPrinting()
-                .registerTypeAdapter(ParentPathCondition.class, PARENT_PATH_CONVERTER)
-                .registerTypeAdapter(FileNameCondition.class, FILE_NAME_CONVERTER)
-                .registerTypeAdapter(Rule.class, RULE_CONVERTER)
-                .create();
+                    .setPrettyPrinting()
+                    .registerTypeAdapter(ParentPathCondition.class, PARENT_PATH_CONVERTER)
+                    .registerTypeAdapter(FileNameCondition.class, FILE_NAME_CONVERTER)
+                    .registerTypeAdapter(Rule.class, RULE_CONVERTER)
+                    .create();
         }
         return DEFAULT_DESERIALIZER;
     }
-    
 
-    
+    /**
+     * Determines args for the TextCondition implementations based on structure.
+     * @param jdc       The deserialization context for deserialization.
+     * @param jObject   The json object to deserialize.
+     * @return          The determined text condition arguments.
+     */
+    private static TextConditionArgs getTextConditionArgs(JsonDeserializationContext jdc, JsonObject jObject) {
+        List<String> values = jdc.deserialize(jObject.get(VALUES_KEY), STRING_LIST_TYPE);
+        if (values != null) {
+            return TextConditionArgs.fromValues(values);
+        }
+
+        String value = jdc.deserialize(jObject.get(VALUE_KEY), String.class);
+        boolean isRegex = (jdc.deserialize(jObject.get(REGEX_KEY), Boolean.class) == Boolean.TRUE);
+        return TextConditionArgs.fromValue(value, isRegex);
+    }
+
+
     /**
      * Writes FilesSet definitions to disk as a json file, logging any errors.
      *
-     * @param fileName Name of the set definitions file as a string.
+     * @param fileName             Name of the set definitions file as a string.
      * @param interestingFilesSets The interesting filesets to serialize.
      *
      * @returns True if the definitions are written to disk, false otherwise.
@@ -270,10 +380,8 @@ final class JsonConversion {
         }
         return true;
     }
-    
-    // Defines the type of the root map to deserialize.
-    private static Type ROOT_MAP_TYPE = new TypeToken<Map<String, FilesSet>>(){}.getType();
-    
+
+
     /**
      * Reads the definitions from the serialization file.
      *

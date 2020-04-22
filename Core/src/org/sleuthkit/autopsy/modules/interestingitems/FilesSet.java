@@ -631,8 +631,9 @@ public final class FilesSet implements Serializable {
             boolean textMatches(String textToMatch);
 
             /**
-             * Retrieves the list of values to match.
-             * @return  The list of values to match.
+             * Returns a list of strings if there are multiple values to be matched.
+             * Otherwise, returns null.
+             * @return  The list of values to match or null if not applicable.
              */
             List<String> getValuesToMatch();
         }
@@ -641,7 +642,7 @@ public final class FilesSet implements Serializable {
          * An abstract base class for file attribute conditions that do textual
          * matching.
          */
-        private static abstract class AbstractTextCondition implements TextCondition {
+        static abstract class AbstractTextCondition implements TextCondition {
 
             /*
              * To ensure compatibility with existing serialized configuration
@@ -686,7 +687,7 @@ public final class FilesSet implements Serializable {
                 if (this.textMatcher instanceof CaseInsensitiveMultiValueStringComparisionMatcher)
                     return ((CaseInsensitiveMultiValueStringComparisionMatcher) this.textMatcher).getValuesToMatch();
                 else
-                    return Arrays.asList(this.textMatcher.getTextToMatch());
+                    return null;
             }
             
 
