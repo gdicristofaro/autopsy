@@ -629,20 +629,13 @@ public final class FilesSet implements Serializable {
              */
             boolean textMatches(String textToMatch);
 
-            /**
-             * Returns a list of strings if there are multiple values to be
-             * matched. Otherwise, returns null.
-             *
-             * @return The list of values to match or null if not applicable.
-             */
-            List<String> getValuesToMatch();
         }
 
         /**
          * An abstract base class for file attribute conditions that do textual
          * matching.
          */
-        static abstract class AbstractTextCondition implements TextCondition {
+        private static abstract class AbstractTextCondition implements TextCondition {
 
             /*
              * To ensure compatibility with existing serialized configuration
@@ -679,15 +672,6 @@ public final class FilesSet implements Serializable {
              */
             AbstractTextCondition(List<String> values) {
                 this.textMatcher = new FilesSet.Rule.CaseInsensitiveMultiValueStringComparisionMatcher(values);
-            }
-
-            @Override
-            public List<String> getValuesToMatch() {
-                if (this.textMatcher instanceof CaseInsensitiveMultiValueStringComparisionMatcher) {
-                    return ((CaseInsensitiveMultiValueStringComparisionMatcher) this.textMatcher).getValuesToMatch();
-                } else {
-                    return null;
-                }
             }
 
             /**
@@ -1067,10 +1051,6 @@ public final class FilesSet implements Serializable {
              */
             CaseInsensitiveMultiValueStringComparisionMatcher(List<String> valuesToMatch) {
                 this.valuesToMatch = valuesToMatch;
-            }
-
-            List<String> getValuesToMatch() {
-                return new ArrayList<String>(valuesToMatch);
             }
 
             @Override

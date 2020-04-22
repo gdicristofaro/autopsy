@@ -137,11 +137,16 @@ final class InterestingFilesJsonConversion {
      * @param textCondition     The text condition where values will be extracted.
      */
     private static void setTextMatchFields(JsonObject jObject, TextCondition textCondition) {
-        List<String> values = textCondition.getValuesToMatch();
+        String textToMatch = textCondition.getTextToMatch();
+        // This uses a comma as a delimiter since that is what is used in 
+        // CaseInsensitiveMultiValueStringComparisionMatcher to construct the string.
+        String[] values = (textToMatch != null) ? textToMatch.split(",") : new String[]{null};
 
-        if (values != null) {
+        if (values.length > 1) {
             JsonArray valueArr = new JsonArray();
-            values.forEach((v) -> valueArr.add(v));
+            for (String v : values)
+                valueArr.add(v);
+            
             jObject.add(VALUES_KEY, valueArr);
         } else {
             jObject.addProperty(REGEX_KEY, textCondition.isRegex());
@@ -155,7 +160,7 @@ final class InterestingFilesJsonConversion {
 
     /**
      * Used to deserialize / serialize a FileNameCondition as FileNameCondition has multiple implementations
-     * and parameters for TextCondition's are not automatically determined.
+     * and parameters for TextCondition objects are not automatically determined.
      */
     static final Converter<FileNameCondition> FILE_NAME_CONVERTER = new Converter<FileNameCondition>() {
         @Override
@@ -205,7 +210,7 @@ final class InterestingFilesJsonConversion {
 
     /**
      * Used to deserialize / serialize a ParentPathCondition.  ParentPathCondition cannot be determined automatically because 
-     * parameters for TextCondition's are not automatically determined.
+     * parameters for TextCondition objects are not automatically determined.
      */
     static final Converter<ParentPathCondition> PARENT_PATH_CONVERTER = new Converter<ParentPathCondition>() {
         @Override

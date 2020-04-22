@@ -27,7 +27,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule;
 import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.DateCondition;
-import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.AbstractTextCondition;
 import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.ExtensionCondition;
 import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.FileNameCondition;
 import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.FileSizeCondition;
@@ -36,6 +35,7 @@ import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.MetaTypeCond
 import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.MetaTypeCondition.Type;
 import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.MimeTypeCondition;
 import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.ParentPathCondition;
+import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.TextCondition;
 
 
 
@@ -145,11 +145,10 @@ public class InterestingFilesJsonConversionTests {
         Assert.assertEquals(t1.getUnit(), t2.getUnit());
     }  
     
-    private static void areAbstractEqual(AbstractTextCondition t1, AbstractTextCondition t2) {
+    private static void areAbstractEqual(TextCondition t1, TextCondition t2) {
         if (nullEquals(t1, t2))
             return;
         Assert.assertEquals(t1.isRegex(), t2.isRegex());
-        Assert.assertEquals(t1.getValuesToMatch(), t2.getValuesToMatch());
         Assert.assertEquals(t1.getTextToMatch(), t2.getTextToMatch());
     }
 
