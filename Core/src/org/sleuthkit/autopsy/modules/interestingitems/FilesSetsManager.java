@@ -41,9 +41,14 @@ public final class FilesSetsManager extends Observable {
         "FilesSetsManager.allFilesDirectoriesAndUnallocated=All Files, Directories, and Unallocated Space"})
     private static final List<String> ILLEGAL_FILE_NAME_CHARS = Collections.unmodifiableList(new ArrayList<>(Arrays.asList("\\", "/", ":", "*", "?", "\"", "<", ">")));
     private static final List<String> ILLEGAL_FILE_PATH_CHARS = Collections.unmodifiableList(new ArrayList<>(Arrays.asList("\\", ":", "*", "?", "\"", "<", ">")));
-    private static final String LEGACY_FILES_SET_DEFS_FILE_NAME = "InterestingFilesSetDefs.xml"; //NON-NLS
-    private static final String INTERESTING_FILES_SET_DEFS_NAME = "InterestingFileSets.settings";
-    private static final String FILE_INGEST_FILTER_DEFS_NAME = "FileIngestFilterDefs.settings";
+    
+    private static final String JSON_FILES_SET_DEFS_NAME = "InterestingFileSets.json";
+    private static final String LEGACY_OBJECT_FILES_SET_DEFS_NAME = "InterestingFileSets.settings";
+    private static final String LEGACY_XML_FILES_SET_DEFS_NAME = "InterestingFilesSetDefs.xml";
+    
+    private static final String JSON_FILE_INGEST_FILTER_DEFS_NAME = "FileIngestFilterDefs.json";
+    private static final String LEGACY_OBJECT_FILE_INGEST_FILTER_DEFS_NAME = "FileIngestFilterDefs.settings";
+    
     private static final Object FILE_INGEST_FILTER_LOCK = new Object();
     private static final Object INTERESTING_FILES_SET_LOCK = new Object();
     private static FilesSetsManager instance;
@@ -113,7 +118,11 @@ public final class FilesSetsManager extends Observable {
      */
     public Map<String, FilesSet> getCustomFileIngestFilters() throws FilesSetsManagerException {
         synchronized (FILE_INGEST_FILTER_LOCK) {
-            return FileSetsDefinitions.readSerializedDefinitions(FILE_INGEST_FILTER_DEFS_NAME);
+            return InterestingItemsFilesSetSettings.readDefinitionsFile(
+                JSON_FILE_INGEST_FILTER_DEFS_NAME, 
+                LEGACY_OBJECT_FILE_INGEST_FILTER_DEFS_NAME, 
+                (FileSetsDefinitions defs) -> defs.getFilesSets(),
+                null);
         }
     }
 
@@ -136,7 +145,7 @@ public final class FilesSetsManager extends Observable {
      */
     void setCustomFileIngestFilters(Map<String, FilesSet> filesSets) throws FilesSetsManagerException {
         synchronized (FILE_INGEST_FILTER_LOCK) {
-            FileSetsDefinitions.writeDefinitionsFile(FILE_INGEST_FILTER_DEFS_NAME, filesSets);
+            InterestingItemsFilesSetSettings.writeDefinitionsFile(JSON_FILE_INGEST_FILTER_DEFS_NAME, filesSets);
         }
     }
 
@@ -149,7 +158,11 @@ public final class FilesSetsManager extends Observable {
      */
     public Map<String, FilesSet> getInterestingFilesSets() throws FilesSetsManagerException {
         synchronized (INTERESTING_FILES_SET_LOCK) {
-            return InterestingItemsFilesSetSettings.readDefinitionsFile(INTERESTING_FILES_SET_DEFS_NAME, LEGACY_FILES_SET_DEFS_FILE_NAME);
+            return InterestingItemsFilesSetSettings.readDefinitionsFile(
+                JSON_FILES_SET_DEFS_NAME, 
+                LEGACY_OBJECT_FILES_SET_DEFS_NAME, 
+                (InterestingItemsFilesSetSettings settings) -> settings.getFilesSets(), 
+                LEGACY_XML_FILES_SET_DEFS_NAME);
         }
     }
 
@@ -163,7 +176,7 @@ public final class FilesSetsManager extends Observable {
      */
     void setInterestingFilesSets(Map<String, FilesSet> filesSets) throws FilesSetsManagerException {
         synchronized (INTERESTING_FILES_SET_LOCK) {
-            InterestingItemsFilesSetSettings.writeDefinitionsFile(INTERESTING_FILES_SET_DEFS_NAME, filesSets);
+            InterestingItemsFilesSetSettings.writeDefinitionsFile(JSON_FILES_SET_DEFS_NAME, filesSets);
             this.setChanged();
             this.notifyObservers();
         }

@@ -18,21 +18,13 @@
  */
 package org.sleuthkit.autopsy.modules.interestingitems;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.Serializable;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.Map;
-import org.openide.util.io.NbObjectInputStream;
-import org.openide.util.io.NbObjectOutputStream;
-import org.sleuthkit.autopsy.coreutils.PlatformUtil;
 
 /**
- * Class for wrapping a map which stores FilesSets as values with a String key.
+ * Class for wrapping a map which stores FilesSets as values with a String key.  This is
+ * being kept for backwards compatibility when file sets definitions were written to disk
+ * through object serialization.
  */
 class FileSetsDefinitions implements Serializable {
 
@@ -51,47 +43,4 @@ class FileSetsDefinitions implements Serializable {
     Map<String, FilesSet> getFilesSets() {
         return filesSets;
     }
-    
-    /**
-     * Writes FilesSet definitions to disk as an XML file, logging any errors.
-     *
-     * @param fileName Name of the set definitions file as a string.
-     *
-     * @returns True if the definitions are written to disk, false otherwise.
-     */
-    static boolean writeDefinitionsFile(String fileName, Map<String, FilesSet> interestingFilesSets) throws FilesSetsManager.FilesSetsManagerException {
-        try (final NbObjectOutputStream out = new NbObjectOutputStream(new FileOutputStream(Paths.get(PlatformUtil.getUserConfigDirectory(), fileName).toString()))) {
-            out.writeObject(new FileSetsDefinitions(interestingFilesSets));
-        } catch (IOException ex) {
-            throw new FilesSetsManager.FilesSetsManagerException(String.format("Failed to write settings to %s", fileName), ex);
-        }
-        return true;
-    }
-    
-    /**
-     * Reads the definitions from the serialization file
-     *
-     * @return the map representing settings saved to serialization file, empty
-     *         set if the file does not exist.
-     *
-     * @throws FilesSetsManagerException if file could not be read
-     */
-    static Map<String, FilesSet> readSerializedDefinitions(String serialFileName) throws FilesSetsManager.FilesSetsManagerException {
-        Path filePath = Paths.get(PlatformUtil.getUserConfigDirectory(), serialFileName);
-        File fileSetFile = filePath.toFile();
-        String filePathStr = filePath.toString();
-        if (fileSetFile.exists()) {
-            try {
-                try (final NbObjectInputStream in = new NbObjectInputStream(new FileInputStream(filePathStr))) {
-                    FileSetsDefinitions filesSetsSettings = (FileSetsDefinitions) in.readObject();
-                    return filesSetsSettings.getFilesSets();
-                }
-            } catch (IOException | ClassNotFoundException ex) {
-                throw new FilesSetsManager.FilesSetsManagerException(String.format("Failed to read settings from %s", filePathStr), ex);
-            }
-        } else {
-            return new HashMap<>();
-        }
-    }
-
 }

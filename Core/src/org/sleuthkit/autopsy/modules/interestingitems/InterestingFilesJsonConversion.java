@@ -58,7 +58,7 @@ import org.sleuthkit.autopsy.modules.interestingitems.FilesSetsManager.FilesSets
 /**
  * Provides means of conversion for FileSet's to and from json.
  */
-final class JsonConversion {
+final class InterestingFilesJsonConversion {
     /**
      * A Gson serializer and deserializer in one interface.
      * @param <T>   The type to convert.
@@ -367,7 +367,7 @@ final class JsonConversion {
      *
      * @returns True if the definitions are written to disk, false otherwise.
      */
-    boolean writeDefinitionsFile(String fileName, Map<String, FilesSet> interestingFilesSets) throws FilesSetsManager.FilesSetsManagerException {
+    static boolean writeDefinitionsFile(String fileName, Map<String, FilesSet> interestingFilesSets) throws FilesSetsManager.FilesSetsManagerException {
         try {
             Gson gson = getDeserializer();
             String path = Paths.get(PlatformUtil.getUserConfigDirectory(), fileName).toString();
@@ -390,7 +390,7 @@ final class JsonConversion {
      *
      * @throws FilesSetsManagerException if file could not be read.
      */
-    Map<String, FilesSet> readSerializedDefinitions(String serialFileName) throws FilesSetsManager.FilesSetsManagerException {
+    static Map<String, FilesSet> readSerializedDefinitions(String serialFileName) throws FilesSetsManager.FilesSetsManagerException {
         Path filePath = Paths.get(PlatformUtil.getUserConfigDirectory(), serialFileName);
         File fileSetFile = filePath.toFile();
         String filePathStr = filePath.toString();

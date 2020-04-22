@@ -20,7 +20,6 @@ package org.sleuthkit.autopsy.modules.interestingitems;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Path;
@@ -29,14 +28,15 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import org.apache.commons.lang3.StringUtils;
 import org.openide.util.io.NbObjectInputStream;
-import org.openide.util.io.NbObjectOutputStream;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.coreutils.PlatformUtil;
 import org.sleuthkit.autopsy.coreutils.XMLUtil;
@@ -46,6 +46,7 @@ import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.MetaTypeCond
 import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.MimeTypeCondition;
 import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.ParentPathCondition;
 import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.DateCondition;
+import org.sleuthkit.autopsy.modules.interestingitems.FilesSetsManager.FilesSetsManagerException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -106,23 +107,93 @@ class InterestingItemsFilesSetSettings implements Serializable {
         return ruleName;
     }
 
+    
+    
+    
+    
+    // Note: This method takes a file path to support the possibility of
+    // multiple intersting files set definition files, e.g., one for
+    // definitions that ship with Autopsy and one for user definitions.
+
+    /**
+     * Reads FilesSet definitions from Serialized file or XML file.
+     *
+     * @param fileName       The name of the file which is expected to store the
+     *                       serialized definitions
+     * @param legacyFileName Name of the xml set definitions file as a string.
+     *
+     * @return The set definitions in a map of set names to sets.
+     *
+     * @throws
+     * org.sleuthkit.autopsy.modules.interestingitems.FilesSetsManager.FilesSetsManagerException
+     */
+    static <T> Map<String, FilesSet> readDefinitionsFile(
+            String jsonFile, 
+            String serializedObjectFile, 
+            Function<T,Map<String, FilesSet>> serializedObjectExtractor, 
+            String xmlFileName) 
+            throws FilesSetsManager.FilesSetsManagerException {
+        
+        if (!StringUtils.isEmpty(jsonFile)) {
+            Map<String, FilesSet> jsonFilesSets = InterestingFilesJsonConversion.readSerializedDefinitions(xmlFileName);
+            if (jsonFilesSets != null && !jsonFilesSets.isEmpty())
+                return jsonFilesSets;
+        }
+
+        if (!StringUtils.isEmpty(serializedObjectFile) && serializedObjectExtractor != null) {
+            Map<String, FilesSet> objectFilesSets = readSerializedDefinitions(serializedObjectFile, serializedObjectExtractor);
+            if (objectFilesSets != null && !objectFilesSets.isEmpty())
+                return objectFilesSets;
+        }
+
+        // Check if the legacy xml file exists.
+        if (!StringUtils.isEmpty(xmlFileName)) {
+            Map<String, FilesSet> xmlFilesSets = readDefinitionsXML(Paths.get(PlatformUtil.getUserConfigDirectory(), xmlFileName).toFile());
+            if (xmlFilesSets != null && !xmlFilesSets.isEmpty())
+                return xmlFilesSets;
+        }
+        
+        return new HashMap<>();
+    }
+
+    
+    // Note: This method takes a file path to support the possibility of
+    // multiple intersting files set definition files, e.g., one for
+    // definitions that ship with Autopsy and one for user definitions.
+    /**
+     * Writes FilesSet definitions to disk as an XML file, logging any errors.
+     *
+     * @param fileName Name of the set definitions file as a string (relative to user config directory).
+     * @param interestingFilesSets The interesting files sets to be committed to disk.
+     *
+     * @returns True if the definitions are written to disk, false otherwise.
+     */
+    static boolean writeDefinitionsFile(String fileName, Map<String, FilesSet> interestingFilesSets) throws FilesSetsManager.FilesSetsManagerException {
+        return InterestingFilesJsonConversion.writeDefinitionsFile(Paths.get(PlatformUtil.getUserConfigDirectory(), fileName).toString(), interestingFilesSets);
+    }
+    
+    
+    
     /**
      * Reads the definitions from the serialization file
      *
+     * @param <T>               The resulting type of deserializing the file.
+     * @param serialFileName    The file with the serialized object.
+     * @param retriever         The means to retrieve the Map<String, FilesSet> from the object.
      * @return the map representing settings saved to serialization file, empty
      *         set if the file does not exist.
      *
      * @throws FilesSetsManagerException if file could not be read
      */
-    private static Map<String, FilesSet> readSerializedDefinitions(String serialFileName) throws FilesSetsManager.FilesSetsManagerException {
+    private static <T> Map<String, FilesSet> readSerializedDefinitions(String serialFileName, Function<T,Map<String, FilesSet>> retriever) throws FilesSetsManager.FilesSetsManagerException {
         Path filePath = Paths.get(PlatformUtil.getUserConfigDirectory(), serialFileName);
         File fileSetFile = filePath.toFile();
         String filePathStr = filePath.toString();
         if (fileSetFile.exists()) {
             try {
                 try (final NbObjectInputStream in = new NbObjectInputStream(new FileInputStream(filePathStr))) {
-                    InterestingItemsFilesSetSettings filesSetsSettings = (InterestingItemsFilesSetSettings) in.readObject();
-                    return filesSetsSettings.getFilesSets();
+                    T objectFile = (T) in.readObject();
+                    return retriever.apply(objectFile);
                 }
             } catch (IOException | ClassNotFoundException ex) {
                 throw new FilesSetsManager.FilesSetsManagerException(String.format("Failed to read settings from %s", filePathStr), ex);
@@ -131,7 +202,7 @@ class InterestingItemsFilesSetSettings implements Serializable {
             return new HashMap<>();
         }
     }
-
+        
     /**
      * Construct a path condition for a FilesSet membership rule from data in an
      * XML element.
@@ -404,33 +475,7 @@ class InterestingItemsFilesSetSettings implements Serializable {
         FilesSet set = new FilesSet(setName, description, ignoreKnownFiles, ignoreUnallocatedSpace, rules);
         filesSets.put(set.getName(), set);
     }
-    // Note: This method takes a file path to support the possibility of
-    // multiple intersting files set definition files, e.g., one for
-    // definitions that ship with Autopsy and one for user definitions.
 
-    /**
-     * Reads FilesSet definitions from Serialized file or XML file.
-     *
-     * @param fileName       The name of the file which is expected to store the
-     *                       serialized definitions
-     * @param legacyFileName Name of the xml set definitions file as a string.
-     *
-     * @return The set definitions in a map of set names to sets.
-     *
-     * @throws
-     * org.sleuthkit.autopsy.modules.interestingitems.FilesSetsManager.FilesSetsManagerException
-     */
-    static Map<String, FilesSet> readDefinitionsFile(String fileName, String legacyFileName) throws FilesSetsManager.FilesSetsManagerException {
-        Map<String, FilesSet> filesSets = readSerializedDefinitions(fileName);
-        if (!filesSets.isEmpty()) {
-            return filesSets;
-        }
-        // Check if the legacy xml file exists.
-        if (!legacyFileName.isEmpty()) {
-            return readDefinitionsXML(Paths.get(PlatformUtil.getUserConfigDirectory(), legacyFileName).toFile());
-        }
-        return filesSets;
-    }
 
     /**
      * Reads an XML file and returns a map of fileSets. Allows for legacy XML
@@ -474,25 +519,7 @@ class InterestingItemsFilesSetSettings implements Serializable {
         }
         return filesSets;
     }
-
-    // Note: This method takes a file path to support the possibility of
-    // multiple intersting files set definition files, e.g., one for
-    // definitions that ship with Autopsy and one for user definitions.
-    /**
-     * Writes FilesSet definitions to disk as an XML file, logging any errors.
-     *
-     * @param fileName Name of the set definitions file as a string.
-     *
-     * @returns True if the definitions are written to disk, false otherwise.
-     */
-    static boolean writeDefinitionsFile(String fileName, Map<String, FilesSet> interestingFilesSets) throws FilesSetsManager.FilesSetsManagerException {
-        try (final NbObjectOutputStream out = new NbObjectOutputStream(new FileOutputStream(Paths.get(PlatformUtil.getUserConfigDirectory(), fileName).toString()))) {
-            out.writeObject(new InterestingItemsFilesSetSettings(interestingFilesSets));
-        } catch (IOException ex) {
-            throw new FilesSetsManager.FilesSetsManagerException(String.format("Failed to write settings to %s", fileName), ex);
-        }
-        return true;
-    }
+    
 
     /**
      * Write the FilesSets to a file as an xml.

@@ -39,7 +39,7 @@ import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.ParentPathCo
 
 
 
-public class JsonConverterTest {
+public class InterestingFilesJsonConversionTests {
     public static FileSizeCondition[] FILE_SIZE = new FileSizeCondition[] {
         new FileSizeCondition(FileSizeCondition.COMPARATOR.EQUAL, FileSizeCondition.SIZE_UNIT.BYTE, 312),
         new FileSizeCondition(FileSizeCondition.COMPARATOR.GREATER_THAN, FileSizeCondition.SIZE_UNIT.GIGABYTE, 312),
@@ -104,7 +104,7 @@ public class JsonConverterTest {
         null
     };
 
-    private static JsonConversion CONVERTER = new JsonConversion();
+    private static InterestingFilesJsonConversion CONVERTER = new InterestingFilesJsonConversion();
 
     
     
