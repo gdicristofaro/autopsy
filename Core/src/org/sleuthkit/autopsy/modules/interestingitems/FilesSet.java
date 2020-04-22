@@ -20,7 +20,6 @@ package org.sleuthkit.autopsy.modules.interestingitems;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -189,8 +188,8 @@ public final class FilesSet implements Serializable {
         public Rule(String ruleName, FileNameCondition fileNameCondition, MetaTypeCondition metaTypeCondition, ParentPathCondition pathCondition, MimeTypeCondition mimeTypeCondition, FileSizeCondition fileSizeCondition, DateCondition dateCondition) {
             this(UUID.randomUUID().toString(), ruleName, fileNameCondition, metaTypeCondition, pathCondition, mimeTypeCondition, fileSizeCondition, dateCondition);
         }
-        
-            /**
+
+        /**
          * Construct an interesting files set membership rule.
          *
          * @param uuid              The unique identifier for this rule;
@@ -631,9 +630,10 @@ public final class FilesSet implements Serializable {
             boolean textMatches(String textToMatch);
 
             /**
-             * Returns a list of strings if there are multiple values to be matched.
-             * Otherwise, returns null.
-             * @return  The list of values to match or null if not applicable.
+             * Returns a list of strings if there are multiple values to be
+             * matched. Otherwise, returns null.
+             *
+             * @return The list of values to match or null if not applicable.
              */
             List<String> getValuesToMatch();
         }
@@ -648,7 +648,6 @@ public final class FilesSet implements Serializable {
              * To ensure compatibility with existing serialized configuration
              * settings, this class cannot have a 'serialVersionUID'.
              */
-            
             private final TextMatcher textMatcher;
 
             /**
@@ -672,10 +671,10 @@ public final class FilesSet implements Serializable {
             AbstractTextCondition(Pattern regex) {
                 this.textMatcher = new FilesSet.Rule.RegexMatcher(regex);
             }
-            
+
             /**
              * Construct a case-insensitive multi-value text condition.
-             * 
+             *
              * @param values The list of values in which to look for a match.
              */
             AbstractTextCondition(List<String> values) {
@@ -684,12 +683,12 @@ public final class FilesSet implements Serializable {
 
             @Override
             public List<String> getValuesToMatch() {
-                if (this.textMatcher instanceof CaseInsensitiveMultiValueStringComparisionMatcher)
+                if (this.textMatcher instanceof CaseInsensitiveMultiValueStringComparisionMatcher) {
                     return ((CaseInsensitiveMultiValueStringComparisionMatcher) this.textMatcher).getValuesToMatch();
-                else
+                } else {
                     return null;
+                }
             }
-            
 
             /**
              * Get the text the condition matches.
@@ -770,11 +769,12 @@ public final class FilesSet implements Serializable {
          * rules.
          */
         static interface FileNameCondition extends TextCondition {
-            
+
             /**
              * Specifies the implementation type of this FileNameCondition for
              * serialization / deserialization purposes.
-             * @return      The json serializable type.
+             *
+             * @return The json serializable type.
              */
             String getType();
         }
@@ -785,8 +785,9 @@ public final class FilesSet implements Serializable {
          * safely published to multiple threads.
          */
         public static final class FullNameCondition extends AbstractTextCondition implements FileNameCondition {
+
             public static final String TYPE = "Full Name";
-            
+
             private static final long serialVersionUID = 1L;
 
             /**
@@ -829,7 +830,6 @@ public final class FilesSet implements Serializable {
              * To ensure compatibility with existing serialized configuration
              * settings, this class cannot have a 'serialVersionUID'.
              */
-            
             private final static long SECS_PER_DAY = 60 * 60 * 24;
 
             private int daysIncluded;
@@ -867,8 +867,9 @@ public final class FilesSet implements Serializable {
          * object allows it to be safely published to multiple threads.
          */
         public static final class ExtensionCondition extends AbstractTextCondition implements FileNameCondition {
+
             public static final String TYPE = "Extension";
-            
+
             private static final long serialVersionUID = 1L;
 
             /**
@@ -881,8 +882,8 @@ public final class FilesSet implements Serializable {
                 // AbstractFile.getFileNameExtension() returns just the 
                 // extension chars and not the dot.
                 super(normalize(extension), false);
-            }            
-            
+            }
+
             /**
              * Construct a case-insensitive file name extension condition.
              *
@@ -909,36 +910,35 @@ public final class FilesSet implements Serializable {
             public boolean passes(AbstractFile file) {
                 return this.textMatches(file.getNameExtension());
             }
-            
+
             /**
              * Strip "." from the start of extensions in the provided list.
-             * 
+             *
              * @param extensions The list of extensions to be processed.
-             * 
+             *
              * @return A post-processed list of extensions.
              */
             private static List<String> normalize(List<String> extensions) {
                 List<String> values = new ArrayList<>(extensions);
-                
-                for (int i=0; i < values.size(); i++) {
+
+                for (int i = 0; i < values.size(); i++) {
                     values.set(i, normalize(values.get(i)));
                 }
-                
+
                 return values;
             }
-            
+
             /**
              * Strip "." from the start of the provided extension.
-             * 
+             *
              * @param extension The extension to be processed.
-             * 
+             *
              * @return A post-processed extension.
              */
             private static String normalize(String extension) {
                 return extension.startsWith(".") ? extension.substring(1) : extension;
             }
 
-            
             @Override
             public String getType() {
                 return TYPE;
@@ -1068,7 +1068,7 @@ public final class FilesSet implements Serializable {
             CaseInsensitiveMultiValueStringComparisionMatcher(List<String> valuesToMatch) {
                 this.valuesToMatch = valuesToMatch;
             }
-            
+
             List<String> getValuesToMatch() {
                 return new ArrayList<String>(valuesToMatch);
             }
