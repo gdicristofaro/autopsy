@@ -1111,6 +1111,25 @@ public final class FilesSetDefsPanel extends IngestModuleGlobalSettingsPanel imp
         this.doFileSetsDialog(this.setsList.getSelectedValue(), true);
         firePropertyChange(OptionsPanelController.PROP_CHANGED, null, null);
     }//GEN-LAST:event_copySetButtonActionPerformed
+
+
+    /**
+     * Attempts to read the file as an xml file for backwards compatibility and then attempts to read as a json file.
+     * @param selFile       The file to read.
+     * @return              The resulting FilesSet objects if successful.
+     * @throws FilesSetsManagerException    If no FilesSet objects are parsed, this exception is thrown.
+     */
+    private Collection<FilesSet> tryReadImportFile(File selFile) throws FilesSetsManager.FilesSetsManagerException {
+        Collection<FilesSet> importedSets = InterestingItemsFilesSetSettings.readDefinitionsXML(selFile).values(); //read the xml from that path
+        if (importedSets == null || importedSets.isEmpty()) {
+            importedSets = InterestingFilesJsonConversion.readExportedDefinitions(selFile.getAbsolutePath());
+            if (importedSets == null || importedSets.isEmpty())
+                throw new FilesSetsManager.FilesSetsManagerException("No Files Sets were read from the xml.");
+        }
+        return importedSets;
+    }
+
+
     @NbBundle.Messages({
         "FilesSetDefsPanel.yesOwMsg=Yes, overwrite",
         "FilesSetDefsPanel.noSkipMsg=No, skip",
@@ -1126,9 +1145,10 @@ public final class FilesSetDefsPanel extends IngestModuleGlobalSettingsPanel imp
         //save currently selected value as default value to select
         FilesSet selectedSet = this.setsList.getSelectedValue();
         JFileChooser chooser = new JFileChooser();
-        final String EXTENSION = "xml"; //NON-NLS
+        final String xmlExtension = "xml"; //NON-NLS
+        final String jsonExtension = "json";
         FileNameExtensionFilter autopsyFilter = new FileNameExtensionFilter(
-                NbBundle.getMessage(this.getClass(), "FilesSetDefsPanel.interesting.fileExtensionFilterLbl"), EXTENSION);
+                NbBundle.getMessage(this.getClass(), "FilesSetDefsPanel.interesting.fileExtensionFilterLbl"), xmlExtension, jsonExtension);
         chooser.addChoosableFileFilter(autopsyFilter);
         chooser.setAcceptAllFileFilterUsed(false);
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
@@ -1145,10 +1165,7 @@ public final class FilesSetDefsPanel extends IngestModuleGlobalSettingsPanel imp
             }
             Collection<FilesSet> importedSets;
             try {
-                importedSets = InterestingItemsFilesSetSettings.readDefinitionsXML(selFile).values(); //read the xml from that path
-                if (importedSets.isEmpty()) {
-                    throw new FilesSetsManager.FilesSetsManagerException("No Files Sets were read from the xml.");
-                }
+                importedSets = tryReadImportFile(selFile);
             } catch (FilesSetsManager.FilesSetsManagerException ex) {
                 JOptionPane.showMessageDialog(this,
                         NbBundle.getMessage(this.getClass(), "FilesSetDefsPanel.interesting.failImportMsg"),
@@ -1202,7 +1219,7 @@ public final class FilesSetDefsPanel extends IngestModuleGlobalSettingsPanel imp
         //display warning that existing filessets with duplicate names will be overwritten
         //create file chooser to get xml filefinal String FEATURE_NAME = NbBundle.getMessage(this.getClass(),
         JFileChooser chooser = new JFileChooser();
-        final String EXTENSION = "xml"; //NON-NLS
+        final String EXTENSION = "json"; //NON-NLS
         FileNameExtensionFilter autopsyFilter = new FileNameExtensionFilter(
                 NbBundle.getMessage(this.getClass(), "FilesSetDefsPanel.interesting.fileExtensionFilterLbl"), EXTENSION);
         chooser.addChoosableFileFilter(autopsyFilter);
@@ -1240,7 +1257,13 @@ public final class FilesSetDefsPanel extends IngestModuleGlobalSettingsPanel imp
             exportSets = new ArrayList<>();
             //currently only exports selectedValue
             exportSets.add(this.setsList.getSelectedValue());
-            boolean written = InterestingItemsFilesSetSettings.exportXmlDefinitionsFile(selFile, exportSets);
+            boolean written = false;
+            try {
+                written = InterestingFilesJsonConversion.writeDefinitionsFile(selFile.getAbsolutePath(), exportSets);
+            }
+            catch (FilesSetsManager.FilesSetsManagerException ex) {
+                logger.log(Level.WARNING, "There was an error writing the files set export list to disk.", ex);
+            }
             if (written) {
                 JOptionPane.showMessageDialog(
                         WindowManager.getDefault().getMainWindow(),

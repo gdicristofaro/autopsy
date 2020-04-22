@@ -38,6 +38,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -324,6 +325,10 @@ final class InterestingFilesJsonConversion {
      */
     private static final Type ROOT_MAP_TYPE = new TypeToken<Map<String, FilesSet>>() {}.getType();
     
+    /**
+     * Defines the type of the root list to deserialize.
+     */
+    private static final Type ROOT_LIST_TYPE = new TypeToken<List<FilesSet>>() {}.getType();
     
     /**
      * Creates and caches a Gson instance for serialization and deserialization.
@@ -357,7 +362,41 @@ final class InterestingFilesJsonConversion {
         boolean isRegex = (jdc.deserialize(jObject.get(REGEX_KEY), Boolean.class) == Boolean.TRUE);
         return TextConditionArgs.fromValue(value, isRegex);
     }
+    
+    
+    
+    /**
+     * Writes the specified object to disk as json.
+     * @param <T>       The type to be written.
+     * @param errorFileName The file name to be specified in the event of an exception.
+     * @param fullPath  The full path to the file to be written.
+     * @param interestingFileDefs   The object to be written.
+     * @return  Whether or not the operation completed successfully.
+     * @throws FilesSetsManagerException Throws exception on IO error.
+     */
+    private static <T> boolean writeFile(String errorFileName, String fullPath, T interestingFileDefs) throws FilesSetsManager.FilesSetsManagerException {
+        try {
+            Gson gson = getDeserializer();
+            FileWriter writer = new FileWriter(fullPath);
+            gson.toJson(interestingFileDefs, writer);
+            writer.flush();
+            writer.close();
+        } catch (IOException ex) {
+            throw new FilesSetsManager.FilesSetsManagerException(String.format("Failed to write settings to %s", errorFileName), ex);
+        }
+        return true;
+    } 
 
+    /**
+     * On export, this is called to write the file to disk as json.
+     * @param path          The absolute path of the file to be written.
+     * @param defToExport   The definition to export.
+     * @return              Whether or not the operation completed successfully.
+     * @throws FilesSetsManagerException Throws exception on IO error.
+     */
+    static boolean writeDefinitionsFile(String path, List<FilesSet> defToExport) throws FilesSetsManager.FilesSetsManagerException {
+        return writeFile(path, path, defToExport);
+    }
 
     /**
      * Writes FilesSet definitions to disk as a json file, logging any errors.
@@ -366,19 +405,11 @@ final class InterestingFilesJsonConversion {
      * @param interestingFilesSets The interesting filesets to serialize.
      *
      * @returns True if the definitions are written to disk, false otherwise.
+     * @throws FilesSetsManagerException Throws exception on IO error.
      */
     static boolean writeDefinitionsFile(String fileName, Map<String, FilesSet> interestingFilesSets) throws FilesSetsManager.FilesSetsManagerException {
-        try {
-            Gson gson = getDeserializer();
-            String path = Paths.get(PlatformUtil.getUserConfigDirectory(), fileName).toString();
-            FileWriter writer = new FileWriter(path);
-            gson.toJson(interestingFilesSets, writer);
-            writer.flush();
-            writer.close();
-        } catch (IOException ex) {
-            throw new FilesSetsManager.FilesSetsManagerException(String.format("Failed to write settings to %s", fileName), ex);
-        }
-        return true;
+        String path = Paths.get(PlatformUtil.getUserConfigDirectory(), fileName).toString();
+        return writeFile(fileName, path, interestingFilesSets);
     }
 
 
@@ -388,21 +419,42 @@ final class InterestingFilesJsonConversion {
      * @return the map representing settings saved to serialization file, empty
      *         set if the file does not exist.
      *
-     * @throws FilesSetsManagerException if file could not be read.
+     * @throws FilesSetsManagerException If file could not be read.
+     */
+    private static <T> T readSerializedDefinitions(String path, Type type) throws FilesSetsManager.FilesSetsManagerException {
+
+        if (new File(path).exists()) {
+            try {
+                Gson gson = getDeserializer();
+                return gson.fromJson(new FileReader(path), type);
+            } catch (IOException | JsonIOException | JsonSyntaxException ex) {
+                throw new FilesSetsManager.FilesSetsManagerException(String.format("Failed to read settings from %s", path), ex);
+            }
+        } else {
+            return null;
+        }
+    }
+    
+    /**
+     * Reads a json serialized configuration file into memory.
+     * @param serialFileName        The config file name with the filesets data.
+     * @return                      The resulting mapping or an empty hashmap.
+     * @throws FilesSetsManagerException If file could not be read. 
      */
     static Map<String, FilesSet> readSerializedDefinitions(String serialFileName) throws FilesSetsManager.FilesSetsManagerException {
         Path filePath = Paths.get(PlatformUtil.getUserConfigDirectory(), serialFileName);
-        File fileSetFile = filePath.toFile();
-        String filePathStr = filePath.toString();
-        if (fileSetFile.exists()) {
-            try {
-                Gson gson = getDeserializer();
-                return gson.fromJson(new FileReader(filePathStr), ROOT_MAP_TYPE);
-            } catch (IOException | JsonIOException | JsonSyntaxException ex) {
-                throw new FilesSetsManager.FilesSetsManagerException(String.format("Failed to read settings from %s", filePathStr), ex);
-            }
-        } else {
-            return new HashMap<>();
-        }
+        Map<String, FilesSet> result = readSerializedDefinitions(filePath.toFile().getAbsolutePath(), ROOT_MAP_TYPE);
+        return (result == null) ? new HashMap<>() : result;
+    }
+    
+    /**
+     * 
+     * @param path          The absolute path of the file to be written.
+     * @return               The definition to export.
+     * @throws FilesSetsManagerException  If file could not be read. 
+     */
+    static List<FilesSet> readExportedDefinitions(String fullPath) throws FilesSetsManager.FilesSetsManagerException {
+        List<FilesSet> result = readSerializedDefinitions(fullPath, ROOT_LIST_TYPE);
+        return (result == null) ? new ArrayList<>() : result;
     }
 }
