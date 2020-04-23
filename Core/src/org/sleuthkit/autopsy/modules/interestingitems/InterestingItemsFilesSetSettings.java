@@ -140,20 +140,19 @@ class InterestingItemsFilesSetSettings implements Serializable {
                 return jsonFilesSets;
         }
 
-        if (!StringUtils.isEmpty(serializedObjectFile) && serializedObjectExtractor != null) {
-            Map<String, FilesSet> objectFilesSets = readSerializedDefinitions(serializedObjectFile, serializedObjectExtractor);
-            if (objectFilesSets != null && !objectFilesSets.isEmpty())
-                return objectFilesSets;
-        }
+        Map<String, FilesSet> legacyFileSets = null;
+        if (!StringUtils.isEmpty(serializedObjectFile) && serializedObjectExtractor != null)
+            legacyFileSets = readSerializedDefinitions(serializedObjectFile, serializedObjectExtractor);
 
-        // Check if the legacy xml file exists.
-        if (!StringUtils.isEmpty(xmlFileName)) {
-            Map<String, FilesSet> xmlFilesSets = readDefinitionsXML(Paths.get(PlatformUtil.getUserConfigDirectory(), xmlFileName).toFile());
-            if (xmlFilesSets != null && !xmlFilesSets.isEmpty())
-                return xmlFilesSets;
-        }
+        // Check if the legacy xml file exists if not already populated by serialized object definition.
+        if ((legacyFileSets == null || legacyFileSets.isEmpty()) && !StringUtils.isEmpty(xmlFileName))
+            legacyFileSets = readDefinitionsXML(Paths.get(PlatformUtil.getUserConfigDirectory(), xmlFileName).toFile());
+
+        // if there is a legacy file, save to new json format
+        if (legacyFileSets != null && !legacyFileSets.isEmpty())
+            writeDefinitionsFile(jsonFile, legacyFileSets);
         
-        return new HashMap<>();
+        return (legacyFileSets == null) ? new HashMap<>() : legacyFileSets;
     }
 
     
