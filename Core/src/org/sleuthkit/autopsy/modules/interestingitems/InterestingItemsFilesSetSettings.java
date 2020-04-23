@@ -135,7 +135,7 @@ class InterestingItemsFilesSetSettings implements Serializable {
             throws FilesSetsManager.FilesSetsManagerException {
         
         if (!StringUtils.isEmpty(jsonFile)) {
-            Map<String, FilesSet> jsonFilesSets = InterestingFilesJsonConversion.readSerializedDefinitions(xmlFileName);
+            Map<String, FilesSet> jsonFilesSets = InterestingFilesJsonConversion.readSerializedDefinitions(jsonFile);
             if (jsonFilesSets != null && !jsonFilesSets.isEmpty())
                 return jsonFilesSets;
         }
@@ -149,9 +149,15 @@ class InterestingItemsFilesSetSettings implements Serializable {
             legacyFileSets = readDefinitionsXML(Paths.get(PlatformUtil.getUserConfigDirectory(), xmlFileName).toFile());
 
         // if there is a legacy file, save to new json format
-        if (legacyFileSets != null && !legacyFileSets.isEmpty())
-            writeDefinitionsFile(jsonFile, legacyFileSets);
-        
+        if (legacyFileSets != null && !legacyFileSets.isEmpty()) {
+            try {
+                writeDefinitionsFile(jsonFile, legacyFileSets);
+            }
+            catch (FilesSetsManagerException ex) {
+                logger.log(Level.WARNING, "There was an error while trying to upgrade legacy file to json format.", ex);
+            }
+        }
+
         return (legacyFileSets == null) ? new HashMap<>() : legacyFileSets;
     }
 
@@ -168,7 +174,7 @@ class InterestingItemsFilesSetSettings implements Serializable {
      * @returns True if the definitions are written to disk, false otherwise.
      */
     static boolean writeDefinitionsFile(String fileName, Map<String, FilesSet> interestingFilesSets) throws FilesSetsManager.FilesSetsManagerException {
-        return InterestingFilesJsonConversion.writeDefinitionsFile(Paths.get(PlatformUtil.getUserConfigDirectory(), fileName).toString(), interestingFilesSets);
+        return InterestingFilesJsonConversion.writeDefinitionsFile(fileName, interestingFilesSets);
     }
     
     

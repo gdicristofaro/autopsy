@@ -1138,7 +1138,7 @@ public final class FilesSetDefsPanel extends IngestModuleGlobalSettingsPanel imp
         "FilesSetDefsPanel.interesting.overwriteSetPrompt=Interesting files set <{0}> already exists locally, overwrite?",
         "FilesSetDefsPanel.interesting.importOwConflict=Import Interesting files set conflict",
         "FilesSetDefsPanel.interesting.failImportMsg=Interesting files set not imported",
-        "FilesSetDefsPanel.interesting.fileExtensionFilterLbl=Autopsy Interesting File Set File (xml)",
+        "FilesSetDefsPanel.interesting.fileExtensionFilterLbl=Autopsy Interesting File Set File (xml, json)",
         "FilesSetDefsPanel.interesting.importButtonAction.featureName=Interesting Files Set Import"
     })
     private void importSetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_importSetButtonActionPerformed
