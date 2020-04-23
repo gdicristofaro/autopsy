@@ -21,8 +21,11 @@ package org.sleuthkit.autopsy.modules.interestingitems;
 import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.Assert;
 import org.junit.Test;
 import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule;
@@ -80,7 +83,7 @@ public class InterestingFilesJsonConversionTests {
         null
     };
     
-    public static FullNameCondition[] FILE_NAME = new FullNameCondition[] {
+    public static FullNameCondition[] FULL_NAME = new FullNameCondition[] {
         new FullNameCondition(Pattern.compile("/Users/testuser/.*")),
         new FullNameCondition("/Users/testuser/.*"),
         new FullNameCondition(""),
@@ -90,12 +93,50 @@ public class InterestingFilesJsonConversionTests {
     
     public static ExtensionCondition[] EXTENSION = new ExtensionCondition[] {    
         new ExtensionCondition("pdf"),
+        new ExtensionCondition(".pdf"),
         new ExtensionCondition(" "),
         new ExtensionCondition(Pattern.compile("pdf")),
-        new ExtensionCondition(Arrays.asList("pdf", "doc", "txt")),
+        new ExtensionCondition(Arrays.asList("pdf", ".doc", "txt")),
+        new ExtensionCondition(Arrays.asList(".pdf", "doc", "xml,json")),
         new ExtensionCondition(new ArrayList<String>()),
         null
     };
+    
+    
+    /**
+     * Signifies items that should be accepted or failed by matching the text of an extension
+     */
+    private static class Matches {
+        private final List<String> accepted;
+        private final List<String> fails;
+
+        Matches(List<String> accepted, List<String> fails) {
+            this.accepted = accepted;
+            this.fails = fails;
+        }
+
+        List<String> getAccepted() {
+            return accepted;
+        }
+
+        List<String> getFails() {
+            return fails;
+        }
+    }
+    
+    // corresponding matches to the extensions
+    public static Matches[] EXTENSION_MATCHES = new Matches[] {    
+        new Matches(Arrays.asList("pdf"), Arrays.asList("pdq")),
+        new Matches(Arrays.asList("pdf"), Arrays.asList("pdq")),
+        new Matches(Arrays.asList(" "), Arrays.asList("  ")),
+        new Matches(Arrays.asList("pdf"), Arrays.asList("pdq")),
+        new Matches(Arrays.asList("pdf", "doc", "txt"), Arrays.asList("json", "xml")),
+        new Matches(Arrays.asList("pdf", "doc", "xml,json"), Arrays.asList("json", "xml")),
+        null
+    };
+    
+    
+    public static List<FileNameCondition> FILE_NAME = Stream.concat(Arrays.stream(FULL_NAME), Arrays.stream(EXTENSION)).collect(Collectors.toList());
     
     public static String[] RULE_NAME = new String[] {
         "Example Rule Name",
@@ -104,9 +145,20 @@ public class InterestingFilesJsonConversionTests {
         null
     };
 
-    private static InterestingFilesJsonConversion CONVERTER = new InterestingFilesJsonConversion();
-
-    
+    private static void assertExtensions(ExtensionCondition extCond, Matches match) {
+        if (match == null)
+            return;
+        
+        if (match.getAccepted() != null) {
+            for (String accepted : match.getAccepted())
+                Assert.assertTrue(extCond.textMatches(accepted));
+        }
+        
+        if (match.getFails() != null) {
+            for (String fail : match.getFails())
+                Assert.assertFalse(extCond.textMatches(fail));
+        }
+    }
     
     private static boolean nullEquals(Object o1, Object o2) {
         if (o1 == null && o2 == null)
@@ -179,11 +231,10 @@ public class InterestingFilesJsonConversionTests {
         areAbstractEqual(r1.getPathCondition(), r2.getPathCondition());
     }
     
-    
     @Test
-    public void testFileNameCondition() {
-        Gson converter = CONVERTER.getDeserializer();
-        for (FileNameCondition item : FILE_NAME) {
+    public void testFullNameCondition() {
+        Gson converter = InterestingFilesJsonConversion.getDeserializer();
+        for (FileNameCondition item : FULL_NAME) {
             String converted = converter.toJson(item, FileNameCondition.class);
             FileNameCondition deserialized = converter.fromJson(converted, FileNameCondition.class);   
             areEqual(item, deserialized);
@@ -192,7 +243,7 @@ public class InterestingFilesJsonConversionTests {
     
     @Test
     public void testMetaTypeCondition() {
-        Gson converter = CONVERTER.getDeserializer();
+        Gson converter = InterestingFilesJsonConversion.getDeserializer();
         for (MetaTypeCondition item : META) {
             String converted = converter.toJson(item, MetaTypeCondition.class);
             MetaTypeCondition deserialized = converter.fromJson(converted, MetaTypeCondition.class);   
@@ -202,7 +253,7 @@ public class InterestingFilesJsonConversionTests {
     
     @Test
     public void testParentPathCondition() {
-        Gson converter = CONVERTER.getDeserializer();
+        Gson converter = InterestingFilesJsonConversion.getDeserializer();
         for (ParentPathCondition item : PARENT_PATH) {
             String converted = converter.toJson(item, ParentPathCondition.class);
             ParentPathCondition deserialized = converter.fromJson(converted, ParentPathCondition.class);   
@@ -211,8 +262,21 @@ public class InterestingFilesJsonConversionTests {
     }
     
     @Test
+    public void testExtensionCondition() {
+        Gson converter = InterestingFilesJsonConversion.getDeserializer();
+        for (int i = 0; i < EXTENSION.length; i++) {
+            ExtensionCondition item = EXTENSION[i];
+            Matches match = (EXTENSION_MATCHES.length > i) ? EXTENSION_MATCHES[i] : null;
+            String converted = converter.toJson(item, FileNameCondition.class);
+            FileNameCondition deserialized = converter.fromJson(converted, FileNameCondition.class);   
+            areEqual(item, deserialized);
+            assertExtensions(item, match);
+        }
+    }
+    
+    @Test
     public void testMimeTypeCondition() {
-        Gson converter = CONVERTER.getDeserializer();
+        Gson converter = InterestingFilesJsonConversion.getDeserializer();
         for (MimeTypeCondition item : MIME) {
             String converted = converter.toJson(item, MimeTypeCondition.class);
             MimeTypeCondition deserialized = converter.fromJson(converted, MimeTypeCondition.class);   
@@ -222,7 +286,7 @@ public class InterestingFilesJsonConversionTests {
     
     @Test
     public void testFileSizeCondition() {
-        Gson converter = CONVERTER.getDeserializer();
+        Gson converter = InterestingFilesJsonConversion.getDeserializer();
         for (FileSizeCondition item : FILE_SIZE) {
             String converted = converter.toJson(item, FileSizeCondition.class);
             FileSizeCondition deserialized = converter.fromJson(converted, FileSizeCondition.class);   
@@ -232,7 +296,7 @@ public class InterestingFilesJsonConversionTests {
     
     @Test
     public void testDateCondition() {
-        Gson converter = CONVERTER.getDeserializer();
+        Gson converter = InterestingFilesJsonConversion.getDeserializer();
         for (DateCondition item : DATE) {
             String converted = converter.toJson(item, DateCondition.class);
             DateCondition deserialized = converter.fromJson(converted, DateCondition.class);   
@@ -243,7 +307,7 @@ public class InterestingFilesJsonConversionTests {
     
     @Test
     public void testRuleConversion() {
-        Gson converter = CONVERTER.getDeserializer();
+        Gson converter = InterestingFilesJsonConversion.getDeserializer();
         for (FileNameCondition filename : FILE_NAME) {
             for (MetaTypeCondition meta : META) {
                 for (ParentPathCondition parent : PARENT_PATH) {

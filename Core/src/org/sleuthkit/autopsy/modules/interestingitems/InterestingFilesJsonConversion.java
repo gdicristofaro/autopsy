@@ -36,15 +36,19 @@ import java.lang.reflect.Type;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.sleuthkit.autopsy.coreutils.PlatformUtil;
 import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule;
+import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.CaseInsensitiveMultiValueStringComparisionMatcher;
 import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.DateCondition;
 import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.ExtensionCondition;
 import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.FileNameCondition;
@@ -130,6 +134,34 @@ final class InterestingFilesJsonConversion {
             return regex;
         }
     }
+    
+    
+    /**
+     * Attempts to fetch the original string list if the TextMatcher is of type CaseInsensitiveMultiValueStringComparisionMatcher.  
+     * Otherwise, this returns null.
+     * 
+     * @param textCondition     The text condition object on which to use reflection to fetch the list of strings.
+     * @return                  The list of strings if found through reflection.  Otherwise, this returns null.
+     */
+    private static List<String> getStringListWithReflection(TextCondition textCondition) {
+        try {
+            String textMatcherFieldStr = "textMatcher";
+            Field textMatcherField = textCondition.getClass().getSuperclass().getDeclaredField(textMatcherFieldStr);
+            textMatcherField.setAccessible(true);
+            Object matcherObj = textMatcherField.get(textCondition);
+            if (matcherObj instanceof CaseInsensitiveMultiValueStringComparisionMatcher) {
+                CaseInsensitiveMultiValueStringComparisionMatcher matcher = (CaseInsensitiveMultiValueStringComparisionMatcher) matcherObj;
+                String stringListFieldStr = "valuesToMatch";
+                Field stringListField = matcher.getClass().getDeclaredField(stringListFieldStr);
+                stringListField.setAccessible(true);
+                return (List<String>) stringListField.get(matcher);
+            }            
+        }
+        catch (NullPointerException | IllegalAccessException | IllegalArgumentException | NoSuchFieldException | SecurityException e) {}
+        
+        return null;
+    }
+    
 
     /**
      * Within the JsonObject, creates fields based on the common fields found in the TextCondition.
@@ -138,13 +170,21 @@ final class InterestingFilesJsonConversion {
      */
     private static void setTextMatchFields(JsonObject jObject, TextCondition textCondition) {
         String textToMatch = textCondition.getTextToMatch();
-        // This uses a comma as a delimiter since that is what is used in 
-        // CaseInsensitiveMultiValueStringComparisionMatcher to construct the string.
-        String[] values = (textToMatch != null) ? textToMatch.split(",") : new String[]{null};
 
-        if (values.length > 1) {
+        // try to get a possible list of strings found in a CaseInsensitiveMultiValueStringComparisionMatcher 
+        // using reflection
+        List<String> stringList = getStringListWithReflection(textCondition);
+        if (stringList == null) {
+            // This uses a comma as a delimiter since that is what is used in 
+            // CaseInsensitiveMultiValueStringComparisionMatcher to construct the string.
+            String[] values = (textToMatch != null) ? textToMatch.split(",") : null;
+            stringList = (values != null) ? Arrays.stream(values).collect(Collectors.toList()) : null;
+        }
+        
+
+        if (stringList != null && stringList.size() > 1) {
             JsonArray valueArr = new JsonArray();
-            for (String v : values)
+            for (String v : stringList)
                 valueArr.add(v);
             
             jObject.add(VALUES_KEY, valueArr);
