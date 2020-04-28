@@ -21,8 +21,11 @@ package org.sleuthkit.autopsy.modules.hashdatabase;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.JLabel;
@@ -30,7 +33,10 @@ import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingWorker;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
 import org.openide.util.NbBundle;
+import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.modules.hashdatabase.HashDbManager.HashDb;
 import org.sleuthkit.datamodel.HashEntry;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -40,6 +46,7 @@ import org.sleuthkit.datamodel.TskCoreException;
  */
 @SuppressWarnings("PMD.SingularField") // UI widgets cause lots of false positives
 public class AddHashValuesToDatabaseProgressDialog extends javax.swing.JDialog {
+    private static Logger logger = Logger.getLogger(AddHashValuesToDatabaseProgressDialog.class.getName());
 
     private final AddHashValuesToDatabaseDialog parentRef;
     private boolean disposeParent = false;
@@ -149,6 +156,7 @@ public class AddHashValuesToDatabaseProgressDialog extends javax.swing.JDialog {
 
     }
 
+
     /**
      * Parses for String for MD5 hashes and adds new HashEntry objects into the
      * list of hashes. It also populates the invalidHashes list for
@@ -157,17 +165,31 @@ public class AddHashValuesToDatabaseProgressDialog extends javax.swing.JDialog {
      * @param text
      */
     private void getHashesFromTextArea(String text) {
-        String[] linesInTextArea = text.split("\\r?\\n"); // NON-NLS
-        // These entries may be of <MD5> or <MD5, comment> format
-        for (String hashEntry : linesInTextArea) {
-            hashEntry = hashEntry.trim();
-            Matcher m = md5Pattern.matcher(hashEntry);
+        Iterable<CSVRecord> records;
+        try {
+            records = CSVFormat.RFC4180.parse(new StringReader(text));
+        } catch (IOException ex) {
+            logger.log(Level.SEVERE, "Unable read csv file.");
+            return;
+        }
+        
+        for (CSVRecord record : records) {
+            int entriesCount = record.size();
+            if (entriesCount < 1)
+                continue;
+            
+            String comment = null;
+            if (entriesCount >= 2) 
+                comment = record.get(1);
+            
+            String hashStr = record.get(0).trim();
+            Matcher m = this.md5Pattern.matcher(hashStr);
             if (m.find()) {
-                // more information can be added to the HashEntry - sha-1, sha-512, comment
-                hashes.add(new HashEntry(null, m.group(0), null, null, null));
-            } else {
-                if (!hashEntry.isEmpty()) {
-                    invalidHashes.add(hashEntry);
+                hashes.add(new HashEntry(null, hashStr, null, null, comment));
+            }
+            else {
+                if (!hashStr.isEmpty()) {
+                    invalidHashes.add(hashStr);
                 }
             }
         }
