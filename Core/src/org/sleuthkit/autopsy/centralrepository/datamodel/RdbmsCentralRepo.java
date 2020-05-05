@@ -2001,7 +2001,7 @@ abstract class RdbmsCentralRepo implements CentralRepository {
         String sqlUpdate
                 = "UPDATE "
                 + tableName
-                + " SET known_status=?, comment=? "
+                + " SET known_status=? "
                 + "WHERE id=?";
 
         try {
@@ -2016,16 +2016,8 @@ abstract class RdbmsCentralRepo implements CentralRepository {
                 preparedUpdate = conn.prepareStatement(sqlUpdate);
 
                 preparedUpdate.setByte(1, knownStatus.getFileKnownValue());
-                // NOTE: if the user tags the same instance as BAD multiple times,
-                // the comment from the most recent tagging is the one that will
-                // prevail in the DB.
-                if ("".equals(eamArtifact.getComment())) {
-                    preparedUpdate.setNull(2, Types.INTEGER);
-                } else {
-                    preparedUpdate.setString(2, eamArtifact.getComment());
-                }
-                preparedUpdate.setInt(3, instance_id);
-
+                preparedUpdate.setInt(2, instance_id);
+                
                 preparedUpdate.executeUpdate();
             } else {
                 // In this case, the user is tagging something that isn't in the database,

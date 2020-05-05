@@ -160,7 +160,6 @@ final class CaseEventListener implements PropertyChangeListener {
 
             AbstractFile af;
             TskData.FileKnown knownStatus;
-            String comment;
             if (Case.Events.valueOf(event.getPropertyName()) == Case.Events.CONTENT_TAG_ADDED) {
                 // For added tags, we want to change the known status to BAD if the 
                 // tag that was just added is in the list of central repo tags.
@@ -171,7 +170,6 @@ final class CaseEventListener implements PropertyChangeListener {
                     if (tagAdded.getContent() instanceof AbstractFile) {
                         af = (AbstractFile) tagAdded.getContent();
                         knownStatus = TskData.FileKnown.BAD;
-                        comment = tagAdded.getComment();
                     } else {
                         LOGGER.log(Level.WARNING, "Error updating non-file object");
                         return;
@@ -209,7 +207,6 @@ final class CaseEventListener implements PropertyChangeListener {
                         if (content instanceof AbstractFile) {
                             af = (AbstractFile) content;
                             knownStatus = TskData.FileKnown.UNKNOWN;
-                            comment = "";
                         } else {
                             LOGGER.log(Level.WARNING, "Error updating non-file object");
                             return;
@@ -256,7 +253,6 @@ final class CaseEventListener implements PropertyChangeListener {
             Content content;
             BlackboardArtifact bbArtifact;
             TskData.FileKnown knownStatus;
-            String comment;
             if (Case.Events.valueOf(event.getPropertyName()) == Case.Events.BLACKBOARD_ARTIFACT_TAG_ADDED) {
                 // For added tags, we want to change the known status to BAD if the 
                 // tag that was just added is in the list of central repo tags.
@@ -267,7 +263,6 @@ final class CaseEventListener implements PropertyChangeListener {
                     content = tagAdded.getContent();
                     bbArtifact = tagAdded.getArtifact();
                     knownStatus = TskData.FileKnown.BAD;
-                    comment = tagAdded.getComment();
                 } else {
                     // The added tag isn't flagged as bad in central repo, so do nothing
                     return;
@@ -308,8 +303,6 @@ final class CaseEventListener implements PropertyChangeListener {
 
                         // There are no more bad tags on the object
                         knownStatus = TskData.FileKnown.UNKNOWN;
-                        comment = "";
-
                     } else {
                         // There's still at least one bad tag, so leave the known status as is
                         return;
@@ -326,7 +319,6 @@ final class CaseEventListener implements PropertyChangeListener {
 
             List<CorrelationAttributeInstance> convertedArtifacts = CorrelationAttributeUtil.makeCorrAttrsForCorrelation(bbArtifact);
             for (CorrelationAttributeInstance eamArtifact : convertedArtifacts) {
-                eamArtifact.setComment(comment);
                 try {
                     dbManager.setAttributeInstanceKnownStatus(eamArtifact, knownStatus);
                 } catch (CentralRepoException ex) {
