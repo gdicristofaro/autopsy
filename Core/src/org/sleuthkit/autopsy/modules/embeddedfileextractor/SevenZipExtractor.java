@@ -140,7 +140,7 @@ class SevenZipExtractor {
 
     SevenZipExtractor(IngestJobContext context, FileTypeDetector fileTypeDetector, String moduleDirRelative, String moduleDirAbsolute) throws SevenZipNativeInitializationException {
         if (!SevenZip.isInitializedSuccessfully() && (SevenZip.getLastInitializationException() == null)) {
-            SevenZip.initSevenZipFromPlatformJAR();
+            SevenZipInitUtil.initialize();
         }
         this.context = context;
         this.fileTypeDetector = fileTypeDetector;
