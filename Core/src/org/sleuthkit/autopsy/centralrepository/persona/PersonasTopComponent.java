@@ -38,6 +38,7 @@ import org.openide.util.NbBundle.Messages;
 import org.openide.windows.RetainLocation;
 import org.openide.windows.TopComponent;
 import org.openide.windows.WindowManager;
+import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepoDbUtil;
 import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepoException;
 import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepository;
 import org.sleuthkit.autopsy.centralrepository.datamodel.Persona;
@@ -163,6 +164,15 @@ public final class PersonasTopComponent extends TopComponent {
         });
 
         addAncestorListener(onAddListener);
+        
+        // In the event that the Central Repo is disabled, close this window.
+        CentralRepoDbUtil.addEventListener((evt) -> {
+            if (evt.getPropertyName() == CentralRepoDbUtil.Event.CR_ENABLED_STATE.name() && 
+                    evt.getNewValue() != Boolean.TRUE) {
+                
+                PersonasTopComponent.this.close();
+            }
+        });
     }
     
 
@@ -281,6 +291,13 @@ public final class PersonasTopComponent extends TopComponent {
         editBtn.setEnabled(false);
         deleteBtn.setEnabled(false);
     }
+    
+    private void resetSearch() {
+        searchNameRadio.setSelected(true);
+        searchAccountRadio.setSelected(false);
+        searchField.setText("");
+        executeSearch();
+    }
 
     @Override
     public void componentOpened() {
@@ -312,6 +329,7 @@ public final class PersonasTopComponent extends TopComponent {
         deleteBtn = new javax.swing.JButton();
         createButtonSeparator = new javax.swing.JSeparator();
         createBtn = new javax.swing.JButton();
+        showAllBtn = new javax.swing.JButton();
         detailsScrollPane = new javax.swing.JScrollPane();
         detailsPanel = new org.sleuthkit.autopsy.centralrepository.persona.PersonaDetailsPanel();
 
@@ -360,6 +378,13 @@ public final class PersonasTopComponent extends TopComponent {
 
         org.openide.awt.Mnemonics.setLocalizedText(createBtn, org.openide.util.NbBundle.getMessage(PersonasTopComponent.class, "PersonasTopComponent.createBtn.text")); // NOI18N
 
+        org.openide.awt.Mnemonics.setLocalizedText(showAllBtn, org.openide.util.NbBundle.getMessage(PersonasTopComponent.class, "PersonasTopComponent.showAllBtn.text")); // NOI18N
+        showAllBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                showAllBtnActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout searchPanelLayout = new javax.swing.GroupLayout(searchPanel);
         searchPanel.setLayout(searchPanelLayout);
         searchPanelLayout.setHorizontalGroup(
@@ -371,12 +396,6 @@ public final class PersonasTopComponent extends TopComponent {
                     .addComponent(resultsPane, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
                     .addComponent(searchField)
                     .addGroup(searchPanelLayout.createSequentialGroup()
-                        .addComponent(searchNameRadio)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(searchAccountRadio)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(searchBtn))
-                    .addGroup(searchPanelLayout.createSequentialGroup()
                         .addGroup(searchPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(createAccountBtn)
                             .addGroup(searchPanelLayout.createSequentialGroup()
@@ -385,7 +404,15 @@ public final class PersonasTopComponent extends TopComponent {
                                 .addComponent(editBtn)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(deleteBtn)))
-                        .addGap(0, 0, Short.MAX_VALUE)))
+                        .addGap(0, 50, Short.MAX_VALUE))
+                    .addGroup(searchPanelLayout.createSequentialGroup()
+                        .addComponent(searchNameRadio)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(searchAccountRadio)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(searchBtn)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(showAllBtn)))
                 .addContainerGap())
         );
         searchPanelLayout.setVerticalGroup(
@@ -397,9 +424,10 @@ public final class PersonasTopComponent extends TopComponent {
                 .addGroup(searchPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(searchNameRadio)
                     .addComponent(searchAccountRadio)
-                    .addComponent(searchBtn))
+                    .addComponent(searchBtn)
+                    .addComponent(showAllBtn))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(resultsPane, javax.swing.GroupLayout.DEFAULT_SIZE, 300, Short.MAX_VALUE)
+                .addComponent(resultsPane, javax.swing.GroupLayout.DEFAULT_SIZE, 302, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(searchPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(editBtn)
@@ -434,6 +462,10 @@ public final class PersonasTopComponent extends TopComponent {
         );
     }// </editor-fold>//GEN-END:initComponents
 
+    private void showAllBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showAllBtnActionPerformed
+        resetSearch();
+    }//GEN-LAST:event_showAllBtnActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton createAccountBtn;
     private javax.swing.JButton createBtn;
@@ -453,6 +485,7 @@ public final class PersonasTopComponent extends TopComponent {
     private javax.swing.JTextField searchField;
     private javax.swing.JRadioButton searchNameRadio;
     private javax.swing.JPanel searchPanel;
+    private javax.swing.JButton showAllBtn;
     // End of variables declaration//GEN-END:variables
 
 }
