@@ -32,6 +32,8 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
 import org.openide.util.NbBundle.Messages;
 import org.sleuthkit.autopsy.casemodule.Case;
+import org.sleuthkit.autopsy.casemodule.datasourcesummary.DataFetchWorker.DataFetchExecutor;
+import org.sleuthkit.autopsy.casemodule.datasourcesummary.DataFetchWorker.DataProcessor;
 import org.sleuthkit.datamodel.DataSource;
 
 /**
@@ -55,8 +57,14 @@ public class DataSourceSummaryUserActivityPanel extends javax.swing.JPanel {
         RIGHT_ALIGNED_RENDERER.setHorizontalAlignment(JLabel.RIGHT);
     }
 
+    private final DataFetchExecutor<DataSource, TopProgramsModel> topProgramsFetcher = 
+            new DataFetchExecutor<>(
+                    DataProcessor.wrap(DataSourceSummaryUserActivityPanel::getTopProgramsModel), 
+                    DataSourceSummaryUserActivityPanel::updateTopPrograms);
+    
     private DataSource dataSource;
 
+    
     /**
      * Creates new form DataSourceUserActivityPanel
      */
@@ -84,7 +92,7 @@ public class DataSourceSummaryUserActivityPanel extends javax.swing.JPanel {
         if (dataSource == null || !Case.isCaseOpen()) {
             updateTopPrograms(new TopProgramsModel(null));
         } else {
-            updateTopPrograms(getTopProgramsModel(dataSource));
+            topProgramsFetcher.setArgsAndRun(dataSource);
         }
     }
 
