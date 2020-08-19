@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.autopsy.datasourcesummary.ui;
+package org.sleuthkit.autopsy.datasourcesummary.datamodel;
 
 import java.io.File;
 import java.sql.ResultSet;
@@ -56,7 +56,8 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 final class DataSourceInfoUtilities {
 
     private static final Logger logger = Logger.getLogger(DataSourceInfoUtilities.class.getName());
-
+    
+    
     /**
      * Gets a count of tsk_files for a particular datasource where dir_type is
      * not a virtual directory and has a name.
@@ -67,7 +68,7 @@ final class DataSourceInfoUtilities {
      *
      * @return The count of files or null on error.
      */
-    private static Long getCountOfTskFiles(DataSource currentDataSource, String additionalWhere, String onError) {
+    static Long getCountOfTskFiles(DataSource currentDataSource, String additionalWhere, String onError) {
         if (currentDataSource != null) {
             try {
                 SleuthkitCase skCase = Case.getCurrentCaseThrows().getSleuthkitCase();
@@ -94,8 +95,8 @@ final class DataSourceInfoUtilities {
      *
      * @return The count of files or null on error.
      */
-    private static Long getCountOfRegularFiles(DataSource currentDataSource, String additionalWhere, String onError) {
-        String whereClause = "meta_type=" + TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG.getValue()
+    static Long getCountOfRegularFiles(DataSource currentDataSource, String additionalWhere, String onError) {
+        String whereClause = "meta_type=" + TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG.getValue()
                 + " AND type<>" + TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType();
 
         if (StringUtils.isNotBlank(additionalWhere)) {
@@ -104,72 +105,18 @@ final class DataSourceInfoUtilities {
 
         return getCountOfTskFiles(currentDataSource, whereClause, onError);
     }
-
+    
+    
     /**
-     * Get count of regular files (not directories) in a data source.
+     * Creates sql where clause that does a bitwise check to see if flag is
+     * present.
      *
-     * @param currentDataSource The data source.
+     * @param flag The flag for which to check.
      *
-     * @return The count.
+     * @return The clause.
      */
-    static Long getCountOfFiles(DataSource currentDataSource) {
-        return getCountOfRegularFiles(currentDataSource, null,
-                "Unable to get count of files, providing empty results");
-    }
-
-    /**
-     * Get count of allocated files in a data source.
-     *
-     * @param currentDataSource The data source.
-     *
-     * @return The count.
-     */
-    static Long getCountOfAllocatedFiles(DataSource currentDataSource) {
-        return getCountOfRegularFiles(currentDataSource,
-                getMetaFlagsContainsStatement(TSK_FS_META_FLAG_ENUM.ALLOC),
-                "Unable to get counts of unallocated files for datasource, providing empty results");
-    }
-
-    /**
-     * Get count of unallocated files in a data source.
-     *
-     * @param currentDataSource The data source.
-     *
-     * @return The count.
-     */
-    static Long getCountOfUnallocatedFiles(DataSource currentDataSource) {
-        return getCountOfRegularFiles(currentDataSource,
-                getMetaFlagsContainsStatement(TSK_FS_META_FLAG_ENUM.UNALLOC)
-                + " AND type<>" + TSK_DB_FILES_TYPE_ENUM.SLACK.getFileType(),
-                "Unable to get counts of unallocated files for datasource, providing empty results");
-    }
-
-    /**
-     * Get count of directories in a data source.
-     *
-     * @param currentDataSource The data source.
-     *
-     * @return The count.
-     */
-    static Long getCountOfDirectories(DataSource currentDataSource) {
-        return getCountOfTskFiles(currentDataSource,
-                "meta_type=" + TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()
-                + " AND type<>" + TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType(),
-                "Unable to get count of directories for datasource, providing empty results");
-    }
-
-    /**
-     * Get count of slack files in a data source.
-     *
-     * @param currentDataSource The data source.
-     *
-     * @return The count.
-     */
-    static Long getCountOfSlackFiles(DataSource currentDataSource) {
-        return getCountOfRegularFiles(currentDataSource,
-                getMetaFlagsContainsStatement(TSK_FS_META_FLAG_ENUM.UNALLOC)
-                + " AND type=" + TskData.TSK_DB_FILES_TYPE_ENUM.SLACK.getFileType(),
-                "Unable to get count of slack files for datasources, providing empty results");
+    static String getMetaFlagsContainsStatement(TskData.TSK_FS_META_FLAG_ENUM flag) {
+        return "meta_flags & " + flag.getValue() + " > 0";
     }
 
     /**
@@ -291,59 +238,6 @@ final class DataSourceInfoUtilities {
 
         String errorMessage = "Unable to get artifact type counts; returning null.";
         return getBaseQueryResult(query, getStringLongResultSetHandler(nameParam, valueParam), errorMessage);
-    }
-
-    /**
-     * Describes a result of a program run on a datasource.
-     */
-    static class TopProgramsResult {
-
-        private final String programName;
-        private final String programPath;
-        private final Long runTimes;
-        private final Date lastRun;
-
-        /**
-         * Main constructor.
-         *
-         * @param programName The name of the program.
-         * @param programPath The path of the program.
-         * @param runTimes    The number of runs.
-         */
-        TopProgramsResult(String programName, String programPath, Long runTimes, Date lastRun) {
-            this.programName = programName;
-            this.programPath = programPath;
-            this.runTimes = runTimes;
-            this.lastRun = lastRun;
-        }
-
-        /**
-         * @return The name of the program
-         */
-        String getProgramName() {
-            return programName;
-        }
-
-        /**
-         * @return The path of the program.
-         */
-        String getProgramPath() {
-            return programPath;
-        }
-
-        /**
-         * @return The number of run times or null if not present.
-         */
-        Long getRunTimes() {
-            return runTimes;
-        }
-
-        /**
-         * @return The last time the program was run or null if not present.
-         */
-        public Date getLastRun() {
-            return lastRun;
-        }
     }
 
     /**
@@ -874,18 +768,6 @@ final class DataSourceInfoUtilities {
 
         String commaSeparatedQuoted = String.join(", ", quotedValues);
         return String.format("(%s) ", commaSeparatedQuoted);
-    }
-
-    /**
-     * Creates sql where clause that does a bitwise check to see if flag is
-     * present.
-     *
-     * @param flag The flag for which to check.
-     *
-     * @return The clause.
-     */
-    private static String getMetaFlagsContainsStatement(TSK_FS_META_FLAG_ENUM flag) {
-        return "meta_flags & " + flag.getValue() + " > 0";
     }
 
     /**
