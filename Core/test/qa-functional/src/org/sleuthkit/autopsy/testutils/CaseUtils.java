@@ -27,6 +27,8 @@ import org.sleuthkit.autopsy.casemodule.CaseActionException;
 import org.sleuthkit.autopsy.casemodule.CaseDetails;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
 import org.sleuthkit.autopsy.coreutils.TimeStampUtils;
+import org.sleuthkit.datamodel.CaseDbConnectionInfo;
+import org.sleuthkit.datamodel.TskData;
 
 /**
  * Class with utility methods for opening and closing cases for functional
@@ -56,6 +58,49 @@ public final class CaseUtils {
         }
         return currentCase;
     }
+    
+    
+    
+    private static String MU_SERVER_HOST_KEY = "MU_SERVER_HOST";
+    
+    public static CaseDbConnectionInfo getMUConnFromEnv() {
+        String hostNameOrIP = null;
+        String portNumber = null;
+        String userName = null;
+        String password = null;
+        
+        return new CaseDbConnectionInfo(hostNameOrIP, portNumber, userName, password, TskData.DbType.POSTGRESQL);
+    }
+    
+    
+    public static Case createAsCurrentMultiUserCase(String caseName) {
+        return createAsCurrentMultiUserCase(getMUConnFromEnv(), caseName);
+    }
+    
+    
+    /**
+     * Appends a time stamp to the given case name for uniqueness and creates a
+     * case as the current case in the temp directory. Asserts if there is an
+     * error creating the case.
+     *
+     * @param caseName The case name.
+     *
+     * @return The new case.
+     */
+    public static Case createAsCurrentMultiUserCase(CaseDbConnectionInfo info, String caseName) {
+        String uniqueCaseName = caseName + "_" + TimeStampUtils.createTimeStamp();
+        Path caseDirectoryPath = Paths.get(System.getProperty("java.io.tmpdir"), uniqueCaseName);
+        Case currentCase = null;
+        try {
+            Case.createAsCurrentCase(Case.CaseType.SINGLE_USER_CASE, caseDirectoryPath.toString(), new CaseDetails(uniqueCaseName));
+            currentCase = Case.getCurrentCaseThrows();
+        } catch (CaseActionException | NoCurrentCaseException ex) {
+            Exceptions.printStackTrace(ex);
+            Assert.fail(String.format("Failed to create case %s at %s: %s", uniqueCaseName, caseDirectoryPath, ex.getMessage()));
+        }
+        return currentCase;
+    }
+    
 
     /**
      * Closes the current case, and optionally deletes it. Asserts if there is
