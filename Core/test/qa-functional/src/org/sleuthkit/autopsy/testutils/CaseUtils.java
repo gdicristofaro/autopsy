@@ -20,12 +20,15 @@ package org.sleuthkit.autopsy.testutils;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.logging.Level;
 import org.openide.util.Exceptions;
 import junit.framework.Assert;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.CaseActionException;
 import org.sleuthkit.autopsy.casemodule.CaseDetails;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
+import org.sleuthkit.autopsy.core.UserPreferences;
+import org.sleuthkit.autopsy.core.UserPreferencesException;
 import org.sleuthkit.autopsy.coreutils.TimeStampUtils;
 import org.sleuthkit.datamodel.CaseDbConnectionInfo;
 import org.sleuthkit.datamodel.TskData;
@@ -35,7 +38,7 @@ import org.sleuthkit.datamodel.TskData;
  * testing purposes.
  */
 public final class CaseUtils {
-
+    
     /**
      * Appends a time stamp to the given case name for uniqueness and creates a
      * case as the current case in the temp directory. Asserts if there is an
@@ -61,13 +64,18 @@ public final class CaseUtils {
     
     
     
-    private static String MU_SERVER_HOST_KEY = "MU_SERVER_HOST";
+    private static String MU_SERVER_HOST_KEY = "QA_TEST_MU_SERVER_HOST";
+    private static String MU_SERVER_PORT_KEY = "QA_TEST_MU_SERVER_PORT";
+    private static String MU_SERVER_USERNAME_KEY = "QA_TEST_MU_SERVER_USERNAME";
+    private static String MU_SERVER_PASSWORD_KEY = "QA_TEST_MU_SERVER_PASSWORD";
+    private static String MU_TEST_PREFIX = "QA_TEST_TEMP_DB_";
+    
     
     public static CaseDbConnectionInfo getMUConnFromEnv() {
-        String hostNameOrIP = null;
-        String portNumber = null;
-        String userName = null;
-        String password = null;
+        String hostNameOrIP = System.getenv(MU_SERVER_HOST_KEY);
+        String portNumber = System.getenv(MU_SERVER_PORT_KEY);
+        String userName = System.getenv(MU_SERVER_USERNAME_KEY);
+        String password = System.getenv(MU_SERVER_PASSWORD_KEY);
         
         return new CaseDbConnectionInfo(hostNameOrIP, portNumber, userName, password, TskData.DbType.POSTGRESQL);
     }
@@ -88,11 +96,21 @@ public final class CaseUtils {
      * @return The new case.
      */
     public static Case createAsCurrentMultiUserCase(CaseDbConnectionInfo info, String caseName) {
-        String uniqueCaseName = caseName + "_" + TimeStampUtils.createTimeStamp();
+        if (info != null) {
+            try {
+                UserPreferences.setDatabaseConnectionInfo(info);
+            } catch (UserPreferencesException ex) {
+                Exceptions.printStackTrace(ex);
+                Assert.fail("Failed to set connection settings.");
+            }
+        }
+        
+        String uniqueCaseName = MU_TEST_PREFIX + caseName + "_" + TimeStampUtils.createTimeStamp();
         Path caseDirectoryPath = Paths.get(System.getProperty("java.io.tmpdir"), uniqueCaseName);
         Case currentCase = null;
         try {
-            Case.createAsCurrentCase(Case.CaseType.SINGLE_USER_CASE, caseDirectoryPath.toString(), new CaseDetails(uniqueCaseName));
+            CaseDetails caseDetails = new CaseDetails(uniqueCaseName);
+            Case.createAsCurrentCase(Case.CaseType.MULTI_USER_CASE, caseDirectoryPath.toString(), caseDetails);
             currentCase = Case.getCurrentCaseThrows();
         } catch (CaseActionException | NoCurrentCaseException ex) {
             Exceptions.printStackTrace(ex);
@@ -108,6 +126,10 @@ public final class CaseUtils {
      * case.
      */
     public static void closeCurrentCase() {
+        closeCurrentCase(false);
+    }
+    
+    public static void closeCurrentCase(boolean delete) {
         Case currentCase;
         try {
             currentCase = Case.getCurrentCaseThrows();
@@ -120,7 +142,11 @@ public final class CaseUtils {
         String caseName = currentCase.getName();
         String caseDirectory = currentCase.getCaseDirectory();
         try {
-            Case.closeCurrentCase();
+            if (delete) {
+                Case.deleteCurrentCase();
+            } else {
+                Case.closeCurrentCase();    
+            }
         } catch (CaseActionException ex) {
             Exceptions.printStackTrace(ex);
             Assert.fail(String.format("Failed to close case %s at %s: %s", caseName, caseDirectory, ex.getMessage()));
