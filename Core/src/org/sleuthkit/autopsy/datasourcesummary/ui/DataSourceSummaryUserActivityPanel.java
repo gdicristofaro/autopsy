@@ -57,12 +57,24 @@ public class DataSourceSummaryUserActivityPanel extends javax.swing.JPanel {
         RIGHT_ALIGNED_RENDERER.setHorizontalAlignment(JLabel.RIGHT);
     }
 
+    private final DataSourceTopProgramsSummary topProgramsData;
     private DataSource dataSource;
 
     /**
-     * Creates new form DataSourceUserActivityPanel
+     * Creates a new DataSourceUserActivityPanel.
      */
     public DataSourceSummaryUserActivityPanel() {
+        this(new DataSourceTopProgramsSummary());
+    }
+
+    /**
+     * Creates a new DataSourceSummaryUserActivityPanel.
+     *
+     * @param topProgramsData Class from which to obtain top programs data.
+     * @param topDomainsData  Class from which to obtain recent domains data.
+     */
+    public DataSourceSummaryUserActivityPanel(DataSourceTopProgramsSummary topProgramsData) {
+        this.topProgramsData = topProgramsData;
         initComponents();
         topProgramsTable.getTableHeader().setReorderingAllowed(false);
     }
@@ -115,9 +127,9 @@ public class DataSourceSummaryUserActivityPanel extends javax.swing.JPanel {
      *
      * @return The JTable data model of counts of program runs.
      */
-    private static TopProgramsModel getTopProgramsModel(DataSource selectedDataSource) {
+    private TopProgramsModel getTopProgramsModel(DataSource selectedDataSource) {
         List<TopProgramsResult> topProgramList
-                = DataSourceTopProgramsSummary.getTopPrograms(selectedDataSource, TOP_PROGS_COUNT);
+                = topProgramsData.getTopPrograms(selectedDataSource, TOP_PROGS_COUNT);
 
         if (topProgramList == null) {
             return new TopProgramsModel(null);
