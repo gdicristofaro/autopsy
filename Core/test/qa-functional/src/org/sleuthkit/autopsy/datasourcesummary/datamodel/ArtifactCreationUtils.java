@@ -41,12 +41,14 @@ public class ArtifactCreationUtils {
     private static final String DEVICE_DIR_PREFIX = "DATA_SOURCE_";
     private static final String DEFAULT_INGEST_COMMENT = "TOP_PROGRAMS_FICTITIOUS_RESULT";
     private static final String DEFAULT_INGEST_NAME = "TOP_PROGRAMS_TEST_DATA";
-    
+
     /**
      * Creates an artifact of the given type as a child of the parent content.
-     * @param parent The content to which this artifact is attached.
-     * @param type The artifact type.
+     *
+     * @param parent     The content to which this artifact is attached.
+     * @param type       The artifact type.
      * @param attributes The attributes attached to the artifact.
+     *
      * @return The created artifact.
      */
     public static BlackboardArtifact createArtifact(Content parent, BlackboardArtifact.ARTIFACT_TYPE type, Collection<BlackboardAttribute> attributes) {
@@ -61,10 +63,13 @@ public class ArtifactCreationUtils {
     }
 
     /**
-     * Creates a local files data source programmatically.  Attempts to fetch the actual filesystem content of the datasource will fail.
-     * @param skCase The sleuthkitcase object.
-     * @param id The id to use with the datasource
-     * @return 
+     * Creates a local files data source programmatically. Attempts to fetch the
+     * actual filesystem content of the datasource will fail.
+     *
+     * @param skCase The SleuthkitCase object.
+     * @param id     The id to use with the datasource.
+     *
+     * @return The programmatically created LocalFilesDataSource.
      */
     public static LocalFilesDataSource createLocalFilesDataSource(SleuthkitCase skCase, int id) {
         LocalFilesDataSource dataSource = null;
@@ -78,7 +83,17 @@ public class ArtifactCreationUtils {
         return dataSource;
     }
 
-
+    /**
+     * Create a local file programmatically. Attempts to fetch the actual file
+     * contents will fail.
+     *
+     * @param skCase   The SleuthkitCase object.
+     * @param parent   The parent of the file being created.
+     * @param fileName The name of the file.
+     * @param path     The path of the file.
+     *
+     * @return The created file.
+     */
     public static LocalFile createLocalFile(SleuthkitCase skCase, AbstractFile parent, String fileName, String path) {
         LocalFile file = null;
         try {
@@ -88,11 +103,21 @@ public class ArtifactCreationUtils {
         }
         return file;
     }
-    
+
+    /**
+     * Create a local directory programmatically. This will be a fictitious
+     * directory and not created on the file system.
+     *
+     * @param skCase   The SleuthkitCase object.
+     * @param parent   The parent of the directry being created.
+     * @param fileName The name of the directory.
+     *
+     * @return The created directory.
+     */
     public static LocalDirectory createLocalDirectory(SleuthkitCase skCase, AbstractFile parent, String fileName) {
         LocalDirectory tskDir = null;
         try {
-             tskDir = skCase.addLocalDirectory(parent.getId(), fileName);
+            tskDir = skCase.addLocalDirectory(parent.getId(), fileName);
         } catch (TskCoreException ex) {
             logger.log(Level.SEVERE, "Unable to create a local directory", ex);
         }
@@ -166,8 +191,6 @@ public class ArtifactCreationUtils {
             createTopProgramsResult(skCase, tskDir, childDir.getValue());
         }
     }
-
-
 
     public static void addTopProgramsResult(SleuthkitCase skCase, AbstractFile parent, TopProgramsResult child) {
         String path = parent.getParentPath();
