@@ -33,24 +33,23 @@ import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskData;
 
 /**
- *
- * @author gregd
+ * Utility methods for creating SleuthkitCase objects.
  */
 public class ArtifactCreationUtils {
 
-    private final Logger logger = Logger.getLogger(ArtifactCreationUtils.class.getName());
+    private static final Logger logger = Logger.getLogger(ArtifactCreationUtils.class.getName());
     private static final String DEVICE_DIR_PREFIX = "DATA_SOURCE_";
-    private final String DEFAULT_INGEST_COMMENT = "TOP_PROGRAMS_FICTITIOUS_RESULT";
-    private final String DEFAULT_INGEST_NAME = "TOP_PROGRAMS_TEST_DATA";
+    private static final String DEFAULT_INGEST_COMMENT = "TOP_PROGRAMS_FICTITIOUS_RESULT";
+    private static final String DEFAULT_INGEST_NAME = "TOP_PROGRAMS_TEST_DATA";
     
-    
-    private final SleuthkitCase skCase;
-
-    public ArtifactCreationUtils(SleuthkitCase skCase) {
-        this.skCase = skCase;
-    }
-
-    public BlackboardArtifact createArtifact(Content parent, BlackboardArtifact.ARTIFACT_TYPE type, Collection<BlackboardAttribute> attributes) {
+    /**
+     * Creates an artifact of the given type as a child of the parent content.
+     * @param parent The content to which this artifact is attached.
+     * @param type The artifact type.
+     * @param attributes The attributes attached to the artifact.
+     * @return The created artifact.
+     */
+    public static BlackboardArtifact createArtifact(Content parent, BlackboardArtifact.ARTIFACT_TYPE type, Collection<BlackboardAttribute> attributes) {
         BlackboardArtifact artifact = null;
         try {
             artifact = parent.newArtifact(type);
@@ -61,7 +60,13 @@ public class ArtifactCreationUtils {
         return artifact;
     }
 
-    public LocalFilesDataSource createLocalFilesDataSource(int id) {
+    /**
+     * Creates a local files data source programmatically.  Attempts to fetch the actual filesystem content of the datasource will fail.
+     * @param skCase The sleuthkitcase object.
+     * @param id The id to use with the datasource
+     * @return 
+     */
+    public static LocalFilesDataSource createLocalFilesDataSource(SleuthkitCase skCase, int id) {
         LocalFilesDataSource dataSource = null;
         try {
             SleuthkitCase.CaseDbTransaction trans = skCase.beginTransaction();
@@ -73,10 +78,8 @@ public class ArtifactCreationUtils {
         return dataSource;
     }
 
-//        VirtualDirectory rootDirectory = dataSource;
-//        AbstractFile dataSourceRoot = rootDirectory;	// Let the root directory be the source for all artifacts
-    
-    public LocalFile createLocalFile(AbstractFile parent, String fileName, String path) {
+
+    public static LocalFile createLocalFile(SleuthkitCase skCase, AbstractFile parent, String fileName, String path) {
         LocalFile file = null;
         try {
             file = skCase.addLocalFile(fileName, Paths.get(path, fileName).toString(), 4096, 0, 0, 0, 0, true, TskData.EncodingType.NONE, parent);
@@ -86,7 +89,7 @@ public class ArtifactCreationUtils {
         return file;
     }
     
-    public LocalDirectory createLocalDirectory(AbstractFile parent, String fileName) {
+    public static LocalDirectory createLocalDirectory(SleuthkitCase skCase, AbstractFile parent, String fileName) {
         LocalDirectory tskDir = null;
         try {
              tskDir = skCase.addLocalDirectory(parent.getId(), fileName);
@@ -96,7 +99,7 @@ public class ArtifactCreationUtils {
         return tskDir;
     }
 
-    public List<String> getDirectoryComponents(String path) {
+    public static List<String> getDirectoryComponents(String path) {
         List<String> toRet = new ArrayList<>();
         File f = new File(path);
         do {
@@ -137,7 +140,7 @@ public class ArtifactCreationUtils {
         }
     }
 
-    public void createTopProgramResult(long dataSourceId, AbstractFile rootParent, Collection<TopProgramsResult> toAdd) {
+    public static void createTopProgramResult(SleuthkitCase skCase, long dataSourceId, AbstractFile rootParent, Collection<TopProgramsResult> toAdd) {
         DirectoryTree<TopProgramsResult> directoryTree = new DirectoryTree<>();
         for (TopProgramsResult topProg : toAdd) {
             List<String> pathEls = getDirectoryComponents(topProg.getProgramPath());
@@ -150,25 +153,25 @@ public class ArtifactCreationUtils {
             folderDirTree.addNode(topProg);
         }
 
-        createTopProgramsResult(rootParent, directoryTree);
+        createTopProgramsResult(skCase, rootParent, directoryTree);
     }
 
-    private void createTopProgramsResult(AbstractFile parent, DirectoryTree<TopProgramsResult> tree) {
+    private static void createTopProgramsResult(SleuthkitCase skCase, AbstractFile parent, DirectoryTree<TopProgramsResult> tree) {
         for (TopProgramsResult res : tree.getNodes()) {
-            addTopProgramsResult(parent, res);
+            addTopProgramsResult(skCase, parent, res);
         }
 
         for (Entry<String, DirectoryTree<TopProgramsResult>> childDir : tree.getBranches()) {
-            AbstractFile tskDir = createLocalDirectory(parent, childDir.getKey());
-            createTopProgramsResult(tskDir, childDir.getValue());
+            AbstractFile tskDir = createLocalDirectory(skCase, parent, childDir.getKey());
+            createTopProgramsResult(skCase, tskDir, childDir.getValue());
         }
     }
 
 
 
-    public void addTopProgramsResult(AbstractFile parent, TopProgramsResult child) {
+    public static void addTopProgramsResult(SleuthkitCase skCase, AbstractFile parent, TopProgramsResult child) {
         String path = parent.getParentPath();
-        AbstractFile file = createLocalFile(parent, path, child.getProgramName());
+        AbstractFile file = createLocalFile(skCase, parent, path, child.getProgramName());
 
         createArtifact(file, ARTIFACT_TYPE.TSK_PROG_RUN, Arrays.asList(
                 new BlackboardAttribute(

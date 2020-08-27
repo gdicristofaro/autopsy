@@ -8,8 +8,8 @@ package org.sleuthkit.autopsy.datasourcesummary.datamodel;
 import junit.framework.Test;
 import org.netbeans.junit.NbModuleSuite;
 import org.netbeans.junit.NbTestCase;
-import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.testutils.CaseUtils;
+import org.sleuthkit.datamodel.SleuthkitCase;
 
 /**
  *
@@ -27,11 +27,22 @@ public class DataSourceTopProgramsSummaryTest extends NbTestCase {
         super(name);
     }
     
+    //        VirtualDirectory rootDirectory = dataSource;
+//        AbstractFile dataSourceRoot = rootDirectory;	// Let the root directory be the source for all artifacts
+    
+    
     private void testTopProgramsData() {
         String caseName = "testTopProgramsData";
-        Case tskCase = CaseUtils.createAsCurrentCase(caseName);
+        SleuthkitCase tskCase = CaseUtils.createAsCurrentCase(caseName).getSleuthkitCase();
         
-        DataSourceTopProgramsSummary topProgsSumm = new DataSourceTopProgramsSummary(() -> tskCase.getSleuthkitCase());
+        DataSourceTopProgramsSummary topProgsSumm = new DataSourceTopProgramsSummary(() -> tskCase);
         
+        // is only datasource being queried?
+        
+        // are only PROG_RUN artifacts being queried?
+        
+        // are top programs being sorted on correct metrics?
+        
+        // are only top X being returned?
     }
 }
