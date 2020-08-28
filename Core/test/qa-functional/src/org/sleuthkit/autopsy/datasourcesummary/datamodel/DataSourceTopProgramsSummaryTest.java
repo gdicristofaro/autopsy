@@ -112,6 +112,9 @@ public class DataSourceTopProgramsSummaryTest extends NbTestCase {
         // make sure the sets 
         assertEqualSets(ds1Items, ds1Results, "ds1 items added", "ds1 items retrieved");
         assertEqualSets(ds2Items, ds2Results, "ds2 items added", "ds2 items retrieved");
+        
+        // cleanup
+        CaseUtils.closeCurrentCase(true);
     }
     
     

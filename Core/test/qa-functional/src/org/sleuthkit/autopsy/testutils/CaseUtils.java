@@ -23,6 +23,7 @@ import java.nio.file.Paths;
 import java.util.logging.Level;
 import org.openide.util.Exceptions;
 import junit.framework.Assert;
+import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.CaseActionException;
 import org.sleuthkit.autopsy.casemodule.CaseDetails;
@@ -71,11 +72,18 @@ public final class CaseUtils {
     private static String MU_TEST_PREFIX = "QA_TEST_TEMP_DB_";
     
     
+    public static String getGlobalProp(String key) {
+        String envVar = System.getenv(key);
+        return StringUtils.isNotBlank(envVar) ?
+            envVar :
+            System.getProperty(key);
+    }
+    
     public static CaseDbConnectionInfo getMUConnFromEnv() {
-        String hostNameOrIP = System.getenv(MU_SERVER_HOST_KEY);
-        String portNumber = System.getenv(MU_SERVER_PORT_KEY);
-        String userName = System.getenv(MU_SERVER_USERNAME_KEY);
-        String password = System.getenv(MU_SERVER_PASSWORD_KEY);
+        String hostNameOrIP = getGlobalProp(MU_SERVER_HOST_KEY);
+        String portNumber = getGlobalProp(MU_SERVER_PORT_KEY);
+        String userName = getGlobalProp(MU_SERVER_USERNAME_KEY);
+        String password = getGlobalProp(MU_SERVER_PASSWORD_KEY);
         
         return new CaseDbConnectionInfo(hostNameOrIP, portNumber, userName, password, TskData.DbType.POSTGRESQL);
     }
