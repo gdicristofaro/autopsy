@@ -19,6 +19,7 @@
 package org.sleuthkit.autopsy.datasourcesummary.datamodel;
 
 import java.util.Date;
+import java.util.Objects;
 
 /**
  * Describes a result of a program run on a datasource.
@@ -71,4 +72,43 @@ public class TopProgramsResult {
     public Date getLastRun() {
         return lastRun;
     }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 43 * hash + Objects.hashCode(this.programName);
+        hash = 43 * hash + Objects.hashCode(this.programPath);
+        hash = 43 * hash + Objects.hashCode(this.runTimes);
+        hash = 43 * hash + Objects.hashCode(this.lastRun);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final TopProgramsResult other = (TopProgramsResult) obj;
+        if (!Objects.equals(this.programName, other.programName)) {
+            return false;
+        }
+        if (!Objects.equals(this.programPath, other.programPath)) {
+            return false;
+        }
+        if (!Objects.equals(this.runTimes, other.runTimes)) {
+            return false;
+        }
+        if (!Objects.equals(this.lastRun, other.lastRun)) {
+            return false;
+        }
+        return true;
+    }
+    
+    
 }
