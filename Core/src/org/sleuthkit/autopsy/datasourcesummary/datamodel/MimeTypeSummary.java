@@ -23,8 +23,10 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.sleuthkit.autopsy.datasourcesummary.datamodel.IngestModuleCheckUtil.NotIngestedWithModuleException;
 import org.sleuthkit.autopsy.datasourcesummary.datamodel.SleuthkitCaseProvider.SleuthkitCaseProviderException;
 import org.sleuthkit.autopsy.ingest.ModuleContentEvent;
+import org.sleuthkit.autopsy.modules.filetypeid.FileTypeIdModuleFactory;
 import org.sleuthkit.datamodel.DataSource;
 import org.sleuthkit.datamodel.TskCoreException;
 
@@ -33,6 +35,9 @@ import org.sleuthkit.datamodel.TskCoreException;
  */
 public class MimeTypeSummary implements DefaultUpdateGovernor {
 
+    private static final String FILE_TYPE_FACTORY = FileTypeIdModuleFactory.class.getCanonicalName();
+    private static final String FILE_TYPE_MODULE_NAME = FileTypeIdModuleFactory.getModuleName();
+    
     private final SleuthkitCaseProvider provider;
 
     /**
@@ -73,10 +78,18 @@ public class MimeTypeSummary implements DefaultUpdateGovernor {
      * @throws SleuthkitCaseProviderException
      * @throws TskCoreException
      * @throws SQLException
+     * @throws NotIngestedWithModuleException
      */
     public Long getCountOfFilesForMimeTypes(DataSource currentDataSource, Set<String> setOfMimeTypes)
-            throws SleuthkitCaseProvider.SleuthkitCaseProviderException, TskCoreException, SQLException {
+            throws SleuthkitCaseProviderException, TskCoreException, SQLException, NotIngestedWithModuleException {
 
+        if (currentDataSource == null) {
+            return null;
+        }
+                
+        IngestModuleCheckUtil.throwOnNotModuleIngested(provider.get(), currentDataSource, 
+                FILE_TYPE_FACTORY, FILE_TYPE_MODULE_NAME);
+                
         return DataSourceInfoUtilities.getCountOfRegNonSlackFiles(
                 provider.get(),
                 currentDataSource,
@@ -99,10 +112,18 @@ public class MimeTypeSummary implements DefaultUpdateGovernor {
      * @throws SleuthkitCaseProviderException
      * @throws TskCoreException
      * @throws SQLException
+     * @throws NotIngestedWithModuleException
      */
     public Long getCountOfFilesNotInMimeTypes(DataSource currentDataSource, Set<String> setOfMimeTypes)
-            throws SleuthkitCaseProvider.SleuthkitCaseProviderException, TskCoreException, SQLException {
+            throws SleuthkitCaseProviderException, TskCoreException, SQLException, NotIngestedWithModuleException {
 
+        if (currentDataSource == null) {
+            return null;
+        }
+                
+        IngestModuleCheckUtil.throwOnNotModuleIngested(provider.get(), currentDataSource, 
+                FILE_TYPE_FACTORY, FILE_TYPE_MODULE_NAME);
+                
         return DataSourceInfoUtilities.getCountOfRegNonSlackFiles(
                 provider.get(),
                 currentDataSource,
@@ -139,10 +160,18 @@ public class MimeTypeSummary implements DefaultUpdateGovernor {
      * @throws SleuthkitCaseProviderException
      * @throws TskCoreException
      * @throws SQLException
+     * @throws NotIngestedWithModuleException
      */
     public Long getCountOfFilesWithNoMimeType(DataSource currentDataSource)
-            throws SleuthkitCaseProvider.SleuthkitCaseProviderException, TskCoreException, SQLException {
+            throws SleuthkitCaseProvider.SleuthkitCaseProviderException, TskCoreException, SQLException, NotIngestedWithModuleException {
 
+        if (currentDataSource == null) {
+            return null;
+        }
+        
+        IngestModuleCheckUtil.throwOnNotModuleIngested(provider.get(), currentDataSource, 
+                FILE_TYPE_FACTORY, FILE_TYPE_MODULE_NAME);
+                
         return DataSourceInfoUtilities.getCountOfRegNonSlackFiles(
                 provider.get(),
                 currentDataSource,

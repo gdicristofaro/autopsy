@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
+import org.sleuthkit.autopsy.datasourcesummary.datamodel.IngestModuleCheckUtil.NotIngestedWithModuleException;
 import org.sleuthkit.autopsy.datasourcesummary.datamodel.SleuthkitCaseProvider.SleuthkitCaseProviderException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
@@ -204,12 +205,17 @@ public class TopProgramsSummary implements DefaultArtifactUpdateGovernor {
      * @throws SleuthkitCaseProviderException
      * @throws TskCoreException
      * @throws SQLException
+     * @throws NotIngestedWithModuleException
      */
     public List<TopProgramsResult> getTopPrograms(DataSource dataSource, int count)
-            throws SleuthkitCaseProviderException, TskCoreException, SQLException {
+            throws SleuthkitCaseProviderException, TskCoreException, SQLException, NotIngestedWithModuleException {
         if (dataSource == null || count <= 0) {
             return Collections.emptyList();
         }
+
+        IngestModuleCheckUtil.throwOnNotModuleIngested(provider.get(), dataSource,
+                IngestModuleCheckUtil.RECENT_ACTIVITY_FACTORY,
+                IngestModuleCheckUtil.RECENT_ACTIVITY_MODULE_NAME);
 
         // ntosboot should be ignored
         final String ntosBootIdentifier = "NTOSBOOT";

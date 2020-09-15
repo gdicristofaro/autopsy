@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import org.sleuthkit.autopsy.datasourcesummary.datamodel.IngestModuleCheckUtil.NotIngestedWithModuleException;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
@@ -105,11 +106,16 @@ public class RecentFilesSummary implements DefaultArtifactUpdateGovernor {
      *
      * @throws SleuthkitCaseProviderException
      * @throws TskCoreException
+     * @throws NotIngestedWithModuleException
      */
-    public List<RecentFileDetails> getRecentlyOpenedDocuments(DataSource dataSource, int maxCount) throws SleuthkitCaseProviderException, TskCoreException {
+    public List<RecentFileDetails> getRecentlyOpenedDocuments(DataSource dataSource, int maxCount) throws SleuthkitCaseProviderException, TskCoreException, NotIngestedWithModuleException {
         if (dataSource == null) {
             throw new IllegalArgumentException("Failed to get recently opened documents given data source was null");
         }
+        
+        IngestModuleCheckUtil.throwOnNotModuleIngested(provider.get(), dataSource, 
+                IngestModuleCheckUtil.RECENT_ACTIVITY_FACTORY,
+                IngestModuleCheckUtil.RECENT_ACTIVITY_MODULE_NAME);
 
         List<BlackboardArtifact> artifactList
                 = DataSourceInfoUtilities.getArtifacts(provider.get(),
@@ -157,8 +163,19 @@ public class RecentFilesSummary implements DefaultArtifactUpdateGovernor {
      *
      * @throws TskCoreException
      * @throws SleuthkitCaseProviderException
+     * @throws NotIngestedWithModuleException
      */
-    public List<RecentDownloadDetails> getRecentDownloads(DataSource dataSource, int maxCount) throws TskCoreException, SleuthkitCaseProviderException {
+    public List<RecentDownloadDetails> getRecentDownloads(DataSource dataSource, int maxCount) 
+            throws TskCoreException, SleuthkitCaseProviderException, NotIngestedWithModuleException {
+        
+        if (dataSource == null) {
+            throw new IllegalArgumentException("Failed to get recent downloads given data source was null");
+        }
+        
+        IngestModuleCheckUtil.throwOnNotModuleIngested(provider.get(), dataSource, 
+                IngestModuleCheckUtil.RECENT_ACTIVITY_FACTORY,
+                IngestModuleCheckUtil.RECENT_ACTIVITY_MODULE_NAME);
+        
         List<BlackboardArtifact> artifactList
                 = DataSourceInfoUtilities.getArtifacts(provider.get(),
                         new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_WEB_DOWNLOAD),

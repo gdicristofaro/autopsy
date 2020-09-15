@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import org.sleuthkit.autopsy.datasourcesummary.datamodel.IngestModuleCheckUtil.NotIngestedWithModuleException;
 import org.sleuthkit.autopsy.datasourcesummary.datamodel.SleuthkitCaseProvider.SleuthkitCaseProviderException;
 import org.sleuthkit.autopsy.ingest.ModuleContentEvent;
 import org.sleuthkit.datamodel.BlackboardArtifact;
@@ -40,7 +41,7 @@ public class ContainerSummary implements DefaultArtifactUpdateGovernor {
             BlackboardArtifact.ARTIFACT_TYPE.TSK_OS_INFO.getTypeID(),
             BlackboardArtifact.ARTIFACT_TYPE.TSK_DATA_SOURCE_USAGE.getTypeID()
     ));
-
+    
     private final SleuthkitCaseProvider provider;
 
     /**
@@ -122,13 +123,18 @@ public class ContainerSummary implements DefaultArtifactUpdateGovernor {
      * @throws SleuthkitCaseProviderException
      * @throws TskCoreException
      * @throws SQLException
+     * @throws NotIngestedWithModuleException 
      */
     public String getOperatingSystems(DataSource dataSource)
-            throws SleuthkitCaseProvider.SleuthkitCaseProviderException, TskCoreException, SQLException {
+            throws SleuthkitCaseProvider.SleuthkitCaseProviderException, TskCoreException, SQLException, NotIngestedWithModuleException {
 
         if (dataSource == null) {
             return null;
         }
+        
+        IngestModuleCheckUtil.throwOnNotModuleIngested(provider.get(), dataSource, 
+                IngestModuleCheckUtil.RECENT_ACTIVITY_FACTORY,
+                IngestModuleCheckUtil.RECENT_ACTIVITY_MODULE_NAME);
 
         return getConcattedAttrValue(dataSource.getId(),
                 BlackboardArtifact.ARTIFACT_TYPE.TSK_OS_INFO.getTypeID(),
@@ -147,14 +153,19 @@ public class ContainerSummary implements DefaultArtifactUpdateGovernor {
      * @throws SleuthkitCaseProviderException
      * @throws TskCoreException
      * @throws SQLException
+     * @throws NotIngestedWithModuleException 
      */
     public String getDataSourceType(DataSource dataSource)
-            throws SleuthkitCaseProvider.SleuthkitCaseProviderException, TskCoreException, SQLException {
+            throws SleuthkitCaseProvider.SleuthkitCaseProviderException, TskCoreException, SQLException, NotIngestedWithModuleException {
 
         if (dataSource == null) {
             return null;
         }
-
+        
+        IngestModuleCheckUtil.throwOnNotModuleIngested(provider.get(), dataSource, 
+                IngestModuleCheckUtil.RECENT_ACTIVITY_FACTORY,
+                IngestModuleCheckUtil.RECENT_ACTIVITY_MODULE_NAME);
+                
         return getConcattedAttrValue(dataSource.getId(),
                 BlackboardArtifact.ARTIFACT_TYPE.TSK_DATA_SOURCE_USAGE.getTypeID(),
                 BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DESCRIPTION.getTypeID());

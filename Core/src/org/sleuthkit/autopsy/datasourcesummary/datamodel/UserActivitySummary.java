@@ -32,6 +32,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.openide.util.NbBundle.Messages;
+import org.sleuthkit.autopsy.datasourcesummary.datamodel.IngestModuleCheckUtil.NotIngestedWithModuleException;
 import org.sleuthkit.autopsy.datasourcesummary.datamodel.SleuthkitCaseProvider.SleuthkitCaseProviderException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
@@ -97,8 +98,15 @@ public class UserActivitySummary implements DefaultArtifactUpdateGovernor {
      * @return The list of items retrieved from the database.
      *
      * @throws InterruptedException
+     * @throws NotIngestedWithModuleException
      */
-    public List<TopDomainsResult> getRecentDomains(DataSource dataSource, int count) throws InterruptedException {
+    public List<TopDomainsResult> getRecentDomains(DataSource dataSource, int count) 
+            throws InterruptedException, TskCoreException, NotIngestedWithModuleException {
+        
+        IngestModuleCheckUtil.throwOnNotModuleIngested(caseProvider.get(), dataSource,
+                IngestModuleCheckUtil.RECENT_ACTIVITY_FACTORY,
+                IngestModuleCheckUtil.RECENT_ACTIVITY_MODULE_NAME);
+
         Thread.sleep(SLEEP_TIME);
         final String dId = Long.toString(dataSource.getId());
         final Function2<String, Integer, String> getId = (s, idx) -> String.format("d:%s, f:%s, i:%d", dId, s, idx);
@@ -186,12 +194,18 @@ public class UserActivitySummary implements DefaultArtifactUpdateGovernor {
      * @return The list of most recent web searches where most recent search
      *         appears first.
      *
-     * @throws
-     * org.sleuthkit.autopsy.datasourcesummary.datamodel.SleuthkitCaseProvider.SleuthkitCaseProviderException
+     * @throws SleuthkitCaseProviderException
      * @throws TskCoreException
+     * @throws NotIngestedWithModuleException
      */
-    public List<TopWebSearchResult> getMostRecentWebSearches(DataSource dataSource, int count) throws SleuthkitCaseProviderException, TskCoreException {
+    public List<TopWebSearchResult> getMostRecentWebSearches(DataSource dataSource, int count)
+            throws SleuthkitCaseProviderException, TskCoreException, NotIngestedWithModuleException {
+        
         assertValidCount(count);
+
+        IngestModuleCheckUtil.throwOnNotModuleIngested(caseProvider.get(), dataSource,
+                IngestModuleCheckUtil.RECENT_ACTIVITY_FACTORY,
+                IngestModuleCheckUtil.RECENT_ACTIVITY_MODULE_NAME);
 
         // get the artifacts
         List<BlackboardArtifact> webSearchArtifacts = caseProvider.get().getBlackboard()
@@ -270,13 +284,18 @@ public class UserActivitySummary implements DefaultArtifactUpdateGovernor {
      * @return The list of most recent devices attached where most recent device
      *         attached appears first.
      *
-     * @throws
-     * org.sleuthkit.autopsy.datasourcesummary.datamodel.SleuthkitCaseProvider.SleuthkitCaseProviderException
+     * @throws SleuthkitCaseProviderException
      * @throws TskCoreException
+     * @throws NotIngestedWithModuleException
      */
-    public List<TopDeviceAttachedResult> getRecentDevices(DataSource dataSource, int count) throws SleuthkitCaseProviderException, TskCoreException {
+    public List<TopDeviceAttachedResult> getRecentDevices(DataSource dataSource, int count) 
+            throws SleuthkitCaseProviderException, TskCoreException, NotIngestedWithModuleException {
         assertValidCount(count);
 
+        IngestModuleCheckUtil.throwOnNotModuleIngested(caseProvider.get(), dataSource,
+                IngestModuleCheckUtil.RECENT_ACTIVITY_FACTORY,
+                IngestModuleCheckUtil.RECENT_ACTIVITY_MODULE_NAME);
+                
         return DataSourceInfoUtilities.getArtifacts(caseProvider.get(), TYPE_DEVICE_ATTACHED,
                 dataSource, TYPE_DATETIME, DataSourceInfoUtilities.SortOrder.DESCENDING, 0)
                 .stream()
@@ -352,15 +371,21 @@ public class UserActivitySummary implements DefaultArtifactUpdateGovernor {
      * @return The list of most recent accounts used where the most recent
      *         account by last message sent occurs first.
      *
-     * @throws
-     * org.sleuthkit.autopsy.datasourcesummary.datamodel.SleuthkitCaseProvider.SleuthkitCaseProviderException
+     * @throws SleuthkitCaseProviderException
      * @throws TskCoreException
+     * @throws NotIngestedWithModuleException
      */
     @Messages({
         "DataSourceUserActivitySummary_getRecentAccounts_emailMessage=Email Message",
         "DataSourceUserActivitySummary_getRecentAccounts_calllogMessage=Call Log",})
-    public List<TopAccountResult> getRecentAccounts(DataSource dataSource, int count) throws SleuthkitCaseProviderException, TskCoreException {
+    public List<TopAccountResult> getRecentAccounts(DataSource dataSource, int count) 
+            throws SleuthkitCaseProviderException, TskCoreException, NotIngestedWithModuleException {
+        
         assertValidCount(count);
+        
+        IngestModuleCheckUtil.throwOnNotModuleIngested(caseProvider.get(), dataSource,
+                IngestModuleCheckUtil.RECENT_ACTIVITY_FACTORY,
+                IngestModuleCheckUtil.RECENT_ACTIVITY_MODULE_NAME);
 
         Stream<TopAccountResult> messageResults = caseProvider.get().getBlackboard().getArtifacts(ARTIFACT_TYPE.TSK_MESSAGE.getTypeID(), dataSource.getId())
                 .stream()

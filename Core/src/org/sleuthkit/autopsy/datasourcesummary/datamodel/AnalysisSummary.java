@@ -21,6 +21,7 @@ package org.sleuthkit.autopsy.datasourcesummary.datamodel;
 import org.sleuthkit.autopsy.datasourcesummary.uiutils.DefaultArtifactUpdateGovernor;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.openide.util.NbBundle.Messages;
+import org.sleuthkit.autopsy.datasourcesummary.datamodel.IngestModuleCheckUtil.NotIngestedWithModuleException;
 import org.sleuthkit.autopsy.datasourcesummary.datamodel.SleuthkitCaseProvider.SleuthkitCaseProviderException;
+import org.sleuthkit.autopsy.modules.hashdatabase.HashLookupModuleFactory;
+import org.sleuthkit.autopsy.modules.interestingitems.InterestingItemsIngestModuleFactory;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute;
@@ -41,6 +46,9 @@ import org.sleuthkit.datamodel.TskCoreException;
 /**
  * Providing data for the data source analysis tab.
  */
+@Messages({
+    "AnalysisSummary_keywordSearchModuleName=Keyword Search"
+})
 public class AnalysisSummary implements DefaultArtifactUpdateGovernor {
 
     private static final BlackboardAttribute.Type TYPE_SET_NAME = new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_SET_NAME);
@@ -60,6 +68,15 @@ public class AnalysisSummary implements DefaultArtifactUpdateGovernor {
         ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID()
     ));
 
+    private static final String KEYWORD_SEARCH_MODULE_NAME = Bundle.AnalysisSummary_keywordSearchModuleName();
+    private static final String KEYWORD_SEARCH_FACTORY = "org.sleuthkit.autopsy.keywordsearch.KeywordSearchModuleFactory";
+    
+    private static final String INTERESTING_ITEM_MODULE_NAME = new InterestingItemsIngestModuleFactory().getModuleDisplayName();
+    private static final String INTERESTING_ITEM_FACTORY = InterestingItemsIngestModuleFactory.class.getCanonicalName();
+    
+    private static final String HASHSET_MODULE_NAME = HashLookupModuleFactory.getModuleName();
+    private static final String HASHSET_FACTORY = HashLookupModuleFactory.class.getCanonicalName();
+    
     private final SleuthkitCaseProvider provider;
 
     /**
@@ -92,8 +109,16 @@ public class AnalysisSummary implements DefaultArtifactUpdateGovernor {
      *
      * @throws SleuthkitCaseProviderException
      * @throws TskCoreException
+     * @throws NotIngestedWithModuleException
      */
-    public List<Pair<String, Long>> getHashsetCounts(DataSource dataSource) throws SleuthkitCaseProviderException, TskCoreException {
+    public List<Pair<String, Long>> getHashsetCounts(DataSource dataSource) 
+            throws SleuthkitCaseProviderException, TskCoreException, NotIngestedWithModuleException {
+        
+        if (dataSource == null) {
+            return Collections.emptyList();
+        }
+        
+        IngestModuleCheckUtil.throwOnNotModuleIngested(provider.get(), dataSource, HASHSET_FACTORY, HASHSET_MODULE_NAME);
         return getCountsData(dataSource, TYPE_SET_NAME, ARTIFACT_TYPE.TSK_HASHSET_HIT);
     }
 
@@ -106,8 +131,16 @@ public class AnalysisSummary implements DefaultArtifactUpdateGovernor {
      *
      * @throws SleuthkitCaseProviderException
      * @throws TskCoreException
+     * @throws NotIngestedWithModuleException
      */
-    public List<Pair<String, Long>> getKeywordCounts(DataSource dataSource) throws SleuthkitCaseProviderException, TskCoreException {
+    public List<Pair<String, Long>> getKeywordCounts(DataSource dataSource) 
+            throws SleuthkitCaseProviderException, TskCoreException, NotIngestedWithModuleException {
+        
+        if (dataSource == null) {
+            return Collections.emptyList();
+        }
+        
+        IngestModuleCheckUtil.throwOnNotModuleIngested(provider.get(), dataSource, KEYWORD_SEARCH_FACTORY, KEYWORD_SEARCH_MODULE_NAME);
         return getCountsData(dataSource, TYPE_SET_NAME, ARTIFACT_TYPE.TSK_KEYWORD_HIT).stream()
                 // make sure we have a valid set and that that set does not belong to the set of excluded items
                 .filter((pair) -> pair != null && pair.getKey() != null && !EXCLUDED_KEYWORD_SEARCH_ITEMS.contains(pair.getKey().toUpperCase().trim()))
@@ -125,8 +158,16 @@ public class AnalysisSummary implements DefaultArtifactUpdateGovernor {
      *
      * @throws SleuthkitCaseProviderException
      * @throws TskCoreException
+     * @throws NotIngestedWithModuleException
      */
-    public List<Pair<String, Long>> getInterestingItemCounts(DataSource dataSource) throws SleuthkitCaseProviderException, TskCoreException {
+    public List<Pair<String, Long>> getInterestingItemCounts(DataSource dataSource) 
+            throws SleuthkitCaseProviderException, TskCoreException, NotIngestedWithModuleException {
+        
+        if (dataSource == null) {
+            return Collections.emptyList();
+        }
+        
+        IngestModuleCheckUtil.throwOnNotModuleIngested(provider.get(), dataSource, INTERESTING_ITEM_FACTORY, INTERESTING_ITEM_MODULE_NAME);
         return getCountsData(dataSource, TYPE_SET_NAME, ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT, ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT);
     }
 
