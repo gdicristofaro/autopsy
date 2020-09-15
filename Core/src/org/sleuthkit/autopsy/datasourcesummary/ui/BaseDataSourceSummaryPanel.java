@@ -21,12 +21,21 @@ package org.sleuthkit.autopsy.datasourcesummary.ui;
 import java.util.List;
 import javax.swing.JPanel;
 import javax.swing.SwingWorker;
+import org.openide.util.NbBundle.Messages;
+import org.sleuthkit.autopsy.datasourcesummary.datamodel.IngestModuleCheckUtil.NotIngestedWithModuleException;
+import org.sleuthkit.autopsy.datasourcesummary.uiutils.DataFetchResult;
+import org.sleuthkit.autopsy.datasourcesummary.uiutils.DataFetchResult.ResultType;
+import org.sleuthkit.autopsy.datasourcesummary.uiutils.LoadableComponent;
 import org.sleuthkit.autopsy.datasourcesummary.uiutils.SwingWorkerSequentialExecutor;
 import org.sleuthkit.datamodel.DataSource;
 
 /**
  * Base class from which other tabs in data source summary derive.
  */
+@Messages({
+    "# {0} - module name",
+    "BaseDataSourceSummaryPanel_defaultNotIngestMessage=The {0} Ingest Module has not been run on this datasource."
+})
 abstract class BaseDataSourceSummaryPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
@@ -61,4 +70,34 @@ abstract class BaseDataSourceSummaryPanel extends JPanel {
      * @param dataSource The new dataSource.
      */
     protected abstract void onNewDataSource(DataSource dataSource);
+
+    protected String getDefaultNoIngestMessage(NotIngestedWithModuleException exception) {
+        return Bundle.BaseDataSourceSummaryPanel_defaultNotIngestMessage(exception.getModuleDisplayName());
+    }
+
+    /**
+     * 
+     * @param <T>
+     * @param component
+     * @param result 
+     */
+    protected <T> void handleIngestModuleResult(LoadableComponent<T> component, DataFetchResult<T> result) {
+        if (result.getResultType() == ResultType.ERROR
+                && result.getException() instanceof NotIngestedWithModuleException) {
+
+            component.showMessage(getDefaultNoIngestMessage((NotIngestedWithModuleException) result.getException()));
+        } else {
+            component.showDataFetchResult(result);
+        }
+    }
+
+    protected <T> void handleIngestModuleResult(LoadableComponent<T> component, DataFetchResult<T> result, String onIngestError, String onError, String onEmpty) {
+        if (result.getResultType() == ResultType.ERROR
+                && result.getException() instanceof NotIngestedWithModuleException) {
+
+            component.showMessage(onIngestError);
+        } else {
+            component.showDataFetchResult(result, onError, onEmpty);
+        }
+    }
 }
