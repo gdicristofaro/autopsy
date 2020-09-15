@@ -29,8 +29,7 @@ import org.sleuthkit.datamodel.DataSource;
 
 /**
  * A tabbed pane showing the summary of a data source including tabs of:
- * DataSourceSummaryCountsPanel, DataSourceSummaryDetailsPanel, and
- * IngestJobInfoPanel.
+ * DataSourceSummaryCountsPanel, ContainerPanel, and IngestJobInfoPanel.
  */
 @Messages({
     "DataSourceSummaryTabbedPane_typesTab_title=Types",
@@ -105,11 +104,11 @@ public class DataSourceSummaryTabbedPane extends JTabbedPane {
 
     private final List<DataSourceTab> tabs = Arrays.asList(
             new DataSourceTab(Bundle.DataSourceSummaryTabbedPane_typesTab_title(), new TypesPanel()),
-            new DataSourceTab(Bundle.DataSourceSummaryTabbedPane_userActivityTab_title(), new DataSourceSummaryUserActivityPanel()),
+            new DataSourceTab(Bundle.DataSourceSummaryTabbedPane_userActivityTab_title(), new UserActivityPanel()),
             new DataSourceTab(Bundle.DataSourceSummaryTabbedPane_recentFileTab_title(), new RecentFilesPanel()),
             new DataSourceTab(Bundle.DataSourceSummaryTabbedPane_analysisTab_title(), new AnalysisPanel()),
             new DataSourceTab(Bundle.DataSourceSummaryTabbedPane_ingestHistoryTab_title(), ingestHistoryPanel, ingestHistoryPanel::setDataSource),
-            new DataSourceTab(Bundle.DataSourceSummaryTabbedPane_detailsTab_title(), new DataSourceSummaryDetailsPanel())
+            new DataSourceTab(Bundle.DataSourceSummaryTabbedPane_detailsTab_title(), new ContainerPanel())
     );
 
     private DataSource dataSource = null;
