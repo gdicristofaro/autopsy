@@ -7,8 +7,7 @@
     <import file="nbproject/build-impl.xml"/>
     <import file="../BootstrapIvy.xml"/>
     <import file="../TSKVersion.xml"/>
-     
-     
+
     <property name="thirdparty.dir" value="${basedir}/../thirdparty" />
     
     <!-- import ant-contrib tools -->
@@ -210,7 +209,7 @@
 
     <!--sets up integration test system properties, calls underlying test-init, 
     get test data files if they have not been retrieved, and then sets up the pathing jar-->
-    <target name="test-init" depends="setup-integration-props,projectized-common.test-init,getTestDataFiles,qa-functional-pathing-jar" />
+    <!--<target name="test-init" depends="setup-integration-props,projectized-common.test-init,getTestDataFiles,qa-functional-pathing-jar" />-->
         
     
     <target name="test-qa-functional">
@@ -292,5 +291,214 @@
             <property name="test.timeout" value="3600000"/>     
             <antcall target="projectized-common.test-qa-functional" />
         </sequential>
-    </target>  
+    </target> 
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    <target name="test-init" depends="init,test-preinit,test-lib-init">
+        <property name="test.timeout" value="600000"/> <!-- 10min per test -->
+        <property name="test.run.args" value="-ea"/>
+        <property name="test.filter.trace" value="true"/>
+        <condition property="test.bootclasspath.prepend.args" value="-Xbootclasspath/p:${run.bootclasspath.prepend}">
+            <isset property="run.bootclasspath.prepend"/>
+        </condition>
+        <property name="test.bootclasspath.prepend.args" value="-Dno.netbeans.bootclasspath.prepend.needed=true"/>
+        <macrodef name="test-init">
+            <attribute name="test.type"/>
+            <sequential>
+                <property name="test.@{test.type}.dir" location="test/@{test.type}"/>
+                <property name="test.@{test.type}.src.dir" location="${test.@{test.type}.dir}/src"/>
+                <property name="test.@{test.type}.data.dir" location="${test.@{test.type}.dir}/data"/>
+                <property name="build.test.@{test.type}.dir" location="${build.dir}/test/@{test.type}"/>
+                <property name="build.test.@{test.type}.classes.dir" location="${build.test.@{test.type}.dir}/classes"/>
+                <property name="build.test.@{test.type}.results.dir" location="${build.test.@{test.type}.dir}/results"/>
+                <property name="build.test.@{test.type}.work.dir" location="${build.test.@{test.type}.dir}/work"/>
+                <property name="test-@{test.type}-sys-prop.cluster.path.final" value="${cluster.path.final}:${cluster}"/> <!-- #153178, 176019 -->
+                <property name="test.@{test.type}.cp.extra" value=""/>
+                <path id="test.@{test.type}.cp">
+                    <!-- Cannot use <path refid="cp"/> since that uses ${module.classpath} and we want ${module.run.classpath}: -->
+                    <pathelement path="${test.@{test.type}.compile.cp}"/>
+                    <pathelement path="${cp.extra}"/>
+                    <pathelement location="${cluster}/${module.jar}"/>
+                    <path refid="test.unit.lib.cp"/>
+                    <!-- for compatibility with property based classpath-->
+                    <pathelement path="${module.run.classpath}"/>
+                    <pathelement path="${test.@{test.type}.cp.extra}"/>
+                </path>
+                <path id="test.@{test.type}.run.cp">
+                    <pathelement path="${build.test.@{test.type}.classes.dir}"/>
+                    <!-- Cannot use <path refid="cp"/> since that uses ${module.classpath} and we want ${module.run.classpath}: -->
+                    <pathelement path="${test.@{test.type}.runtime.cp}"/>
+                    <pathelement path="${cp.extra}"/>
+                    <pathelement location="${cluster}/${module.jar}"/>
+                    <path refid="test.unit.lib.cp"/>
+                    <!-- for compatibility with property based classpath-->
+                    <pathelement path="${module.run.classpath}"/>
+                    <pathelement path="${test.@{test.type}.run.cp.extra}"/>
+                    <pathelement path="${test.@{test.type}.cp.extra}"/>
+                    <pathelement path="${test.extra.nb.javac.deps}"/>
+                </path>
+                <!-- path reference used in both compiler and executor -->
+                <propertyset id="test.@{test.type}.properties">
+                    <propertyset>
+                        <propertyref prefix="test-@{test.type}-sys-prop."/>
+                        <mapper type="glob" from="test-@{test.type}-sys-prop.*" to="*"/>
+                    </propertyset>
+                    <propertyset>
+                        <propertyref name="build.test.@{test.type}.work.dir"/>
+                        <mapper type="glob" from="build.test.@{test.type}.work.dir" to="nbjunit.workdir"/>
+                    </propertyset>
+                    <propertyset>
+                        <propertyref name="test.timeout"/>
+                        <mapper type="glob" from="test.timeout" to="nbjunit.hard.timeout"/>
+                    </propertyset>
+                </propertyset>
+                <condition property="exists.test.@{test.type}.src.dir">
+                    <and>
+                        <available file="${test.@{test.type}.src.dir}" type="dir"/>
+                        <not>
+                            <istrue value="${disable.@{test.type}.tests}"/>
+                        </not>
+                    </and>
+                </condition>
+
+            </sequential>
+        </macrodef>
+        <test-init test.type="unit"/>
+        <test-init test.type="qa-functional"/>
+    </target> 
+    
+    <target name="test-parse" depends="init">
+        <script language="javascript">
+            <![CDATA[ 
+                var moduleRunClasspath = project.getProperty("module.run.classpath");
+                
+                var directories = [];
+                // searches for jar file parent directories with path separators of \ or /
+                var individualPathRegex = /^\s*(.+?[\\\/])[^\\\/]+?\.jar\s*$/i;
+                // split on ':' but not 'C:\'
+                var classPathRegex = /((C:\\)?.+?)(:|$)/gi;
+                var match;
+                while((match = classPathRegex.exec(moduleRunClasspath)) !== null) {
+                    var thisPath = match[1];
+                    var pathMatch = thisPath.match(individualPathRegex);
+                    // find unique matches
+                    if (pathMatch && directories.indexOf(pathMatch[1]) < 0) {
+                        directories.push(pathMatch[1]);
+                    }
+                }
+                
+                // suffix with *
+                for (var i = 0; i < directories.length; i++) {
+                    directories[i] = directories[i] + "*";
+                }
+
+                // set project property
+                project.setNewProperty("_myNewProperty", directories.join(":"));
+            ]]>
+        </script>
+        <echoproperties/>
+    </target>
+    
+    <target name="-do-junit" depends="test-init">
+        <macrodef name="junit-impl">
+            <attribute name="test.type"/>
+            <attribute name="disable.apple.ui" default="false"/>
+            <sequential>
+                <!--set up pathing jar based on module.run.classpath as classpath-->
+                <!--                <path id="test.@{test.type}.pathing-jar.module-cp.classpath" path="${module.run.classpath}"/>
+                <pathconvert pathsep=" " refid="test.@{test.type}.pathing-jar.module-cp.classpath" property="test.@{test.type}.pathing-jar.module-cp.classpathstr"/>
+                <property name="test.@{test.type}.pathing-jar.module-cp.loc" value="${cluster}/test.@{test.type}.pathing.module-cp.jar"/>
+                <jar destfile="${test.@{test.type}.pathing-jar.module-cp.loc}">
+                    <manifest>
+                        <attribute name="Class-Path" value="${test.@{test.type}.pathing-jar.module-cp.classpathstr}"/>
+                    </manifest>
+                </jar>
+                <path id="test.@{test.type}.path-to-pathing-jar">
+                    <pathelement path="${test.@{test.type}.pathing-jar.module-cp.loc}"/>
+                    <path refid="test.unit.lib.cp"/>
+                </path>-->
+                
+                <script language="javascript">
+                    <![CDATA[ 
+                        var moduleRunClasspath = project.getProperty("module.run.classpath");
+
+                        var directories = [];
+                        // searches for jar file parent directories with path separators of \ or /
+                        var individualPathRegex = /^\s*(.+?[\\\/])[^\\\/]+?\.jar\s*$/i;
+                        // split on ':' but not 'C:\'
+                        var classPathRegex = /((C:\\)?.+?)(:|$)/gi;
+                        var match;
+                        while((match = classPathRegex.exec(moduleRunClasspath)) !== null) {
+                            var thisPath = match[1];
+                            var pathMatch = thisPath.match(individualPathRegex);
+                            // find unique matches
+                            if (pathMatch && directories.indexOf(pathMatch[1]) < 0) {
+                                directories.push(pathMatch[1]);
+                            }
+                        }
+
+                        // suffix with *
+                        for (var i = 0; i < directories.length; i++) {
+                            directories[i] = directories[i] + "*";
+                        }
+
+                        // set project property
+                        project.setNewProperty("abbreviatedModuleRunClassPath", directories.join(":"));
+                    ]]>
+                </script>
+                
+                <path id="test.@{test.type}.newclasspath">
+                    <pathelement path="${build.test.@{test.type}.classes.dir}"/>
+                    <!-- Cannot use <path refid="cp"/> since that uses ${module.classpath} and we want ${module.run.classpath}: -->
+                    <pathelement path="${test.@{test.type}.runtime.cp}"/>
+                    <pathelement path="${cp.extra}"/>
+                    <pathelement location="${cluster}/${module.jar}"/>
+                    <path refid="test.unit.lib.cp"/>
+                    <!-- for compatibility with property based classpath-->
+                    <!--<pathelement path="${module.run.classpath}"/>-->
+<!--                <pathelement path="${nbplatform.active.dir}/platform/modules/*" />
+                    <pathelement path="${nbplatform.active.dir}/platform/lib/*" />
+                    <pathelement path="${nbplatform.active.dir}/platform/core/*" />
+                    
+                    <pathelement path="${basedir}/../build/cluster/modules/*" />
+                    <pathelement path="${basedir}/../Tika/release/modules/ext/*" />
+                    <pathelement path="${basedir}/../CoreLibs/release/modules/ext/*" />
+                    <pathelement path="${basedir}/release/modules/ext/*" />-->
+                    
+                    <pathelement path="${abbreviatedModuleRunClassPath}"/>
+                    <pathelement path="${test.@{test.type}.run.cp.extra}"/>
+                    <pathelement path="${test.@{test.type}.cp.extra}"/>
+                    <pathelement path="${test.extra.nb.javac.deps}"/>
+                </path>
+                
+                <junit showoutput="true" fork="true" failureproperty="tests.failed" errorproperty="tests.failed" filtertrace="${test.filter.trace}" tempdir="${build.test.@{test.type}.results.dir}" timeout="${test.timeout}" jvm="${test.nbjdk.java}">
+                    <batchtest todir="${build.test.@{test.type}.results.dir}">
+                        <fileset dir="${build.test.@{test.type}.classes.dir}" includes="${test.includes}" excludes="${test.excludes}"/>
+                    </batchtest>
+                    <classpath refid="test.@{test.type}.newclasspath"/>
+                    <syspropertyset refid="test.@{test.type}.properties"/>
+                    <jvmarg value="${test.bootclasspath.prepend.args}"/>
+                    <jvmarg line="${test.run.args}"/>
+                    <!--needed to have tests NOT to steal focus when running, works in latest apple jdk update only.-->
+                    <sysproperty key="apple.awt.UIElement" value="@{disable.apple.ui}"/>
+                    <formatter type="brief" usefile="false"/>
+                    <formatter type="xml"/>
+                </junit>
+                <fail if="tests.failed" unless="continue.after.failing.tests">Some tests failed; see details above.</fail>
+            </sequential>
+        </macrodef>
+        <junit-impl test.type="${run.test.type}" disable.apple.ui="${disable.apple.ui}"/>
+    </target>
 </project>
