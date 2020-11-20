@@ -220,13 +220,30 @@ public class TimelinePanel extends BaseDataSourceSummaryPanel {
             }
         }
 
+        openFilteredChart(dataSource, minDate, maxDate);
+    }
+
+    /**
+     * Action that occurs when 'View in Timeline' button is pressed.
+     *
+     * @param dataSource The data source to filter to.
+     * @param minDate The min date for the zoom of the window.
+     * @param maxDate The max date for the zoom of the window.
+     */
+    private void openFilteredChart(DataSource dataSource, Date minDate, Date maxDate) {
+
         // notify dialog (if in dialog) should close.
         TimelinePanel.this.notifyParentClose();
 
         // open the timeline filtered to data source and zoomed in on interval
-        openTimelineAction.performAction();
+        // NOTE: order of operations matters here because the open timeline 
+        // action triggers applying whatever current filters are present again
+        // and activating the timeline also clears the current time range.  so 
+        // time range needs to be handled later.
+        // open the timeline filtered to data source and zoomed in on interval
         try {
-            TimeLineController controller = TimeLineModule.getController();
+            final TimeLineController controller = TimeLineModule.getController();
+
             if (dataSource != null) {
                 controller.pushFilters(timelineUtils.getDataSourceFilterState(dataSource));
             }
@@ -237,17 +254,28 @@ public class TimelinePanel extends BaseDataSourceSummaryPanel {
             }
 
         } catch (NoCurrentCaseException | TskCoreException ex) {
-            logger.log(Level.WARNING, "Unable to open Timeline view", ex);
+            logger.log(Level.WARNING, "Unable to view time range in Timeline view", ex);
         }
+
+        openTimelineAction.performAction(false);
     }
 
     @Override
+
     protected void fetchInformation(DataSource dataSource) {
+        synchronized (this.timelineBtnLock) {
+            this.curTimelineData = null;
+            this.viewInTimelineBtn.setEnabled(false);
+        }
         fetchInformation(dataFetchComponents, dataSource);
     }
 
     @Override
     protected void onNewDataSource(DataSource dataSource) {
+        synchronized (this.timelineBtnLock) {
+            this.curTimelineData = null;
+            this.viewInTimelineBtn.setEnabled(false);
+        }
         onNewDataSource(dataFetchComponents, loadableComponents, dataSource);
     }
 

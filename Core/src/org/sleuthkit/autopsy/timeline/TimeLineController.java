@@ -359,7 +359,7 @@ public class TimeLineController {
      * ViewInTimelineRequestedEvent in the List View.
      *
      * @param requestEvent Contains the ID of the requested events and the
-     *                     timerange to show.
+     * timerange to show.
      */
     @ThreadConfined(type = ThreadConfined.ThreadType.JFX)
     private void showInListView(ViewInTimelineRequestedEvent requestEvent) throws TskCoreException {
@@ -376,14 +376,13 @@ public class TimeLineController {
         }
     }
 
-    
     /**
      * Shuts down the task executor in charge of handling case events.
      */
     void shutDownTimeLineListeners() {
         ThreadUtils.shutDownTaskExecutor(executor);
     }
-    
+
     /**
      * "Shut down" Timeline. Close the timeline window.
      */
@@ -394,19 +393,22 @@ public class TimeLineController {
             topComponent = null;
         }
     }
-    
-    
+
+    @ThreadConfined(type = ThreadConfined.ThreadType.AWT)
+    void showTimeLine(AbstractFile file, BlackboardArtifact artifact) {
+        showTimeLine(file, artifact, true);
+    }
 
     /**
      * Add the case and ingest listeners, prompt for rebuilding the database if
      * necessary, and show the timeline window.
      *
-     * @param file     The AbstractFile from which to choose an event to show in
-     *                 the List View.
+     * @param file The AbstractFile from which to choose an event to show in the
+     * List View.
      * @param artifact The BlackboardArtifact to show in the List View.
      */
     @ThreadConfined(type = ThreadConfined.ThreadType.AWT)
-    void showTimeLine(AbstractFile file, BlackboardArtifact artifact) {
+    void showTimeLine(AbstractFile file, BlackboardArtifact artifact, boolean clearTimeRange) {
         Platform.runLater(() -> {
             //if there is an existing prompt or progressdialog,...
             if (promptDialogManager.bringCurrentDialogToFront()) {
@@ -421,7 +423,9 @@ public class TimeLineController {
                 try {
                     if (file == null && artifact == null) {
                         SwingUtilities.invokeLater(TimeLineController.this::showWindow);
-                        this.showFullRange();
+                        if (clearTimeRange) {
+                            this.showFullRange();
+                        }
                     } else {
 
                         //prompt user to pick specific event and time range
@@ -453,7 +457,7 @@ public class TimeLineController {
      * around the middle of the currently viewed time range.
      *
      * @param period The period of time to show around the current center of the
-     *               view.
+     * view.
      */
     synchronized public void pushPeriod(ReadablePeriod period) throws TskCoreException {
         synchronized (filteredEvents) {
@@ -496,8 +500,8 @@ public class TimeLineController {
          */
         topComponent.requestActive();
     }
-    
-    synchronized public TimeLineTopComponent  getTopComponent(){
+
+    synchronized public TimeLineTopComponent getTopComponent() {
         return topComponent;
     }
 
@@ -517,7 +521,7 @@ public class TimeLineController {
      * @param timeRange The Interval to view.
      *
      * @return True if the interval was changed. False if the interval was the
-     *         same as the existing one and no change happened.
+     * same as the existing one and no change happened.
      */
     synchronized public boolean pushTimeRange(Interval timeRange) throws TskCoreException {
         //clamp timerange to case
@@ -709,7 +713,7 @@ public class TimeLineController {
      * Register the given object to receive events.
      *
      * @param listener The object to register. Must implement public methods
-     *                 annotated with Subscribe.
+     * annotated with Subscribe.
      */
     synchronized public void registerForEvents(Object listener) {
         eventbus.register(listener);

@@ -46,13 +46,10 @@ import org.sleuthkit.datamodel.TskCoreException;
  * An Action that opens the Timeline window. Has methods to open the window in
  * various specific states (e.g., showing a specific artifact in the List View)
  */
-
-
 @ActionID(category = "Tools", id = "org.sleuthkit.autopsy.timeline.Timeline")
 @ActionRegistration(displayName = "#CTL_MakeTimeline", lazy = false)
 @ActionReferences(value = {
-    @ActionReference(path = "Menu/Tools", position = 104)
-    ,
+    @ActionReference(path = "Menu/Tools", position = 104),
     @ActionReference(path = "Toolbars/Case", position = 104)})
 public final class OpenTimelineAction extends CallableSystemAction {
 
@@ -64,7 +61,6 @@ public final class OpenTimelineAction extends CallableSystemAction {
     private final JButton toolbarButton = new JButton(getName(),
             new ImageIcon(getClass().getResource("images/btn_icon_timeline_colorized_26.png"))); //NON-NLS
 
-
     public OpenTimelineAction() {
         toolbarButton.addActionListener(actionEvent -> performAction());
         menuItem = super.getMenuPresenter();
@@ -74,9 +70,10 @@ public final class OpenTimelineAction extends CallableSystemAction {
     @Override
     public boolean isEnabled() {
         /**
-         * We used to also check if Case.getCurrentOpenCase().hasData() was true. We
-         * disabled that check because if it is executed while a data source is
-         * being added, it blocks the edt. We still do that in ImageGallery.
+         * We used to also check if Case.getCurrentOpenCase().hasData() was
+         * true. We disabled that check because if it is executed while a data
+         * source is being added, it blocks the edt. We still do that in
+         * ImageGallery.
          */
         return super.isEnabled() && Case.isCaseOpen() && Installer.isJavaFxInited();
     }
@@ -84,6 +81,15 @@ public final class OpenTimelineAction extends CallableSystemAction {
     @Override
     @ThreadConfined(type = ThreadConfined.ThreadType.AWT)
     public void performAction() {
+        performAction(true);
+    }
+
+    /**
+     * Opens window and triggers a callback
+     * @param onOpen 
+     */
+    @ThreadConfined(type = ThreadConfined.ThreadType.AWT)
+    public void performAction(boolean clearTimeRange) {
         if (tooManyFiles()) {
             Platform.runLater(PromptDialogManager::showTooManyFiles);
             setEnabled(false);
@@ -92,18 +98,22 @@ public final class OpenTimelineAction extends CallableSystemAction {
             setEnabled(false);
         } else {
             try {
-                showTimeline();
+                showTimeline(null, null, clearTimeRange);
             } catch (TskCoreException ex) {
                 MessageNotifyUtil.Message.error(Bundle.OpenTimelineAction_settingsErrorMessage());
                 logger.log(Level.SEVERE, "Error showingtimeline.", ex);
             }
         }
     }
+    
+    synchronized private void showTimeline(AbstractFile file, BlackboardArtifact artifact) throws TskCoreException {
+        showTimeline(file, artifact, true);
+    }
 
     @NbBundle.Messages({
         "OpenTimelineAction.settingsErrorMessage=Failed to initialize timeline settings.",
         "OpenTimeLineAction.msgdlg.text=Could not create timeline, there are no data sources."})
-    synchronized private void showTimeline(AbstractFile file, BlackboardArtifact artifact) throws TskCoreException {
+    synchronized private void showTimeline(AbstractFile file, BlackboardArtifact artifact, boolean clearTimeRange) throws TskCoreException {
         try {
             Case currentCase = Case.getCurrentCaseThrows();
             if (currentCase.hasData() == false) {
@@ -112,7 +122,7 @@ public final class OpenTimelineAction extends CallableSystemAction {
                 return;
             }
             TimeLineController controller = TimeLineModule.getController();
-            controller.showTimeLine(file, artifact);
+            controller.showTimeLine(file, artifact, clearTimeRange);
         } catch (NoCurrentCaseException e) {
             //there is no case...   Do nothing.
         }
