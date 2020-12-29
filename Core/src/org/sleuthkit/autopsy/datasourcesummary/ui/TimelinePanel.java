@@ -21,6 +21,10 @@ package org.sleuthkit.autopsy.datasourcesummary.ui;
 import java.awt.Color;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -53,6 +57,9 @@ import org.sleuthkit.autopsy.timeline.TimeLineController;
 import org.sleuthkit.autopsy.timeline.TimeLineModule;
 import org.sleuthkit.datamodel.DataSource;
 import org.sleuthkit.datamodel.TskCoreException;
+import java.util.TimeZone;
+import org.joda.time.DateTimeZone;
+import static org.joda.time.format.ISODateTimeFormat.date;
 
 /**
  * A tab shown in data source summary displaying information about a data
@@ -65,21 +72,45 @@ import org.sleuthkit.datamodel.TskCoreException;
     "TimlinePanel_last30DaysChart_fileEvts_title=File Events",
     "TimlinePanel_last30DaysChart_artifactEvts_title=Artifact Events",})
 public class TimelinePanel extends BaseDataSourceSummaryPanel {
-    
+
     private static final Logger logger = Logger.getLogger(TimelinePanel.class.getName());
     private static final long serialVersionUID = 1L;
-    private static final DateFormat EARLIEST_LATEST_FORMAT = getUtcFormat("MMM d, yyyy");
-    private static final DateFormat CHART_FORMAT = getUtcFormat("MMM d");
+
+    private static final DateFormat EARLIEST_LATEST_FORMAT = getDateFormat("MMM d, yyyy");
+    private static final DateFormat CHART_FORMAT = getDateFormat("MMM d");
+
     private static final int MOST_RECENT_DAYS_COUNT = 30;
 
+    private static final long DAY_SECS = 24 * 60 * 60;
+    private static final long DAY_MILLIS = DAY_SECS * 1000;
+
+    private static final Color FILE_EVT_COLOR = new Color(228, 22, 28);
+    private static final Color ARTIFACT_EVT_COLOR = new Color(21, 227, 100);
+
     /**
-     * Creates a DateFormat formatter that uses UTC for time zone.
+     * Creates a DateFormat formatter. Uses UTC since offset shouldn't matter
+     * for days from epoch.
      *
      * @param formatString The date format string.
      * @return The data format.
      */
-    private static DateFormat getUtcFormat(String formatString) {
-        return new SimpleDateFormat(formatString, Locale.getDefault());
+    private static DateFormat getDateFormat(String formatString) {
+        SimpleDateFormat formatter = new SimpleDateFormat(formatString, Locale.getDefault());
+        formatter.setTimeZone(TimeZone.getTimeZone("GMT"));
+        return formatter;
+    }
+
+    /**
+     * Formats a date using a DateFormat. In the event that the date is null,
+     * returns a null string.
+     *
+     * @param daysFromEpoch Days from epoch.
+     * @param formatter The date formatter.
+     * @return The formatted string generated from the formatter or null if the
+     * date is null.
+     */
+    private static String formatDate(long daysFromEpoch, DateFormat formatter) {
+        return formatter.format(new Date(daysFromEpoch * DAY_MILLIS));
     }
 
     // components displayed in the tab
@@ -94,7 +125,7 @@ public class TimelinePanel extends BaseDataSourceSummaryPanel {
 
     // actions to load data for this tab
     private final List<DataFetchComponents<DataSource, ?>> dataFetchComponents;
-    
+
     public TimelinePanel() {
         this(new TimelineSummary());
     }
@@ -109,25 +140,9 @@ public class TimelinePanel extends BaseDataSourceSummaryPanel {
                         (dataSource) -> timelineData.getData(dataSource, MOST_RECENT_DAYS_COUNT),
                         (result) -> handleResult(result))
         );
-        
+
         initComponents();
     }
-
-    /**
-     * Formats a date using a DateFormat. In the event that the date is null,
-     * returns a null string.
-     *
-     * @param date The date to format.
-     * @param formatter The DateFormat to use to format the date.
-     * @return The formatted string generated from the formatter or null if the
-     * date is null.
-     */
-    private static String formatDate(Date date, DateFormat formatter) {
-        return date == null ? null : formatter.format(date);
-    }
-    
-    private static final Color FILE_EVT_COLOR = new Color(228, 22, 28);
-    private static final Color ARTIFACT_EVT_COLOR = new Color(21, 227, 100);
 
     /**
      * Converts DailyActivityAmount data retrieved from TimelineSummary into
@@ -145,25 +160,25 @@ public class TimelinePanel extends BaseDataSourceSummaryPanel {
         // Create a bar chart item for each recent days activity item
         List<BarChartItem> fileEvtCounts = new ArrayList<>();
         List<BarChartItem> artifactEvtCounts = new ArrayList<>();
-        
+
         for (int i = 0; i < recentDaysActivity.size(); i++) {
             DailyActivityAmount curItem = recentDaysActivity.get(i);
-            
+
             long fileAmt = curItem.getFileActivityCount();
             long artifactAmt = curItem.getArtifactActivityCount() * 100;
             String formattedDate = (i == 0 || i == recentDaysActivity.size() - 1)
                     ? formatDate(curItem.getDay(), CHART_FORMAT) : "";
-            
+
             OrderedKey thisKey = new OrderedKey(formattedDate, i);
             fileEvtCounts.add(new BarChartItem(thisKey, fileAmt));
             artifactEvtCounts.add(new BarChartItem(thisKey, artifactAmt));
         }
-        
+
         return Arrays.asList(
                 new BarChartSeries(Bundle.TimlinePanel_last30DaysChart_fileEvts_title(), FILE_EVT_COLOR, fileEvtCounts),
                 new BarChartSeries(Bundle.TimlinePanel_last30DaysChart_artifactEvts_title(), ARTIFACT_EVT_COLOR, artifactEvtCounts));
     }
-    
+
     private final Object timelineBtnLock = new Object();
     private TimelineSummaryData curTimelineData = null;
 
@@ -179,11 +194,11 @@ public class TimelinePanel extends BaseDataSourceSummaryPanel {
         earliestLabel.showDataFetchResult(DataFetchResult.getSubResult(result, r -> formatDate(r.getMinDate(), EARLIEST_LATEST_FORMAT)));
         latestLabel.showDataFetchResult(DataFetchResult.getSubResult(result, r -> formatDate(r.getMaxDate(), EARLIEST_LATEST_FORMAT)));
         last30DaysChart.showDataFetchResult(DataFetchResult.getSubResult(result, r -> parseChartData(r.getMostRecentDaysActivity())));
-        
+
         if (result != null
                 && result.getResultType() == DataFetchResult.ResultType.SUCCESS
                 && result.getData() != null) {
-            
+
             synchronized (this.timelineBtnLock) {
                 this.curTimelineData = result.getData();
                 this.viewInTimelineBtn.setEnabled(true);
@@ -200,37 +215,49 @@ public class TimelinePanel extends BaseDataSourceSummaryPanel {
      */
     private void openFilteredChart() {
         DataSource dataSource = null;
-        Date minDate = null;
-        Date maxDate = null;
+        Interval timeSpan = null;
 
         // get date from current timelineData if that data exists.
         synchronized (this.timelineBtnLock) {
             if (curTimelineData == null) {
                 return;
             }
-            
+
             dataSource = curTimelineData.getDataSource();
-            if (CollectionUtils.isNotEmpty(curTimelineData.getMostRecentDaysActivity())) {
-                minDate = curTimelineData.getMostRecentDaysActivity().get(0).getDay();
-                maxDate = curTimelineData.getMostRecentDaysActivity().get(curTimelineData.getMostRecentDaysActivity().size() - 1).getDay();
-                // set outer bound to end of day instead of beginning
-                if (maxDate != null) {
-                    maxDate = new Date(maxDate.getTime() + 1000 * 60 * 60 * 24);
-                }
+            TimeZone curTimeZone = curTimelineData.getTimeZone();
+            ZoneId curZoneId = curTimeZone.toZoneId();
+
+            if (curTimelineData.getMinDate() < curTimelineData.getMaxDate()) {
+
+                timeSpan = new Interval(
+                        getEpochMillis(curTimelineData.getMinDate(), curZoneId),
+                        getEpochMillis(curTimelineData.getMaxDate(), curZoneId),
+                        DateTimeZone.forTimeZone(curTimeZone));
+
             }
         }
-        
-        openFilteredChart(dataSource, minDate, maxDate);
+
+        openFilteredChart(dataSource, timeSpan);
+    }
+
+    /**
+     * Converts days from epoch (in local time) to milliseconds from epoch in UTC.
+     * @param localDaysFromEpoch Days from epoch in zone id offset as opposed to UTC.
+     * @param zoneId The time zone offset.
+     * @return The UTC milliseconds from epoch.
+     */
+    private long getEpochMillis(long localDaysFromEpoch, ZoneId zoneId) {
+        LocalDate localTime = LocalDate.ofEpochDay(localDaysFromEpoch);
+        return localTime.atStartOfDay(zoneId).toEpochSecond() * 1000;
     }
 
     /**
      * Action that occurs when 'View in Timeline' button is pressed.
      *
      * @param dataSource The data source to filter to.
-     * @param minDate The min date for the zoom of the window.
-     * @param maxDate The max date for the zoom of the window.
+     * @param timeSpan The time span to be shown in the timeline.
      */
-    private void openFilteredChart(DataSource dataSource, Date minDate, Date maxDate) {
+    private void openFilteredChart(DataSource dataSource, Interval timeSpan) {
         OpenTimelineAction openTimelineAction = CallableSystemAction.get(OpenTimelineAction.class);
         if (openTimelineAction == null) {
             logger.log(Level.WARNING, "No OpenTimelineAction provided by CallableSystemAction; taking no redirect action.");
@@ -238,40 +265,34 @@ public class TimelinePanel extends BaseDataSourceSummaryPanel {
 
         // notify dialog (if in dialog) should close.
         TimelinePanel.this.notifyParentClose();
-        
-        Interval timeSpan = null;
-        
+
         try {
             final TimeLineController controller = TimeLineModule.getController();
-            
+
             if (dataSource != null) {
                 controller.pushFilters(timelineUtils.getDataSourceFilterState(dataSource));
-            }
-            
-            if (minDate != null && maxDate != null) {
-                timeSpan = new Interval(new DateTime(minDate), new DateTime(maxDate));
             }
         } catch (NoCurrentCaseException | TskCoreException ex) {
             logger.log(Level.WARNING, "Unable to view time range in Timeline view", ex);
         }
-        
+
         try {
             openTimelineAction.showTimeline(timeSpan);
         } catch (TskCoreException ex) {
             logger.log(Level.WARNING, "An unexpected exception occurred while opening the timeline.", ex);
         }
     }
-    
+
     @Override
     protected void fetchInformation(DataSource dataSource) {
         fetchInformation(dataFetchComponents, dataSource);
     }
-    
+
     @Override
     protected void onNewDataSource(DataSource dataSource) {
         onNewDataSource(dataFetchComponents, loadableComponents, dataSource);
     }
-    
+
     @Override
     public void close() {
         ingestRunningLabel.unregister();

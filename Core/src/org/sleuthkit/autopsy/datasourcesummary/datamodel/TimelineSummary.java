@@ -22,7 +22,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -42,8 +41,10 @@ import org.sleuthkit.datamodel.TimelineFilter.RootFilter;
 import org.sleuthkit.datamodel.TimelineManager;
 import org.sleuthkit.datamodel.TskCoreException;
 import java.util.function.Supplier;
+import org.joda.time.LocalDateTime;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
 import org.sleuthkit.autopsy.core.UserPreferences;
+import org.threeten.bp.ZoneOffset;
 
 /**
  * Provides data source summary information pertaining to Timeline data.
@@ -67,7 +68,6 @@ public class TimelineSummary implements DefaultUpdateGovernor {
         RootFilter apply(DataSource dataSource) throws NoCurrentCaseException, TskCoreException;
     }
 
-    private static final long DAY_SECS = 24 * 60 * 60;
     private static final Set<IngestManager.IngestJobEvent> INGEST_JOB_EVENTS = new HashSet<>(
             Arrays.asList(IngestManager.IngestJobEvent.COMPLETED, IngestManager.IngestJobEvent.CANCELLED));
 
@@ -83,11 +83,20 @@ public class TimelineSummary implements DefaultUpdateGovernor {
     private final DataSourceFilterFunction filterFunction;
 
     /**
+     * @return The time zone to use based on user preferences.
+     */
+    private static TimeZone getTimeZone() {
+        return UserPreferences.displayTimesInLocalTime()
+                ? TimeZone.getDefault()
+                : TimeZone.getTimeZone(UserPreferences.getTimeZoneForDisplays());
+    }
+
+    /**
      * Default constructor.
      */
     public TimelineSummary() {
         this(SleuthkitCaseProvider.DEFAULT,
-                () -> TimeZone.getTimeZone(UserPreferences.getTimeZoneForDisplays()),
+                TimelineSummary::getTimeZone,
                 (ds) -> TimelineDataSourceUtils.getInstance().getDataSourceFilter(ds));
     }
 
@@ -157,9 +166,6 @@ public class TimelineSummary implements DefaultUpdateGovernor {
             return null;
         }
 
-        Date minDate = new Date(minDay * 1000 * DAY_SECS);
-        Date maxDate = new Date(maxDay * 1000 * DAY_SECS);
-
         // The minimum recent day will be within recentDaysNum from the maximum day 
         // (+1 since maxDay included) or the minimum day of activity
         long minRecentDay = Math.max(maxDay - recentDaysNum + 1, minDay);
@@ -167,7 +173,7 @@ public class TimelineSummary implements DefaultUpdateGovernor {
         // get most recent days activity
         List<DailyActivityAmount> mostRecentActivityAmt = getMostRecentActivityAmounts(dateCounts, minRecentDay, maxDay);
 
-        return new TimelineSummaryData(minDate, maxDate, mostRecentActivityAmt, dataSource);
+        return new TimelineSummaryData(timeZone, minDay, maxDay, mostRecentActivityAmt, dataSource);
     }
 
     /**
@@ -187,7 +193,7 @@ public class TimelineSummary implements DefaultUpdateGovernor {
             DailyActivityAmount prevCounts = dateCounts.get(curRecentDay);
             DailyActivityAmount countsHandleNotFound = prevCounts != null
                     ? prevCounts
-                    : new DailyActivityAmount(new Date(curRecentDay * DAY_SECS * 1000), 0, 0);
+                    : new DailyActivityAmount(curRecentDay, 0, 0);
 
             mostRecentActivityAmt.add(countsHandleNotFound);
         }
@@ -222,17 +228,16 @@ public class TimelineSummary implements DefaultUpdateGovernor {
                     .atZone(timeZone.toZoneId())
                     .toLocalDate()
                     .toEpochDay();
-
+            
             DailyActivityAmount prevAmt = dateCounts.get(curDaysFromEpoch);
             long prevFileEvtCount = prevAmt == null ? 0 : prevAmt.getFileActivityCount();
             long prevArtifactEvtCount = prevAmt == null ? 0 : prevAmt.getArtifactActivityCount();
-            Date thisDay = prevAmt == null ? new Date(curDaysFromEpoch * 1000 * DAY_SECS) : prevAmt.getDay();
 
             boolean isFileEvt = FILE_SYSTEM_EVENTS.contains(evt.getEventType());
             long curFileEvtCount = prevFileEvtCount + (isFileEvt ? 1 : 0);
             long curArtifactEvtCount = prevArtifactEvtCount + (isFileEvt ? 0 : 1);
 
-            dateCounts.put(curDaysFromEpoch, new DailyActivityAmount(thisDay, curFileEvtCount, curArtifactEvtCount));
+            dateCounts.put(curDaysFromEpoch, new DailyActivityAmount(curDaysFromEpoch, curFileEvtCount, curArtifactEvtCount));
         }
 
         return dateCounts;
@@ -243,22 +248,27 @@ public class TimelineSummary implements DefaultUpdateGovernor {
      */
     public static class TimelineSummaryData {
 
-        private final Date minDate;
-        private final Date maxDate;
+        private final TimeZone timeZone;
+        private final long minDate;
+        private final long maxDate;
         private final List<DailyActivityAmount> histogramActivity;
         private final DataSource dataSource;
 
         /**
          * Main constructor.
          *
-         * @param minDate Earliest usage date recorded for the data source.
-         * @param maxDate Latest usage date recorded for the data source.
+         * @param timeZone The timezone used to calculate day boundaries.
+         * @param minDate Earliest usage date recorded for the data source in
+         * days from epoch.
+         * @param maxDate Latest usage date recorded for the data source in days
+         * from epoch.
          * @param recentDaysActivity A list of activity prior to and including
          * max date sorted by min to max date.
          * @param dataSource The data source for which this data applies. the
          * latest usage date by day.
          */
-        TimelineSummaryData(Date minDate, Date maxDate, List<DailyActivityAmount> recentDaysActivity, DataSource dataSource) {
+        TimelineSummaryData(TimeZone timeZone, long minDate, long maxDate, List<DailyActivityAmount> recentDaysActivity, DataSource dataSource) {
+            this.timeZone = timeZone;
             this.minDate = minDate;
             this.maxDate = maxDate;
             this.histogramActivity = (recentDaysActivity == null) ? Collections.emptyList() : Collections.unmodifiableList(recentDaysActivity);
@@ -266,16 +276,18 @@ public class TimelineSummary implements DefaultUpdateGovernor {
         }
 
         /**
-         * @return Earliest usage date recorded for the data source.
+         * @return Earliest usage date recorded for the data source in days from
+         * epoch.
          */
-        public Date getMinDate() {
+        public long getMinDate() {
             return minDate;
         }
 
         /**
-         * @return Latest usage date recorded for the data source.
+         * @return Latest usage date recorded for the data source in days from
+         * epoch.
          */
-        public Date getMaxDate() {
+        public long getMaxDate() {
             return maxDate;
         }
 
@@ -293,6 +305,13 @@ public class TimelineSummary implements DefaultUpdateGovernor {
         public DataSource getDataSource() {
             return dataSource;
         }
+
+        /**
+         * @return The timezone used to calculate day boundaries.
+         */
+        public TimeZone getTimeZone() {
+            return timeZone;
+        }
     }
 
     /**
@@ -300,27 +319,29 @@ public class TimelineSummary implements DefaultUpdateGovernor {
      */
     public static class DailyActivityAmount {
 
-        private final Date day;
+        private final long day;
         private final long fileActivityCount;
         private final long artifactActivityCount;
 
         /**
          * Main constructor.
          *
-         * @param day The day for which activity is being measured.
+         * @param day The day for which activity is being measured in days from
+         * epoch.
          * @param fileActivityCount The amount of file activity timeline events.
          * @param artifactActivityCount The amount of artifact timeline events.
          */
-        DailyActivityAmount(Date day, long fileActivityCount, long artifactActivityCount) {
+        DailyActivityAmount(long day, long fileActivityCount, long artifactActivityCount) {
             this.day = day;
             this.fileActivityCount = fileActivityCount;
             this.artifactActivityCount = artifactActivityCount;
         }
 
         /**
-         * @return The day for which activity is being measured.
+         * @return The day for which activity is being measured in days from
+         * epoch.
          */
-        public Date getDay() {
+        public long getDay() {
             return day;
         }
 
