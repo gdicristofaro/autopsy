@@ -31,6 +31,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.ConnectException;
+import java.net.DatagramSocket;
 import java.net.ServerSocket;
 import java.net.SocketException;
 import java.nio.charset.Charset;
@@ -761,34 +762,76 @@ public class Server {
         }
     }
 
+
+    // NOTE: Old implementation
     /**
      * Checks to see if a specific port is available.
      *
      * @param port the port to check for availability
      */
+//    static boolean isPortAvailable(int port) {
+//        ServerSocket ss = null;
+//        try {
+//
+//            ss = new ServerSocket(port, 0, java.net.Inet4Address.getByName("localhost")); //NON-NLS
+//            if (ss.isBound()) {
+//                ss.setReuseAddress(true);
+//                ss.close();
+//                return true;
+//            }
+//
+//        } catch (IOException e) {
+//        } finally {
+//            if (ss != null) {
+//                try {
+//                    ss.close();
+//                } catch (IOException e) {
+//                    /*
+//                     * should not be thrown
+//                     */
+//                }
+//            }
+//        }
+//        return false;
+//    }
+    
+    
+    
+    /**
+     * Checks to see if a specific port is available.
+     *
+     * @param port The port to check for availability.
+     * @throws IllegalArgumentException If port is outside range of possible ports.
+     */
     static boolean isPortAvailable(int port) {
+        // implementation taken from https://stackoverflow.com/a/435579
+        if (port < 1 || port > 65535) {
+            throw new IllegalArgumentException("Invalid start port: " + port);
+        }
+
         ServerSocket ss = null;
+        DatagramSocket ds = null;
         try {
-
-            ss = new ServerSocket(port, 0, java.net.Inet4Address.getByName("localhost")); //NON-NLS
-            if (ss.isBound()) {
-                ss.setReuseAddress(true);
-                ss.close();
-                return true;
-            }
-
+            ss = new ServerSocket(port);
+            ss.setReuseAddress(true);
+            ds = new DatagramSocket(port);
+            ds.setReuseAddress(true);
+            return true;
         } catch (IOException e) {
         } finally {
+            if (ds != null) {
+                ds.close();
+            }
+
             if (ss != null) {
                 try {
                     ss.close();
                 } catch (IOException e) {
-                    /*
-                     * should not be thrown
-                     */
+                    /* should not be thrown */
                 }
             }
         }
+
         return false;
     }
 
