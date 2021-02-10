@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.autopsy.datamodel.hosts;
+package org.sleuthkit.autopsy.datamodel.persons;
 
 import java.awt.Frame;
 import java.beans.PropertyChangeEvent;
@@ -32,21 +32,21 @@ import org.openide.windows.WindowManager;
 import org.sleuthkit.autopsy.casemodule.Case;
 
 /**
- * An Action that opens the Host Management window.
+ * An Action that opens the Person Management window.
  */
-@ActionID(category = "Case", id = "org.sleuthkit.autopsy.datamodel.hosts.OpenHostsAction")
-@ActionRegistration(displayName = "#CTL_OpenHosts", lazy = false)
+@ActionID(category = "Case", id = "org.sleuthkit.autopsy.datamodel.persons.OpenPersonsAction")
+@ActionRegistration(displayName = "#CTL_OpenPersons", lazy = false)
 @Messages({
-    "CTL_OpenHosts=Hosts",})
-public final class OpenHostsAction extends CallableSystemAction {
+    "CTL_OpenPersons=Persons",})
+public final class OpenPersonsAction extends CallableSystemAction {
 
     private static final long serialVersionUID = 1L;
 
     /**
      * Main constructor.
      */
-    OpenHostsAction() {
-        putValue(Action.NAME, Bundle.CTL_OpenHosts());
+    OpenPersonsAction() {
+        putValue(Action.NAME, Bundle.CTL_OpenPersons());
         this.setEnabled(false);
         Case.addEventTypeSubscriber(EnumSet.of(Case.Events.CURRENT_CASE), (PropertyChangeEvent evt) -> {
             setEnabled(null != evt.getNewValue());
@@ -56,7 +56,7 @@ public final class OpenHostsAction extends CallableSystemAction {
     @Override
     public void performAction() {
         Frame parent = WindowManager.getDefault().getMainWindow();
-        ManageHostsDialog dialog = new ManageHostsDialog(parent);
+        ManagePersonsDialog dialog = new ManagePersonsDialog(parent);
         dialog.setResizable(false);
         dialog.setLocationRelativeTo(parent);
         dialog.setVisible(true);
@@ -64,9 +64,9 @@ public final class OpenHostsAction extends CallableSystemAction {
     }
 
     @Override
-    @NbBundle.Messages("OpenHostsAction_displayName=Hosts")
+    @NbBundle.Messages("OpenPersonsAction_displayName=Persons")
     public String getName() {
-        return Bundle.OpenHostsAction_displayName();
+        return Bundle.OpenPersonsAction_displayName();
     }
 
     @Override
