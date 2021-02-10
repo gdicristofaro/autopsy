@@ -40,7 +40,9 @@ import org.sleuthkit.datamodel.TskCoreException;
     "ManagePersonsDialog_title_text=Manage Persons"
 })
 public class ManagePersonsDialog extends javax.swing.JDialog {
+
     private static class PersonListItem {
+
         private final Person person;
 
         PersonListItem(Person person) {
@@ -78,20 +80,20 @@ public class ManagePersonsDialog extends javax.swing.JDialog {
             if (this.person == null || other.getPerson() == null) {
                 return this.person == null && other.getPerson() == null;
             }
-            
+
             return this.person.getId() == other.getPerson().getId();
         }
-        
-        
+
     }
-    
+
     private static final Logger logger = Logger.getLogger(ManagePersonsDialog.class.getName());
     private static final long serialVersionUID = 1L;
-    
+
     private List<Person> personListData = Collections.emptyList();
 
     /**
      * Main constructor.
+     *
      * @param parent The parent frame.
      */
     public ManagePersonsDialog(java.awt.Frame parent) {
@@ -132,8 +134,15 @@ public class ManagePersonsDialog extends javax.swing.JDialog {
      * @param selectedPerson
      */
     private void deletePerson(Person selectedPerson) {
-        if (selectedPerson != null) {
-            System.out.println("Deleting: " + selectedPerson);
+        if (selectedPerson != null && selectedPerson.getName() != null) {
+            try {
+                Case.getCurrentCaseThrows().getSleuthkitCase().getPersonManager().deletePerson(selectedPerson.getName());
+            } catch (NoCurrentCaseException | TskCoreException ex) {
+                logger.log(Level.WARNING, String.format("There was an error editing person name changing '%s' to '%s' in person id: %d.",
+                        selectedPerson.getName() == null ? "<null>" : selectedPerson.getName(),
+                        newPersonName,
+                        selectedPerson.getId()));
+            }
             refresh();
         }
     }
@@ -147,9 +156,15 @@ public class ManagePersonsDialog extends javax.swing.JDialog {
         if (selectedPerson != null) {
             String newPersonName = getAddEditDialogName(selectedPerson);
             if (newPersonName != null) {
-                //TODO
-                logger.log(Level.SEVERE, String.format("This needs to edit person %d to change to %s.", selectedPerson.getId(), newPersonName));
-                //Case.getCurrentCaseThrows().getSleuthkitCase().getPersonManager().updatePersonName(selectedPerson.getId(), newPersonName);
+                try {
+                    Case.getCurrentCaseThrows().getSleuthkitCase().getPersonManager().updatePersonName(selectedPerson.getId(), newPersonName);
+                } catch (NoCurrentCaseException | TskCoreException ex) {
+                    logger.log(Level.WARNING, String.format("There was an error editing person name changing '%s' to '%s' in person id: %d.",
+                            selectedPerson.getName() == null ? "<null>" : selectedPerson.getName(),
+                            newPersonName,
+                            selectedPerson.getId()));
+                }
+
                 refresh();
             }
         }
@@ -172,7 +187,7 @@ public class ManagePersonsDialog extends javax.swing.JDialog {
         addEditDialog.setLocationRelativeTo(parent);
         addEditDialog.setVisible(true);
         addEditDialog.toFront();
-        
+
         if (addEditDialog.isChanged()) {
             String newPersonName = addEditDialog.getValue();
             return newPersonName;
@@ -197,11 +212,11 @@ public class ManagePersonsDialog extends javax.swing.JDialog {
         PersonListItem selectedItem = personList.getSelectedValue();
         Long selectedId = selectedItem == null || selectedItem.getPerson() == null ? null : selectedItem.getPerson().getId();
         personListData = getPersonListData();
-        
+
         Vector<PersonListItem> jlistData = personListData.stream()
                 .map(PersonListItem::new)
                 .collect(Collectors.toCollection(Vector::new));
-        
+
         personList.setListData(jlistData);
 
         if (selectedId != null) {
@@ -239,8 +254,8 @@ public class ManagePersonsDialog extends javax.swing.JDialog {
     }
 
     /**
-     * Returns the name of the person or an empty string if the person or name of
-     * person is null.
+     * Returns the name of the person or an empty string if the person or name
+     * of person is null.
      *
      * @param h The person.
      * @return The name of the person or empty string.
@@ -253,7 +268,7 @@ public class ManagePersonsDialog extends javax.swing.JDialog {
      * Refreshes component's enabled state and displayed person data.
      */
     private void refreshComponents() {
-        Person selectedPerson = getSelectedPerson();        
+        Person selectedPerson = getSelectedPerson();
         boolean itemSelected = selectedPerson != null;
         this.editButton.setEnabled(itemSelected);
         this.deleteButton.setEnabled(itemSelected);
