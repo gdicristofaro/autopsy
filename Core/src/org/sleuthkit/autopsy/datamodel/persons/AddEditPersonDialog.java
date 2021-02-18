@@ -27,7 +27,6 @@ import java.util.stream.Stream;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import org.openide.util.NbBundle.Messages;
-import org.sleuthkit.autopsy.datamodel.persons.Bundle;
 
 /**
  *

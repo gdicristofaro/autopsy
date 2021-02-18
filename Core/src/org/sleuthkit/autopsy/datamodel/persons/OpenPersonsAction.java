@@ -30,7 +30,6 @@ import org.openide.util.NbBundle.Messages;
 import org.openide.util.actions.CallableSystemAction;
 import org.openide.windows.WindowManager;
 import org.sleuthkit.autopsy.casemodule.Case;
-import org.sleuthkit.autopsy.datamodel.persons.Bundle;
 
 /**
  * An Action that opens the Person Management window.

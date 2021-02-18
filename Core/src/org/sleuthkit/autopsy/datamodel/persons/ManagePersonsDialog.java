@@ -35,8 +35,7 @@ import org.openide.util.NbBundle.Messages;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
 import org.sleuthkit.autopsy.coreutils.Logger;
-import org.sleuthkit.autopsy.datamodel.persons.Bundle;
-import org.sleuthkit.datamodel.DataSource;
+import org.sleuthkit.datamodel.Host;
 import org.sleuthkit.datamodel.Person;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -55,17 +54,17 @@ public class ManagePersonsDialog extends javax.swing.JDialog {
     private static class PersonListItem {
 
         private final Person person;
-        private final List<DataSource> dataSources;
+        private final List<Host> hosts;
 
         /**
          * Main constructor.
          *
          * @param person The person.
-         * @param dataSources The data sources that are children of this person.
+         * @param hosts The data sources that are children of this person.
          */
-        PersonListItem(Person person, List<DataSource> dataSources) {
+        PersonListItem(Person person, List<Host> hosts) {
             this.person = person;
-            this.dataSources = dataSources;
+            this.hosts = hosts;
         }
 
         /**
@@ -76,10 +75,10 @@ public class ManagePersonsDialog extends javax.swing.JDialog {
         }
 
         /**
-         * @return The data sources associated with this person.
+         * @return The hosts associated with this person.
          */
-        List<DataSource> getDataSources() {
-            return dataSources;
+        List<Host> getHosts() {
+            return hosts;
         }
 
         @Override
@@ -118,7 +117,7 @@ public class ManagePersonsDialog extends javax.swing.JDialog {
     private static final Logger logger = Logger.getLogger(ManagePersonsDialog.class.getName());
     private static final long serialVersionUID = 1L;
 
-    private Map<Person, List<DataSource>> personChildrenMap = Collections.emptyMap();
+    private Map<Person, List<Host>> personChildrenMap = Collections.emptyMap();
 
     /**
      * Main constructor.
@@ -319,20 +318,22 @@ public class ManagePersonsDialog extends javax.swing.JDialog {
      * @return The list of persons to be displayed in the list (sorted
      * alphabetically).
      */
-    private Map<Person, List<DataSource>> getPersonListData() {
-        Map<Person, List<DataSource>> personMapping = new HashMap<>();
+    private Map<Person, List<Host>> getPersonListData() {
+        Map<Person, List<Host>> personMapping = new HashMap<>();
         try {
             SleuthkitCase curCase = Case.getCurrentCaseThrows().getSleuthkitCase();
             List<Person> persons = curCase.getPersonManager().getPersons();
-            List<DataSource> dataSources = curCase.getDataSources();
+            
+            // TODO this needs to be fixed.
+            List<Host> hosts = new ArrayList<>();
 
-            if (dataSources != null) {
-                for (DataSource ds : dataSources) {
-                    List<DataSource> personDataSources = personMapping.computeIfAbsent(ds.getPerson(), (d) -> new ArrayList<>());
-                    personDataSources.add(ds);
-                }
-
-            }
+//            if (dataSources != null) {
+//                for (DataSource ds : dataSources) {
+//                    List<DataSource> personDataSources = personMapping.computeIfAbsent(ds.getPerson(), (d) -> new ArrayList<>());
+//                    personDataSources.add(ds);
+//                }
+//
+//            }
 
             if (persons != null) {
                 for (Person person : persons) {
@@ -353,9 +354,9 @@ public class ManagePersonsDialog extends javax.swing.JDialog {
     private void refreshComponents() {
         PersonListItem selectedItem = personList.getSelectedValue();
         Person selectedPerson = selectedItem == null ? null : selectedItem.getPerson();
-        List<DataSource> dataSources = selectedItem == null ? null : selectedItem.getDataSources();
+        List<Host> hosts = selectedItem == null ? null : selectedItem.getHosts();
         this.editButton.setEnabled(selectedPerson != null);
-        this.deleteButton.setEnabled(selectedPerson != null && CollectionUtils.isEmpty(dataSources));
+        this.deleteButton.setEnabled(selectedPerson != null && CollectionUtils.isEmpty(hosts));
         String nameTextFieldStr = selectedPerson != null && selectedPerson.getName() != null ? selectedPerson.getName() : "";
         this.personNameTextField.setText(nameTextFieldStr);
 

@@ -30,7 +30,6 @@ import org.openide.util.NbBundle.Messages;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
 import org.sleuthkit.autopsy.coreutils.Logger;
-import org.sleuthkit.autopsy.datamodel.persons.Bundle;
 import org.sleuthkit.datamodel.Person;
 import org.sleuthkit.datamodel.TskCoreException;
 
