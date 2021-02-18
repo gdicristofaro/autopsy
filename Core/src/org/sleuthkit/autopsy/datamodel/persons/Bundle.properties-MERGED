@@ -1,0 +1,26 @@
+AddEditPersonDialog_addPerson_title=Add Person
+AddEditPersonDialog_editPerson_title=Edit Person
+AddEditPersonDialog_getValidationMessage_onDuplicate=Another person already has the same name.  Please choose a different name.
+AddEditPersonDialog_getValidationMessage_onEmpty=Please provide some text for the person name.
+AddEditPersonDialog_getValidationMessage_sameAsOriginal=Please provide a new name for this person.
+CTL_OpenPersons=Manage Persons
+# To change this license header, choose License Headers in Project Properties.
+# To change this template file, choose Tools | Templates
+# and open the template in the editor.
+ManagePersonsDialog.personDetailsLabel.text=Person Details
+ManagePersonsDialog.personNameLabel.text=Person Name:
+ManagePersonsDialog.closeButton.text=Close
+ManagePersonsDialog.personDescriptionTextArea.text=Persons represent individual devices that may have multiple data sources.
+ManagePersonsDialog.personListLabel.text=Persons
+ManagePersonsDialog.newButton.text=New
+ManagePersonsDialog.editButton.text=Edit
+ManagePersonsDialog.deleteButton.text=Delete
+AddEditPersonDialog.nameLabel.text=Name:
+AddEditPersonDialog.okButton.text=OK
+AddEditPersonDialog.cancelButton.text=Cancel
+AddEditPersonDialog.inputTextField.text=jTextField1
+ManagePersonsDialog_title_text=Manage Persons
+OpenPersonsAction_displayName=Persons
+SelectPersonPanel.title=Person
+SelectPersonPanel.bnManagePersons.text=Manage Persons
+SelectPersonPanel_PersonCbItem_defaultPerson=Default
