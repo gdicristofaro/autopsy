@@ -140,13 +140,14 @@
         <file name="Edit_hidden"/>
         <file name="File_hidden"/>
         <folder name="Case">
+            <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
             <file name="org-sleuthkit-autopsy-casemodule-CaseNewAction.shadow">
                 <attr name="originalFile" stringvalue="Actions/Case/org-sleuthkit-autopsy-casemodule-CaseNewAction.instance"/>
                 <attr name="position" intvalue="100"/>
             </file>
-            <folder name="Open Recent Case">
+            <folder name="OpenRecentCase">
                 <attr name="position" intvalue="101"/>
-                <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.casemodule.Bundle"/>
+                <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
                 <file name="org-sleuthkit-autopsy-casemodule-RecentCasesAction.shadow">
                     <attr name="originalFile" stringvalue="Actions/Case/org-sleuthkit-autopsy-casemodule-RecentCases.instance"/>
                 </file>
@@ -268,10 +269,58 @@
                 <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
                 <attr name="position" intvalue="175"/>
             </file>
+            <file name="CloseWindowAction.shadow">
+                <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
+            </file>
+            <folder name="ConfigureWindow">
+                <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
+                <file name="org-netbeans-core-windows-actions-DockModeAction.shadow">
+                    <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
+                </file>
+                <file name="CollapseDocumentTabGroupAction.shadow">
+                    <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
+                </file>
+                <file name="org-netbeans-core-windows-actions-DockWindowAction.shadow">
+                    <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
+                </file>
+                <file name="NewDocumentTabGroupAction.shadow">
+                    <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
+                </file>
+                <file name="MaximizeWindowAction.shadow">
+                    <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
+                </file>
+                <file name="CloneDocumentAction.shadow">
+                    <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
+                </file>
+                <file name="org-netbeans-core-multiview-SplitAction.instance">
+                    <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
+                </file>
+                <file name="org-netbeans-core-windows-actions-MinimizeWindowAction.shadow">
+                    <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
+                </file>
+                <file name="org-netbeans-core-windows-actions-UndockAction.shadow">
+                    <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
+                </file>
+                <file name="org-netbeans-core-windows-actions-UndockModeAction.shadow">
+                    <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
+                </file>
+                <file name="org-netbeans-core-windows-actions-MinimizeModeAction.shadow">
+                    <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
+                </file>
+            </folder>
             <!--<file name="FileBrowserAction.shadow"/>
             <file name="FileBrowserAction.shadow_hidden"/>-->
         </folder>
         <folder name="View">
+            <file name="ShowEditorOnlyAction.shadow">
+                <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
+            </file>
+            <file name="ToggleFullScreenAction.shadow">
+                <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
+            </file>
+            <file name="org-netbeans-core-multiview-SplitAction.shadow">
+                <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
+            </file>
             <file name="org-netbeans-core-actions-HTMLViewAction.shadow_hidden"/>
             <file name="org-netbeans-core-actions-LogAction.shadow_hidden"/>
             <file name="org-netbeans-core-multiview-EditorsAction.instance_hidden"/>
