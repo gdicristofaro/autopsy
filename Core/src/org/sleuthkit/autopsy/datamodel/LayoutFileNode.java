@@ -132,7 +132,7 @@ public class LayoutFileNode extends AbstractAbstractFileNode<LayoutFile> {
         actionsList.addAll(ContextMenuExtensionPoint.getActions());
         if (FileTypeExtensions.getArchiveExtensions().contains("." + this.content.getNameExtension().toLowerCase())) {
             try {
-                if (this.content.getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED).size() > 0) {
+                if (this.content.getArtifacts(BlackboardArtifact.Type.TSK_ENCRYPTION_DETECTED).size() > 0) {
                     actionsList.add(new ExtractArchiveWithPasswordAction(this.getContent()));
                 }
             } catch (TskCoreException ex) {

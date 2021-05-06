@@ -43,7 +43,6 @@ import org.sleuthkit.autopsy.modules.hashdatabase.HashDbManager.HashDb;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.Blackboard;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.HashHitInfo;
@@ -443,7 +442,7 @@ public class HashDbIngestModule implements FileIngestModule {
         attributesList.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_SET_NAME, HashLookupModuleFactory.getModuleName(), hashSetName));
         try {
             Blackboard tskBlackboard = skCase.getBlackboard();
-            if (tskBlackboard.artifactExists(file, BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT, attributesList) == false) {
+            if (tskBlackboard.artifactExists(file, BlackboardArtifact.Type.TSK_HASHSET_HIT, attributesList) == false) {
                 postHashSetHitToBlackboard(file, file.getMd5Hash(), hashSetName, comment, db.getSendIngestMessages());
             }
         } catch (TskCoreException ex) {

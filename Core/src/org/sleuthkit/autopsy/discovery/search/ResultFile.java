@@ -317,7 +317,7 @@ public class ResultFile extends Result {
             return;
         }
         try {
-            if (currentScore == DataResultViewerTable.Score.NO_SCORE && !file.getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT).isEmpty()) {
+            if (currentScore == DataResultViewerTable.Score.NO_SCORE && !file.getArtifacts(BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT).isEmpty()) {
                 currentScore = DataResultViewerTable.Score.INTERESTING_SCORE;
                 scoreDescription = Bundle.ResultFile_score_interestingResult_description();
             }

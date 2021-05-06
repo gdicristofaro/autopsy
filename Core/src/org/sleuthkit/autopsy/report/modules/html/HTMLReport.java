@@ -73,7 +73,6 @@ import org.sleuthkit.autopsy.report.ReportBranding;
 import org.sleuthkit.autopsy.report.infrastructure.TableReportModule;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.ContentTag;
 import org.sleuthkit.datamodel.Image;

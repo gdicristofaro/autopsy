@@ -35,7 +35,7 @@ import org.sleuthkit.autopsy.yara.YaraJNIWrapper;
 import org.sleuthkit.autopsy.yara.YaraWrapperException;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_YARA_HIT;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_YARA_HIT;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_RULE;
 import org.sleuthkit.datamodel.BlackboardAttribute;

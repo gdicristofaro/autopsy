@@ -96,13 +96,13 @@ class ExtractOs extends Extract {
         }
         AbstractFile file = getFirstFileFound(osType.getFilePaths());
 
-        if (file != null && tskCase.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_OS_INFO, file.getId()).isEmpty()) {
+        if (file != null && tskCase.getBlackboardArtifacts(BlackboardArtifact.Type.TSK_OS_INFO, file.getId()).isEmpty()) {
             //if the os info program name is not empty create an os info artifact on the first of the files found
             Collection<BlackboardAttribute> bbattributes = new ArrayList<>();
             bbattributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME,
                     Bundle.ExtractOs_parentModuleName(),
                     osType.getOsInfoLabel())); //NON-NLS
-            postArtifact(createArtifactWithAttributes(BlackboardArtifact.ARTIFACT_TYPE.TSK_OS_INFO, file, bbattributes));
+            postArtifact(createArtifactWithAttributes(BlackboardArtifact.Type.TSK_OS_INFO, file, bbattributes));
         }
     }
 

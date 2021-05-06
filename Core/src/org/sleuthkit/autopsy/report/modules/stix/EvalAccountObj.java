@@ -108,7 +108,7 @@ class EvalAccountObj extends EvaluatableObject {
             Case case1 = Case.getCurrentCaseThrows();
             SleuthkitCase sleuthkitCase = case1.getSleuthkitCase();
             List<BlackboardArtifact> artList
-                    = sleuthkitCase.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_OS_ACCOUNT);
+                    = sleuthkitCase.getBlackboardArtifacts(BlackboardArtifact.Type.TSK_OS_ACCOUNT);
 
             for (BlackboardArtifact art : artList) {
                 boolean foundHomeDirMatch = false;

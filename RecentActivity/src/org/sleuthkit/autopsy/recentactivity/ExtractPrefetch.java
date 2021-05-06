@@ -316,7 +316,7 @@ final class ExtractPrefetch extends Extract {
                                         BlackboardAttribute.ATTRIBUTE_TYPE.TSK_COMMENT, getName(), PREFETCH_TSK_COMMENT));
 
                         try {
-                            BlackboardArtifact blkBrdArt = createArtifactWithAttributes(BlackboardArtifact.ARTIFACT_TYPE.TSK_PROG_RUN, pfAbstractFile, blkBrdAttributes);
+                            BlackboardArtifact blkBrdArt = createArtifactWithAttributes(BlackboardArtifact.Type.TSK_PROG_RUN, pfAbstractFile, blkBrdAttributes);
                             blkBrdArtList.add(blkBrdArt);
                             BlackboardArtifact associatedBbArtifact = createAssociatedArtifact(applicationName.toLowerCase(), filePath, blkBrdArt, dataSource);
                             if (associatedBbArtifact != null) {

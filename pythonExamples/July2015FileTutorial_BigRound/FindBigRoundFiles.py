@@ -120,7 +120,7 @@ class FindBigRoundFilesIngestModule(FileIngestModule):
 
             # Make an artifact on the blackboard.  TSK_INTERESTING_FILE_HIT is a generic type of
             # artifact.  Refer to the developer docs for other examples.
-            art = file.newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT)
+            art = file.newArtifact(BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT)
             att = BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID(), 
                   FindBigRoundFilesIngestModuleFactory.moduleName, "Big and Round Files")
             art.addAttribute(att)
@@ -134,7 +134,7 @@ class FindBigRoundFilesIngestModule(FileIngestModule):
             # Fire an event to notify the UI and others that there is a new artifact  
             IngestServices.getInstance().fireModuleDataEvent(
                 ModuleDataEvent(FindBigRoundFilesIngestModuleFactory.moduleName, 
-                    BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT, None))
+                    BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT, None))
 
         return IngestModule.ProcessResult.OK
  

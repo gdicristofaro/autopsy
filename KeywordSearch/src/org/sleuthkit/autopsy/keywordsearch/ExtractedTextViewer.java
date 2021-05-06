@@ -38,8 +38,8 @@ import org.sleuthkit.autopsy.keywordsearch.AdHocSearchChildFactory.AdHocQueryRes
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.Account;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_ACCOUNT;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_KEYWORD_HIT;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT;
 import org.sleuthkit.datamodel.Content;
@@ -382,9 +382,9 @@ public class ExtractedTextViewer implements TextViewer {
         BlackboardArtifact artifact = node.getLookup().lookup(BlackboardArtifact.class);
         if (artifact == null) {
             return 4;
-        } else if (artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID()) {
+        } else if (artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID()) {
             return 7;
-        } else if (artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()) {
+        } else if (artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_ACCOUNT.getTypeID()) {
             try {
                 BlackboardAttribute attribute = artifact.getAttribute(TSK_ACCOUNT_TYPE);
                 if (attribute != null && Account.Type.CREDIT_CARD.getTypeName().equals(attribute.getValueString())) {

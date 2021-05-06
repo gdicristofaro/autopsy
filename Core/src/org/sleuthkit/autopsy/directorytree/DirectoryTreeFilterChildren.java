@@ -39,7 +39,6 @@ import org.sleuthkit.autopsy.datamodel.SlackFileNode;
 import org.sleuthkit.autopsy.datamodel.VirtualDirectoryNode;
 import org.sleuthkit.autopsy.datamodel.VolumeNode;
 import org.sleuthkit.datamodel.AbstractFile;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.Directory;
 import org.sleuthkit.datamodel.LayoutFile;

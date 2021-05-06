@@ -97,7 +97,7 @@ class CacheLocationAnalyzer(general.AndroidComponentAnalyzer):
                     attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, general.MODULE_NAME,
                         abstractFile.getName() + " Location History"))
 
-                    artifact = abstractFile.newDataArtifact(BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_BOOKMARK), attributes)
+                    artifact = abstractFile.newDataArtifact(BlackboardArtifact.Type(BlackboardArtifact.Type.TSK_GPS_BOOKMARK), attributes)
                     #Not storing these for now.
                     #    artifact.addAttribute(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_VALUE.getTypeID(), AndroidModuleFactorymodule.moduleName, accuracy))
                     #    artifact.addAttribute(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_COMMENT.getTypeID(), AndroidModuleFactorymodule.moduleName, confidence))

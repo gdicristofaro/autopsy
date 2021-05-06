@@ -26,7 +26,7 @@ import org.openide.nodes.Sheet;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.datamodel.NodeProperty;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_MESSAGE;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TEXT;
 import org.sleuthkit.datamodel.TskCoreException;

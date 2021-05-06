@@ -479,7 +479,7 @@ public class CallLogArtifactViewer extends javax.swing.JPanel implements Artifac
     public boolean isSupported(BlackboardArtifact artifact) {
 
         return (artifact != null)
-                && (artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG.getTypeID());
+                && (artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_CALLLOG.getTypeID());
     }
 
     /**

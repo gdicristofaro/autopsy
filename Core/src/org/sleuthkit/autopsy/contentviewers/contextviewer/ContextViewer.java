@@ -38,7 +38,7 @@ import org.sleuthkit.autopsy.corecomponentinterfaces.DataContentViewer;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_ASSOCIATED_OBJECT;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -315,7 +315,7 @@ public final class ContextViewer extends javax.swing.JPanel implements DataConte
      */
     private void addAssociatedArtifactToPanel(BlackboardArtifact artifact) throws TskCoreException {
 
-        if (BlackboardArtifact.ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT.getTypeID() == artifact.getArtifactTypeID()) {
+        if (BlackboardArtifact.Type.TSK_ASSOCIATED_OBJECT.getTypeID() == artifact.getArtifactTypeID()) {
             BlackboardAttribute associatedArtifactAttribute = artifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT));
             if (associatedArtifactAttribute != null) {
                 long artifactId = associatedArtifactAttribute.getValueLong();
@@ -341,27 +341,27 @@ public final class ContextViewer extends javax.swing.JPanel implements DataConte
     })
     private void addArtifactToPanels(BlackboardArtifact associatedArtifact) throws TskCoreException {
         Long dateTime = getArtifactDateTime(associatedArtifact);
-        if (BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.getTypeID() == associatedArtifact.getArtifactTypeID()
-                || BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID() == associatedArtifact.getArtifactTypeID()) {
+        if (BlackboardArtifact.Type.TSK_MESSAGE.getTypeID() == associatedArtifact.getArtifactTypeID()
+                || BlackboardArtifact.Type.TSK_EMAIL_MSG.getTypeID() == associatedArtifact.getArtifactTypeID()) {
             String sourceName = Bundle.ContextViewer_attachmentSource();
             String sourceText = msgArtifactToAbbreviatedString(associatedArtifact);
             ContextSourcePanel sourcePanel = new ContextSourcePanel(sourceName, sourceText, associatedArtifact, dateTime);
             contextSourcePanels.add(sourcePanel);
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD.getTypeID() == associatedArtifact.getArtifactTypeID()
-                || BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CACHE.getTypeID() == associatedArtifact.getArtifactTypeID()) {
+        } else if (BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID() == associatedArtifact.getArtifactTypeID()
+                || BlackboardArtifact.Type.TSK_WEB_CACHE.getTypeID() == associatedArtifact.getArtifactTypeID()) {
             String sourceName = Bundle.ContextViewer_downloadSource();
             String sourceText = webDownloadArtifactToString(associatedArtifact);
             ContextSourcePanel sourcePanel = new ContextSourcePanel(sourceName, sourceText, associatedArtifact, dateTime);
             contextSourcePanels.add(sourcePanel);
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_RECENT_OBJECT.getTypeID() == associatedArtifact.getArtifactTypeID()) {
+        } else if (BlackboardArtifact.Type.TSK_RECENT_OBJECT.getTypeID() == associatedArtifact.getArtifactTypeID()) {
             String sourceName = Bundle.ContextViewer_recentDocs();
             String sourceText = recentDocArtifactToString(associatedArtifact);
             ContextUsagePanel usagePanel = new ContextUsagePanel(sourceName, sourceText, associatedArtifact, dateTime);        
             contextUsagePanels.add(usagePanel);
             
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_PROG_RUN.getTypeID() == associatedArtifact.getArtifactTypeID()) {
+        } else if (BlackboardArtifact.Type.TSK_PROG_RUN.getTypeID() == associatedArtifact.getArtifactTypeID()) {
             String sourceName = Bundle.ContextViewer_programExecution();
             String sourceText = programExecArtifactToString(associatedArtifact);
             ContextUsagePanel usagePanel = new ContextUsagePanel(sourceName, sourceText, associatedArtifact, dateTime);        
@@ -390,8 +390,8 @@ public final class ContextViewer extends javax.swing.JPanel implements DataConte
         StringBuilder sb = new StringBuilder(ARTIFACT_STR_MAX_LEN);
         Map<BlackboardAttribute.ATTRIBUTE_TYPE, BlackboardAttribute> attributesMap = getAttributesMap(artifact);
 
-        if (BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD.getTypeID() == artifact.getArtifactTypeID()
-                || BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CACHE.getTypeID() == artifact.getArtifactTypeID()) {
+        if (BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID() == artifact.getArtifactTypeID()
+                || BlackboardArtifact.Type.TSK_WEB_CACHE.getTypeID() == artifact.getArtifactTypeID()) {
             appendAttributeString(sb, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL, attributesMap, Bundle.ContextViewer_downloadURL());
             appendAttributeString(sb, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED, attributesMap, Bundle.ContextViewer_downloadedOn());
         }
@@ -418,7 +418,7 @@ public final class ContextViewer extends javax.swing.JPanel implements DataConte
         
         BlackboardAttribute attribute = attributesMap.get(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME);
         
-        if (BlackboardArtifact.ARTIFACT_TYPE.TSK_RECENT_OBJECT.getTypeID() == artifact.getArtifactTypeID()) {
+        if (BlackboardArtifact.Type.TSK_RECENT_OBJECT.getTypeID() == artifact.getArtifactTypeID()) {
             if (attribute != null && attribute.getValueLong() > 0) {
                 appendAttributeString(sb, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, attributesMap, Bundle.ContextViewer_on());
             } else {
@@ -448,7 +448,7 @@ public final class ContextViewer extends javax.swing.JPanel implements DataConte
         
         BlackboardAttribute attribute = attributesMap.get(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME);
         
-        if (BlackboardArtifact.ARTIFACT_TYPE.TSK_PROG_RUN.getTypeID() == artifact.getArtifactTypeID()) {
+        if (BlackboardArtifact.Type.TSK_PROG_RUN.getTypeID() == artifact.getArtifactTypeID()) {
             if (attribute != null && attribute.getValueLong() > 0) {
                 appendAttributeString(sb, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, attributesMap, Bundle.ContextViewer_runOn());
             } else {
@@ -478,12 +478,12 @@ public final class ContextViewer extends javax.swing.JPanel implements DataConte
         StringBuilder sb = new StringBuilder(ARTIFACT_STR_MAX_LEN);
         Map<BlackboardAttribute.ATTRIBUTE_TYPE, BlackboardAttribute> attributesMap = getAttributesMap(artifact);
 
-        if (BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.getTypeID() == artifact.getArtifactTypeID()) {
+        if (BlackboardArtifact.Type.TSK_MESSAGE.getTypeID() == artifact.getArtifactTypeID()) {
             sb.append(Bundle.ContextViewer_message()).append(' ');
             appendAttributeString(sb, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM, attributesMap, Bundle.ContextViewer_messageFrom());
             appendAttributeString(sb, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, attributesMap, Bundle.ContextViewer_messageTo());
             appendAttributeString(sb, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, attributesMap, Bundle.ContextViewer_messageOn());
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID() == artifact.getArtifactTypeID()) {
+        } else if (BlackboardArtifact.Type.TSK_EMAIL_MSG.getTypeID() == artifact.getArtifactTypeID()) {
             sb.append(Bundle.ContextViewer_email()).append(' ');
             appendAttributeString(sb, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL_FROM, attributesMap, Bundle.ContextViewer_messageFrom());
             appendAttributeString(sb, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL_TO, attributesMap, Bundle.ContextViewer_messageTo());
@@ -560,10 +560,10 @@ public final class ContextViewer extends javax.swing.JPanel implements DataConte
     private Long getArtifactDateTime(BlackboardArtifact artifact) throws TskCoreException {
         BlackboardAttribute attribute =  artifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME));
         
-        if (BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID() == artifact.getArtifactTypeID()) {
+        if (BlackboardArtifact.Type.TSK_EMAIL_MSG.getTypeID() == artifact.getArtifactTypeID()) {
             attribute =  artifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_SENT));
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD.getTypeID() == artifact.getArtifactTypeID()
-                || BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CACHE.getTypeID() == artifact.getArtifactTypeID()) {
+        } else if (BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID() == artifact.getArtifactTypeID()
+                || BlackboardArtifact.Type.TSK_WEB_CACHE.getTypeID() == artifact.getArtifactTypeID()) {
             attribute =  artifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED));
         }
         return (attribute != null ? attribute.getValueLong() : null);

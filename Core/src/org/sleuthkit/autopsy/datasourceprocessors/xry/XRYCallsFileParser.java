@@ -315,8 +315,8 @@ final class XRYCallsFileParser extends AbstractSingleEntityParser {
 
             if (!otherAttributes.isEmpty()) {
                 BlackboardArtifact artifact = (parent instanceof AbstractFile)
-                        ? ((AbstractFile) parent).newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG), otherAttributes) 
-                        : parent.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG), otherAttributes, null);
+                        ? ((AbstractFile) parent).newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.Type.TSK_CALLLOG), otherAttributes) 
+                        : parent.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.Type.TSK_CALLLOG), otherAttributes, null);
                         
                 currentCase.getBlackboard().postArtifact(artifact, PARSER_NAME);
             }

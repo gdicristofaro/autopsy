@@ -104,14 +104,14 @@ final class EncryptionDetectionDataSourceIngestModule implements DataSourceInges
                             return ProcessResult.OK;
                         }
                         if (BitlockerDetection.isBitlockerVolume(volume)) {
-                            return flagVolume(volume, BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED, Bundle.EncryptionDetectionDataSourceIngestModule_artifactComment_bitlocker());
+                            return flagVolume(volume, BlackboardArtifact.Type.TSK_ENCRYPTION_DETECTED, Bundle.EncryptionDetectionDataSourceIngestModule_artifactComment_bitlocker());
                         }
 
                         if (context.dataSourceIngestIsCancelled()) {
                             return ProcessResult.OK;
                         }
                         if (isVolumeEncrypted(volume)) {
-                            return flagVolume(volume, BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_SUSPECTED, String.format(Bundle.EncryptionDetectionDataSourceIngestModule_artifactComment_suspected(), calculatedEntropy));
+                            return flagVolume(volume, BlackboardArtifact.Type.TSK_ENCRYPTION_SUSPECTED, String.format(Bundle.EncryptionDetectionDataSourceIngestModule_artifactComment_suspected(), calculatedEntropy));
                         }
                     }
                     // Update progress bar
@@ -184,7 +184,7 @@ final class EncryptionDetectionDataSourceIngestModule implements DataSourceInges
                 detailsSb.append(volume.getParent().getUniquePath());
             }
             detailsSb.append(volume.getName());
-            if (artifactType.equals(BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_SUSPECTED)) {
+            if (artifactType.equals(BlackboardArtifact.Type.TSK_ENCRYPTION_SUSPECTED)) {
                 detailsSb.append("<br/>\nEntropy: ").append(calculatedEntropy);
             }
 

@@ -87,7 +87,7 @@ import org.sleuthkit.autopsy.timeline.zooming.TimeUnits;
 import org.sleuthkit.autopsy.timeline.zooming.EventsModelParams;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_HASHSET_HIT;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TimelineEventType;
 import org.sleuthkit.datamodel.TimelineFilter.EventTypeFilter;

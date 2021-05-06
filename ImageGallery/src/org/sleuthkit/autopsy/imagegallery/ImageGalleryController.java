@@ -796,9 +796,9 @@ public final class ImageGalleryController {
                     ModuleDataEvent artifactAddedEvent = (ModuleDataEvent) event.getOldValue();
                     if (CollectionUtils.isNotEmpty(artifactAddedEvent.getArtifacts())) {
                         for (BlackboardArtifact art : artifactAddedEvent.getArtifacts()) {
-                            if (artifactAddedEvent.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_METADATA_EXIF.getTypeID()) {
+                            if (artifactAddedEvent.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_METADATA_EXIF.getTypeID()) {
                                 drawableDB.addExifCache(art.getObjectID());
-                            } else if (artifactAddedEvent.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID()) {
+                            } else if (artifactAddedEvent.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_HASHSET_HIT.getTypeID()) {
                                 drawableDB.addHashSetCache(art.getObjectID());
                             }
                         }

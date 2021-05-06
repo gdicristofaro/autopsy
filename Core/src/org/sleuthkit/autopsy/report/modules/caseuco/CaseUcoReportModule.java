@@ -51,7 +51,6 @@ import org.sleuthkit.caseuco.CaseUcoExporter;
 import org.sleuthkit.caseuco.ContentNotExportableException;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.DataSource;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -209,7 +208,7 @@ public final class CaseUcoReportModule implements GeneralReportModule {
                 // Write all standard artifacts that are contained within the 
                 // selected data sources.
                 for (ARTIFACT_TYPE artType : currentCase.getSleuthkitCase().getBlackboardArtifactTypesInUse()) {
-                    if(artType.equals(BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT)) {
+                    if(artType.equals(BlackboardArtifact.Type.TSK_KEYWORD_HIT)) {
                         // Keyword hits cannot be represented in CASE.
                         continue;
                     }

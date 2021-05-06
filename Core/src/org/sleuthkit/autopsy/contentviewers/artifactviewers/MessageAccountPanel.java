@@ -305,7 +305,7 @@ final class MessageAccountPanel extends JPanel {
          * @param personaAccount
          */
         AccountContainer(Account account, PersonaAccount personaAccount, BlackboardArtifact contactArtifact) throws TskCoreException {
-            if (contactArtifact != null && contactArtifact.getArtifactTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT.getTypeID()) {
+            if (contactArtifact != null && contactArtifact.getArtifactTypeID() != BlackboardArtifact.Type.TSK_CONTACT.getTypeID()) {
                 throw new IllegalArgumentException("Failed to create AccountContainer object, passed in artifact was not a TSK_CONTACT");
             }
 

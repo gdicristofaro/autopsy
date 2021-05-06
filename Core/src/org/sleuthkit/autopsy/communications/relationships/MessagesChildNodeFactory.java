@@ -90,8 +90,8 @@ public class MessagesChildNodeFactory extends ChildFactory<BlackboardArtifact>{
                 BlackboardArtifact bba = (BlackboardArtifact) content;
                 BlackboardArtifact.ARTIFACT_TYPE fromID = BlackboardArtifact.ARTIFACT_TYPE.fromID(bba.getArtifactTypeID());
 
-                if (fromID != BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG 
-                        && fromID != BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE) {
+                if (fromID != BlackboardArtifact.Type.TSK_EMAIL_MSG 
+                        && fromID != BlackboardArtifact.Type.TSK_MESSAGE) {
                     continue;
                 }
 

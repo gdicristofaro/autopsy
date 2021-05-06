@@ -26,7 +26,6 @@ import java.util.Map;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 
 /**

@@ -43,7 +43,6 @@ import org.sleuthkit.autopsy.discovery.search.DiscoveryEventUtils;
 import org.sleuthkit.autopsy.discovery.search.SearchData.Type;
 import static org.sleuthkit.autopsy.discovery.search.SearchData.Type.DOMAIN;
 import org.sleuthkit.autopsy.discovery.search.SearchFiltering.ArtifactTypeFilter;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 
 /**
  * Create a dialog for displaying the Discovery results.

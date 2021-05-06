@@ -78,7 +78,6 @@ import javax.imageio.ImageIO;
 import javax.swing.SwingUtilities;
 import org.jxmapviewer.painter.CompoundPainter;
 import org.jxmapviewer.painter.Painter;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 
 /**
  * The map panel. This panel contains the jxmapviewer MapViewer

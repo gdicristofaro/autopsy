@@ -46,7 +46,6 @@ import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.TskData;
 import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepository;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 
 /**
  * Run various filters to return a subset of Results from the current case.
@@ -809,7 +808,7 @@ public class SearchFiltering {
             String hashSetPart = concatenateNamesForSQL(setNames);
 
             String queryStr = "(obj_id IN (SELECT obj_id from blackboard_artifacts WHERE artifact_id IN "
-                    + "(SELECT artifact_id FROM blackboard_attributes WHERE artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID()
+                    + "(SELECT artifact_id FROM blackboard_attributes WHERE artifact_type_id = " + BlackboardArtifact.Type.TSK_HASHSET_HIT.getTypeID()
                     + " AND attribute_type_ID = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID() + " "
                     + "AND (" + hashSetPart + "))))";  // NON-NLS
 
@@ -847,7 +846,7 @@ public class SearchFiltering {
             String intItemSetPart = concatenateNamesForSQL(setNames);
 
             String queryStr = "(obj_id IN (SELECT obj_id from blackboard_artifacts WHERE artifact_id IN "
-                    + "(SELECT artifact_id FROM blackboard_attributes WHERE artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT.getTypeID()
+                    + "(SELECT artifact_id FROM blackboard_attributes WHERE artifact_type_id = " + BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT.getTypeID()
                     + " AND attribute_type_ID = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID() + " "
                     + "AND (" + intItemSetPart + "))))";  // NON-NLS
 
@@ -885,7 +884,7 @@ public class SearchFiltering {
             String objTypePart = concatenateNamesForSQL(typeNames);
 
             String queryStr = "(obj_id IN (SELECT obj_id from blackboard_artifacts WHERE artifact_id IN "
-                    + "(SELECT artifact_id FROM blackboard_attributes WHERE artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_OBJECT_DETECTED.getTypeID()
+                    + "(SELECT artifact_id FROM blackboard_attributes WHERE artifact_type_id = " + BlackboardArtifact.Type.TSK_OBJECT_DETECTED.getTypeID()
                     + " AND attribute_type_ID = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DESCRIPTION.getTypeID() + " "
                     + "AND (" + objTypePart + "))))";  // NON-NLS
 
@@ -936,7 +935,7 @@ public class SearchFiltering {
             if (scores.contains(Score.INTERESTING)) {
                 // Matches interesting item artifact
                 intItemQueryPart = " (obj_id IN (SELECT obj_id from blackboard_artifacts WHERE artifact_type_id = "
-                        + BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT.getTypeID() + ")) ";
+                        + BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT.getTypeID() + ")) ";
             }
 
             if (scores.contains(Score.NOTABLE) && scores.contains(Score.INTERESTING)) {
@@ -1037,7 +1036,7 @@ public class SearchFiltering {
         public String getWhereClause() {
             return "(obj_id IN (SELECT obj_id from blackboard_artifacts WHERE artifact_id IN "
                     + "(SELECT artifact_id FROM blackboard_attributes WHERE artifact_type_id = "
-                    + BlackboardArtifact.ARTIFACT_TYPE.TSK_USER_CONTENT_SUSPECTED.getTypeID() + ")))";
+                    + BlackboardArtifact.Type.TSK_USER_CONTENT_SUSPECTED.getTypeID() + ")))";
         }
 
         @NbBundle.Messages({

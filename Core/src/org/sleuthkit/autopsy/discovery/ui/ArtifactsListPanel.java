@@ -243,7 +243,7 @@ final class ArtifactsListPanel extends AbstractArtifactListPanel {
         @ThreadConfined(type = ThreadConfined.ThreadType.AWT)
         @Override
         public int getColumnCount() {
-            if (artifactType == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CACHE) {
+            if (artifactType == BlackboardArtifact.Type.TSK_WEB_CACHE) {
                 return 3;
             } else {
                 return 2;
@@ -266,7 +266,7 @@ final class ArtifactsListPanel extends AbstractArtifactListPanel {
         @NbBundle.Messages({"ArtifactsListPanel.value.noValue=No value available."})
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
-            if (columnIndex < 2 || artifactType == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CACHE) {
+            if (columnIndex < 2 || artifactType == BlackboardArtifact.Type.TSK_WEB_CACHE) {
                 final BlackboardArtifact artifact = getArtifactByRow(rowIndex);
                 try {
                     for (BlackboardAttribute bba : artifact.getAttributes()) {
@@ -305,7 +305,7 @@ final class ArtifactsListPanel extends AbstractArtifactListPanel {
             if (columnIndex == 0 && bba.getAttributeType().getTypeID() == BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED.getTypeID()) {
                 return TimeUtilities.epochToTime(bba.getValueLong(), ContentUtils.getTimeZone(artifact));
             } else if (columnIndex == 1) {
-                if (artifactType == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD || artifactType == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CACHE) {
+                if (artifactType == BlackboardArtifact.Type.TSK_WEB_DOWNLOAD || artifactType == BlackboardArtifact.Type.TSK_WEB_CACHE) {
                     if (bba.getAttributeType().getTypeID() == BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH_ID.getTypeID()) {
                         return Case.getCurrentCase().getSleuthkitCase().getAbstractFileById(bba.getValueLong()).getName();
                     } else if (bba.getAttributeType().getTypeID() == BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH.getTypeID()) {

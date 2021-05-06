@@ -30,7 +30,6 @@ import org.sleuthkit.autopsy.geolocation.datamodel.Area;
 import org.sleuthkit.autopsy.geolocation.datamodel.Track;
 import org.sleuthkit.autopsy.geolocation.datamodel.Waypoint;
 import org.sleuthkit.autopsy.geolocation.datamodel.WaypointBuilder;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 
 /**
  * The business logic for filtering waypoints.

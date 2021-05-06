@@ -99,7 +99,7 @@ final public class ContactCache {
             String eventType = pce.getPropertyName();
             if (eventType.equals(DATA_ADDED.toString())) {
                 ModuleDataEvent eventData = (ModuleDataEvent) pce.getOldValue();
-                if (eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT.getTypeID()) {
+                if (eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_CONTACT.getTypeID()) {
                     invalidateCache();
                 }
             }
@@ -137,7 +137,7 @@ final public class ContactCache {
      */
     private Map<String, List<BlackboardArtifact>> buildMap() throws TskCoreException, SQLException {
         Map<String, List<BlackboardArtifact>> acctMap = new HashMap<>();
-        List<BlackboardArtifact> contactList = Case.getCurrentCase().getSleuthkitCase().getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT);
+        List<BlackboardArtifact> contactList = Case.getCurrentCase().getSleuthkitCase().getBlackboardArtifacts(BlackboardArtifact.Type.TSK_CONTACT);
 
         for (BlackboardArtifact contactArtifact : contactList) {
             List<BlackboardAttribute> contactAttributes = contactArtifact.getAttributes();

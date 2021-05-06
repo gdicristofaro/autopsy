@@ -77,7 +77,7 @@ public class GeneralPurposeArtifactViewer extends AbstractArtifactDetailsPanel i
         BlackboardAttribute.ATTRIBUTE_TYPE.TSK_VALUE.getTypeID(), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TEXT.getTypeID(),
         BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH.getTypeID(), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH_ID.getTypeID(),
         BlackboardAttribute.ATTRIBUTE_TYPE.TSK_HEADERS.getTypeID()};
-    private static final List<Integer> TYPES_WITH_DATE_SECTION = Arrays.asList(new Integer[]{BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_COOKIE.getTypeID()});
+    private static final List<Integer> TYPES_WITH_DATE_SECTION = Arrays.asList(new Integer[]{BlackboardArtifact.Type.TSK_WEB_COOKIE.getTypeID()});
     private final GridBagLayout gridBagLayout = new GridBagLayout();
     private final GridBagConstraints gridBagConstraints = new GridBagConstraints();
     private final Map<Integer, Integer[]> orderingMap = new HashMap<>();
@@ -99,37 +99,37 @@ public class GeneralPurposeArtifactViewer extends AbstractArtifactDetailsPanel i
      * the map for lookup.
      */
     private void addOrderings() {
-        orderingMap.put(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_BOOKMARK.getTypeID(), new Integer[]{BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME.getTypeID(),
+        orderingMap.put(BlackboardArtifact.Type.TSK_WEB_BOOKMARK.getTypeID(), new Integer[]{BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TITLE.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED.getTypeID(), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_START.getTypeID(), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_END.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN.getTypeID(), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME.getTypeID()});
-        orderingMap.put(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CACHE.getTypeID(), new Integer[]{BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN.getTypeID(),
+        orderingMap.put(BlackboardArtifact.Type.TSK_WEB_CACHE.getTypeID(), new Integer[]{BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED.getTypeID(), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_START.getTypeID(), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_END.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_HEADERS.getTypeID(), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME.getTypeID()});
-        orderingMap.put(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD.getTypeID(), new Integer[]{BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN.getTypeID(),
+        orderingMap.put(BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID(), new Integer[]{BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED.getTypeID(), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_START.getTypeID(), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_END.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME.getTypeID()});
-        orderingMap.put(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_SEARCH_QUERY.getTypeID(), new Integer[]{BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TEXT.getTypeID(),
+        orderingMap.put(BlackboardArtifact.Type.TSK_WEB_SEARCH_QUERY.getTypeID(), new Integer[]{BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TEXT.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED.getTypeID(), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_START.getTypeID(), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_END.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME.getTypeID()});
-        orderingMap.put(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY.getTypeID(), new Integer[]{BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TITLE.getTypeID(),
+        orderingMap.put(BlackboardArtifact.Type.TSK_WEB_HISTORY.getTypeID(), new Integer[]{BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TITLE.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_USER_NAME.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED.getTypeID(), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_START.getTypeID(), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_END.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN.getTypeID(), BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_REFERRER.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME.getTypeID()});
-        orderingMap.put(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_COOKIE.getTypeID(), new Integer[]{BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN.getTypeID(),
+        orderingMap.put(BlackboardArtifact.Type.TSK_WEB_COOKIE.getTypeID(), new Integer[]{BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME.getTypeID(),
             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_VALUE.getTypeID(),
@@ -188,15 +188,15 @@ public class GeneralPurposeArtifactViewer extends AbstractArtifactDetailsPanel i
     @Override
     public boolean isSupported(BlackboardArtifact artifact) {
         return (artifact != null)
-                && (artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY.getTypeID()
-                || artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_SEARCH_QUERY.getTypeID()
-                || artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_COOKIE.getTypeID()
-                || artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_BOOKMARK.getTypeID()
-                || artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD.getTypeID()
-                || artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CACHE.getTypeID()
-                || artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_ACCOUNT_TYPE.getTypeID()
-                || artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_FORM_ADDRESS.getTypeID()
-                || artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_FORM_AUTOFILL.getTypeID());
+                && (artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_WEB_HISTORY.getTypeID()
+                || artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_WEB_SEARCH_QUERY.getTypeID()
+                || artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_WEB_COOKIE.getTypeID()
+                || artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_WEB_BOOKMARK.getTypeID()
+                || artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID()
+                || artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_WEB_CACHE.getTypeID()
+                || artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_WEB_ACCOUNT_TYPE.getTypeID()
+                || artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_WEB_FORM_ADDRESS.getTypeID()
+                || artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_WEB_FORM_AUTOFILL.getTypeID());
     }
     
     @NbBundle.Messages({"GeneralPurposeArtifactViewer.details.attrHeader=Details",
@@ -262,12 +262,12 @@ public class GeneralPurposeArtifactViewer extends AbstractArtifactDetailsPanel i
                 if (attrList != null) {
                     for (BlackboardAttribute bba : attrList) {
                         if (bba.getAttributeType().getTypeName().startsWith("TSK_DATETIME")) {
-                            if (artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_SEARCH_QUERY.getTypeID()) {
+                            if (artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_WEB_SEARCH_QUERY.getTypeID()) {
                                 addNameValueRow(Bundle.GeneralPurposeArtifactViewer_dates_time(), TimeUtilities.epochToTime(bba.getValueLong(), ContentUtils.getTimeZone(artifact)));
                             } else {
                                 addNameValueRow(bba.getAttributeType().getDisplayName(), TimeUtilities.epochToTime(bba.getValueLong(), ContentUtils.getTimeZone(artifact)));
                             }
-                        } else if (bba.getAttributeType().getTypeID() == BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TEXT.getTypeID() && artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_SEARCH_QUERY.getTypeID()) {
+                        } else if (bba.getAttributeType().getTypeID() == BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TEXT.getTypeID() && artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_WEB_SEARCH_QUERY.getTypeID()) {
                             addNameValueRow(Bundle.GeneralPurposeArtifactViewer_term_label(), bba.getDisplayString());
                         } else if (bba.getAttributeType().getTypeID() == BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH.getTypeID()) {
                             String displayString = bba.getDisplayString();
@@ -281,7 +281,7 @@ public class GeneralPurposeArtifactViewer extends AbstractArtifactDetailsPanel i
                     }
                 }
             }
-            if (TYPES_WITH_DATE_SECTION.contains(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_COOKIE.getTypeID())) {
+            if (TYPES_WITH_DATE_SECTION.contains(BlackboardArtifact.Type.TSK_WEB_COOKIE.getTypeID())) {
                 boolean headerAdded = false;
                 headerAdded = addDates(Bundle.GeneralPurposeArtifactViewer_dates_created(), attributeMap.remove(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED.getTypeID()), headerAdded);
                 headerAdded = addDates(Bundle.GeneralPurposeArtifactViewer_dates_start(), attributeMap.remove(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_START.getTypeID()), headerAdded);
@@ -353,17 +353,17 @@ public class GeneralPurposeArtifactViewer extends AbstractArtifactDetailsPanel i
         "GeneralPurposeArtifactViewer.details.cookieHeader=Cookie Details",})
     private JTextPane addDetailsHeader(int artifactTypeId) {
         String header;
-        if (artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY.getTypeID()) {
+        if (artifactTypeId == BlackboardArtifact.Type.TSK_WEB_HISTORY.getTypeID()) {
             header = Bundle.GeneralPurposeArtifactViewer_details_historyHeader();
-        } else if (artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_BOOKMARK.getTypeID()) {
+        } else if (artifactTypeId == BlackboardArtifact.Type.TSK_WEB_BOOKMARK.getTypeID()) {
             header = Bundle.GeneralPurposeArtifactViewer_details_bookmarkHeader();
-        } else if (artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CACHE.getTypeID()) {
+        } else if (artifactTypeId == BlackboardArtifact.Type.TSK_WEB_CACHE.getTypeID()) {
             header = Bundle.GeneralPurposeArtifactViewer_details_cachedHeader();
-        } else if (artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_COOKIE.getTypeID()) {
+        } else if (artifactTypeId == BlackboardArtifact.Type.TSK_WEB_COOKIE.getTypeID()) {
             header = Bundle.GeneralPurposeArtifactViewer_details_cookieHeader();
-        } else if (artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD.getTypeID()) {
+        } else if (artifactTypeId == BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID()) {
             header = Bundle.GeneralPurposeArtifactViewer_details_downloadHeader();
-        } else if (artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_SEARCH_QUERY.getTypeID()) {
+        } else if (artifactTypeId == BlackboardArtifact.Type.TSK_WEB_SEARCH_QUERY.getTypeID()) {
             header = Bundle.GeneralPurposeArtifactViewer_details_searchHeader();
         } else {
             header = Bundle.GeneralPurposeArtifactViewer_details_attrHeader();

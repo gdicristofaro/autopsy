@@ -32,7 +32,6 @@ import org.sleuthkit.autopsy.ingest.DataSourceIngestModuleProgress;
 import org.sleuthkit.autopsy.ingest.IngestJobContext;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -49,8 +48,8 @@ class ExtractWebAccountType extends Extract {
     }
 
     private static final List<BlackboardArtifact.Type> QUERY_ARTIFACTS = Arrays.asList(
-            new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY),
-            new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_SERVICE_ACCOUNT)
+            new BlackboardArtifact.Type(BlackboardArtifact.Type.TSK_WEB_HISTORY),
+            new BlackboardArtifact.Type(BlackboardArtifact.Type.TSK_SERVICE_ACCOUNT)
     );
 
     private void extractDomainRoles(Content dataSource, IngestJobContext context) {
@@ -298,7 +297,7 @@ class ExtractWebAccountType extends Extract {
                             NbBundle.getMessage(this.getClass(),
                                     "ExtractWebAccountType.parentModuleName"), role.getUrl()));
 
-                    artifactList.add(createArtifactWithAttributes(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_ACCOUNT_TYPE, file, bbattributes));
+                    artifactList.add(createArtifactWithAttributes(BlackboardArtifact.Type.TSK_WEB_ACCOUNT_TYPE, file, bbattributes));
                 }
                 
                 if (!context.dataSourceIngestIsCancelled()) {

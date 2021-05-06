@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.sleuthkit.autopsy.directorytree.DirectoryTreeTopComponent;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_ASSOCIATED_OBJECT;
 
 /**
  * Displays additional context for the selected file, such as its source, and

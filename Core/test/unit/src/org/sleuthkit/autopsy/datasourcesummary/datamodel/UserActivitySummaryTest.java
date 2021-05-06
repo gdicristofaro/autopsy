@@ -55,7 +55,6 @@ import org.sleuthkit.autopsy.texttranslation.TextTranslationService;
 import org.sleuthkit.autopsy.texttranslation.TranslationException;
 import org.sleuthkit.datamodel.Blackboard;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.DataSource;

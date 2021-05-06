@@ -72,14 +72,14 @@ public final class MapWaypoint extends KdTree.XYZPoint implements org.jxmapviewe
     private static final Map<Integer, Color> artifactTypesToColors = new HashMap<>();
 
     static {
-        artifactTypesToColors.put(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_BOOKMARK.getTypeID(), Color.BLUE);
-        artifactTypesToColors.put(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_LAST_KNOWN_LOCATION.getTypeID(), Color.RED);
-        artifactTypesToColors.put(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_ROUTE.getTypeID(), Color.CYAN);
-        artifactTypesToColors.put(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_SEARCH.getTypeID(), Color.GREEN);
-        artifactTypesToColors.put(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK.getTypeID(), Color.ORANGE);
-        artifactTypesToColors.put(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACKPOINT.getTypeID(), Color.ORANGE);
-        artifactTypesToColors.put(BlackboardArtifact.ARTIFACT_TYPE.TSK_METADATA_EXIF.getTypeID(), Color.MAGENTA);
-        artifactTypesToColors.put(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA.getTypeID(), new Color(0x8a2be2)); // Blue violet
+        artifactTypesToColors.put(BlackboardArtifact.Type.TSK_GPS_BOOKMARK.getTypeID(), Color.BLUE);
+        artifactTypesToColors.put(BlackboardArtifact.Type.TSK_GPS_LAST_KNOWN_LOCATION.getTypeID(), Color.RED);
+        artifactTypesToColors.put(BlackboardArtifact.Type.TSK_GPS_ROUTE.getTypeID(), Color.CYAN);
+        artifactTypesToColors.put(BlackboardArtifact.Type.TSK_GPS_SEARCH.getTypeID(), Color.GREEN);
+        artifactTypesToColors.put(BlackboardArtifact.Type.TSK_GPS_TRACK.getTypeID(), Color.ORANGE);
+        artifactTypesToColors.put(BlackboardArtifact.Type.TSK_GPS_TRACKPOINT.getTypeID(), Color.ORANGE);
+        artifactTypesToColors.put(BlackboardArtifact.Type.TSK_METADATA_EXIF.getTypeID(), Color.MAGENTA);
+        artifactTypesToColors.put(BlackboardArtifact.Type.TSK_GPS_AREA.getTypeID(), new Color(0x8a2be2)); // Blue violet
     }
 
     private final Waypoint dataModelWaypoint;

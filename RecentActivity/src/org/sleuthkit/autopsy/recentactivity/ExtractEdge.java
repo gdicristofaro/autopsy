@@ -52,9 +52,9 @@ import org.sleuthkit.autopsy.ingest.DataSourceIngestModuleProgress;
 import org.sleuthkit.autopsy.ingest.IngestJobContext;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_BOOKMARK;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_COOKIE;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_BOOKMARK;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_COOKIE;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_HISTORY;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.TskCoreException;
 

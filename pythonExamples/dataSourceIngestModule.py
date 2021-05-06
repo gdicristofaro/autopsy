@@ -142,7 +142,7 @@ class SampleJythonDataSourceIngestModule(DataSourceIngestModule):
             # artfiact.  Refer to the developer docs for other examples.
             attrs = ArrayList()
             attrs.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME, SampleJythonDataSourceIngestModuleFactory.moduleName, "Test file"))
-            art = file.newAnalysisResult(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT, Score.SCORE_UNKNOWN, None, None, None, attrs)
+            art = file.newAnalysisResult(BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT, Score.SCORE_UNKNOWN, None, None, None, attrs)
 
             try:
                 # index the artifact for keyword search

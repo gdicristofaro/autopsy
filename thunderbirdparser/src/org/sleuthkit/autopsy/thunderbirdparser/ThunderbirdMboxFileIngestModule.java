@@ -243,7 +243,7 @@ public final class ThunderbirdMboxFileIngestModule implements FileIngestModule {
                     try {
 
                     BlackboardArtifact artifact = abstractFile.newAnalysisResult(
-                            new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED), 
+                            new BlackboardArtifact.Type(BlackboardArtifact.Type.TSK_ENCRYPTION_DETECTED), 
                             Score.SCORE_UNKNOWN, null, null, null, Arrays.asList(
                                 new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_NAME, 
                                         EmailParserModuleFactory.getModuleName(), 
@@ -769,7 +769,7 @@ public final class ThunderbirdMboxFileIngestModule implements FileIngestModule {
             }
 
             bbart = abstractFile.newDataArtifact(
-                    new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG), 
+                    new BlackboardArtifact.Type(BlackboardArtifact.Type.TSK_EMAIL_MSG), 
                     bbattributes);
 
             if (context.fileIngestIsCancelled()) {

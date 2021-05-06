@@ -83,7 +83,7 @@ final class CallLogsChildNodeFactory extends ChildFactory<CallLogNodeKey>{
             BlackboardArtifact bba = (BlackboardArtifact) content;
             BlackboardArtifact.ARTIFACT_TYPE fromID = BlackboardArtifact.ARTIFACT_TYPE.fromID(bba.getArtifactTypeID());
 
-            if ( fromID == BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG) { 
+            if ( fromID == BlackboardArtifact.Type.TSK_CALLLOG) { 
                 
                 String deviceID = "";
                 try {

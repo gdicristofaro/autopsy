@@ -162,7 +162,7 @@ class ContactsDbIngestModule(DataSourceIngestModule):
                 
                 
                 # Make an artifact on the blackboard, TSK_CONTACT and give it attributes for each of the fields
-                art = file.newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT)
+                art = file.newArtifact(BlackboardArtifact.Type.TSK_CONTACT)
                 attributes = ArrayList()
 
                 attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME_PERSON.getTypeID(), 
@@ -184,7 +184,7 @@ class ContactsDbIngestModule(DataSourceIngestModule):
             # Fire an event to notify the UI and others that there are new artifacts
             IngestServices.getInstance().fireModuleDataEvent(
                 ModuleDataEvent(ContactsDbIngestModuleFactory.moduleName, 
-                BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT, None))
+                BlackboardArtifact.Type.TSK_CONTACT, None))
                 
             # Clean up
             stmt.close()

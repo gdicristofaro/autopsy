@@ -21,7 +21,6 @@ package org.sleuthkit.autopsy.discovery.search;
 import java.util.Objects;
 import org.openide.util.NbBundle;
 import org.sleuthkit.datamodel.SleuthkitCase;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 
 /**
  * Requests artifacts of a specific type and domain from a given Case.

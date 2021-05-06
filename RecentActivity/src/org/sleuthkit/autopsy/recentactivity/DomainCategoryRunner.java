@@ -44,7 +44,6 @@ import org.sleuthkit.autopsy.ingest.IngestJobContext;
 import org.sleuthkit.autopsy.ingest.IngestModule;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.Content;
@@ -90,12 +89,12 @@ class DomainCategoryRunner extends Extract {
 
     // the artifact types to be searched for domain categories
     private static final List<BlackboardArtifact.Type> DOMAIN_CATEGORIZATION_TYPES = Stream.of(
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_BOOKMARK,
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CACHE,
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_COOKIE,
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD,
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY,
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_SEARCH_QUERY)
+            BlackboardArtifact.Type.TSK_WEB_BOOKMARK,
+            BlackboardArtifact.Type.TSK_WEB_CACHE,
+            BlackboardArtifact.Type.TSK_WEB_COOKIE,
+            BlackboardArtifact.Type.TSK_WEB_DOWNLOAD,
+            BlackboardArtifact.Type.TSK_WEB_HISTORY,
+            BlackboardArtifact.Type.TSK_WEB_SEARCH_QUERY)
             .map(BlackboardArtifact.Type::new)
             .collect(Collectors.toList());
 

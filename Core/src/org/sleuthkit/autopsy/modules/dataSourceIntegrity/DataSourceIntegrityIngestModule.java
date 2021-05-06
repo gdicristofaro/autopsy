@@ -294,7 +294,7 @@ public class DataSourceIntegrityIngestModule implements DataSourceIngestModule {
             if (!verified) {
                 try {
                     BlackboardArtifact verificationFailedArtifact = Case.getCurrentCase().getSleuthkitCase().getBlackboard().newAnalysisResult(
-                            new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_VERIFICATION_FAILED),
+                            new BlackboardArtifact.Type(BlackboardArtifact.Type.TSK_VERIFICATION_FAILED),
                             img.getId(), img.getId(),
                             Score.SCORE_UNKNOWN,
                             null, null, null,

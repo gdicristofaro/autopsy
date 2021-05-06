@@ -392,7 +392,7 @@ public class PortableCaseReportModule implements ReportModule {
         // Copy interesting files and results
         if (!setNames.isEmpty()) {
             try {
-                List<BlackboardArtifact> interestingFiles = currentCase.getSleuthkitCase().getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT);
+                List<BlackboardArtifact> interestingFiles = currentCase.getSleuthkitCase().getBlackboardArtifacts(BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT);
                 for (BlackboardArtifact art : interestingFiles) {
                     // Check for cancellation 
                     if (progressPanel.getStatus() == ReportProgressPanel.ReportStatus.CANCELED) {
@@ -411,7 +411,7 @@ public class PortableCaseReportModule implements ReportModule {
             }
 
             try {
-                List<BlackboardArtifact> interestingResults = currentCase.getSleuthkitCase().getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT);
+                List<BlackboardArtifact> interestingResults = currentCase.getSleuthkitCase().getBlackboardArtifacts(BlackboardArtifact.Type.TSK_INTERESTING_ARTIFACT_HIT);
                 for (BlackboardArtifact art : interestingResults) {
                     // Check for cancellation 
                     if (progressPanel.getStatus() == ReportProgressPanel.ReportStatus.CANCELED) {
@@ -574,9 +574,9 @@ public class PortableCaseReportModule implements ReportModule {
         Multimap<Long, BlackboardArtifact> artifactsWithSetName = ArrayListMultimap.create();
         if (!setNames.isEmpty()) {
             List<BlackboardArtifact> allArtifacts = skCase.getBlackboardArtifacts(
-                    BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT);
+                    BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT);
             allArtifacts.addAll(skCase.getBlackboardArtifacts(
-                    BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT));
+                    BlackboardArtifact.Type.TSK_INTERESTING_ARTIFACT_HIT));
 
             for (BlackboardArtifact bArt : allArtifacts) {
                 BlackboardAttribute setAttr = bArt.getAttribute(
@@ -642,8 +642,8 @@ public class PortableCaseReportModule implements ReportModule {
         // There may not be a case open when configuring report modules for Command Line execution
         // Get all SET_NAMEs from interesting item artifacts
         String innerSelect = "SELECT (value_text) AS set_name FROM blackboard_attributes WHERE (artifact_type_id = '"
-                + BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT.getTypeID() + "' OR artifact_type_id = '"
-                + BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT.getTypeID() + "') AND attribute_type_id = '"
+                + BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT.getTypeID() + "' OR artifact_type_id = '"
+                + BlackboardArtifact.Type.TSK_INTERESTING_ARTIFACT_HIT.getTypeID() + "') AND attribute_type_id = '"
                 + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID() + "'"; // NON-NLS
 
         // Get the count of each SET_NAME

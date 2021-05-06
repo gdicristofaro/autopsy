@@ -103,7 +103,7 @@ class EvalAddressObj extends EvaluatableObject {
                 if ((obj.getAddressValue().getCondition() == null)
                         || (obj.getAddressValue().getCondition() == ConditionTypeEnum.EQUALS)) {
                     List<BlackboardArtifact> arts = sleuthkitCase.getBlackboardArtifacts(
-                            BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT,
+                            BlackboardArtifact.Type.TSK_KEYWORD_HIT,
                             BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD,
                             addressStr);
 
@@ -120,7 +120,7 @@ class EvalAddressObj extends EvaluatableObject {
 
                     // Get all the URL artifacts
                     List<BlackboardArtifact> artList
-                            = sleuthkitCase.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT);
+                            = sleuthkitCase.getBlackboardArtifacts(BlackboardArtifact.Type.TSK_KEYWORD_HIT);
 
                     for (BlackboardArtifact art : artList) {
 

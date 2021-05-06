@@ -38,7 +38,6 @@ import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationAttributeIns
 import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationAttributeInstance.Type;
 import org.sleuthkit.autopsy.corecomponents.DataResultViewerTable;
 import org.sleuthkit.autopsy.coreutils.Logger;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.Tag;

@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.autopsy.datamodel.utils;
 
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 
 /**
  * Utility methods for handling icons

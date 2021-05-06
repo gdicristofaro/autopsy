@@ -130,7 +130,7 @@ class SampleJythonFileIngestModule(FileIngestModule):
             attrs = ArrayList()
             attrs.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME,
                   SampleJythonFileIngestModuleFactory.moduleName, "Text Files"))
-            art = file.newAnalysisResult(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT, Score.SCORE_UNKNOWN, None, None, None, attrs)
+            art = file.newAnalysisResult(BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT, Score.SCORE_UNKNOWN, None, None, None, attrs)
 
 
             try:
@@ -142,12 +142,12 @@ class SampleJythonFileIngestModule(FileIngestModule):
             # Fire an event to notify the UI and others that there is a new artifact
             IngestServices.getInstance().fireModuleDataEvent(
                 ModuleDataEvent(SampleJythonFileIngestModuleFactory.moduleName,
-                    BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT, None))
+                    BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT, None))
 
             # For the example (this wouldn't be needed normally), we'll query the blackboard for data that was added
             # by other modules. We then iterate over its attributes.  We'll just print them, but you would probably
             # want to do something with them.
-            artifactList = file.getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT)
+            artifactList = file.getArtifacts(BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT)
             for artifact in artifactList:
                 attributeList = artifact.getAttributes()
                 for attrib in attributeList:

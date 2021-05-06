@@ -50,7 +50,7 @@ public class CaseDataSourcesSummary {
     public static Map<Long, String> getDataSourceTypes() {
         try {
             SleuthkitCase skCase = Case.getCurrentCaseThrows().getSleuthkitCase();
-            List<BlackboardArtifact> listOfArtifacts = skCase.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_DATA_SOURCE_USAGE);
+            List<BlackboardArtifact> listOfArtifacts = skCase.getBlackboardArtifacts(BlackboardArtifact.Type.TSK_DATA_SOURCE_USAGE);
             Map<Long, String> typeMap = new HashMap<>();
             for (BlackboardArtifact typeArtifact : listOfArtifacts) {
                 BlackboardAttribute descriptionAttr = typeArtifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DESCRIPTION));

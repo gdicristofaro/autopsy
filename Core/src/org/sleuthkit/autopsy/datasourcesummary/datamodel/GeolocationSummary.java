@@ -39,7 +39,6 @@ import org.sleuthkit.autopsy.geolocation.MapWaypoint;
 import org.sleuthkit.autopsy.geolocation.datamodel.GeoLocationDataException;
 import org.sleuthkit.autopsy.geolocation.datamodel.WaypointBuilder;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.DataSource;
 
 /**
@@ -219,14 +218,14 @@ public class GeolocationSummary implements DefaultArtifactUpdateGovernor {
     // taken from GeoFilterPanel: all of the GPS artifact types.
     @SuppressWarnings("deprecation")
     private static final List<ARTIFACT_TYPE> GPS_ARTIFACT_TYPES = Arrays.asList(
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_BOOKMARK,
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_LAST_KNOWN_LOCATION,
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_ROUTE,
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_SEARCH,
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK,
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACKPOINT,
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_METADATA_EXIF,
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA
+            BlackboardArtifact.Type.TSK_GPS_BOOKMARK,
+            BlackboardArtifact.Type.TSK_GPS_LAST_KNOWN_LOCATION,
+            BlackboardArtifact.Type.TSK_GPS_ROUTE,
+            BlackboardArtifact.Type.TSK_GPS_SEARCH,
+            BlackboardArtifact.Type.TSK_GPS_TRACK,
+            BlackboardArtifact.Type.TSK_GPS_TRACKPOINT,
+            BlackboardArtifact.Type.TSK_METADATA_EXIF,
+            BlackboardArtifact.Type.TSK_GPS_AREA
     );
 
     // all GPS types

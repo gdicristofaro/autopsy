@@ -82,7 +82,7 @@ class EvalDomainObj extends EvaluatableObject {
 
             // Get all the URL artifacts
             List<BlackboardArtifact> artList
-                    = sleuthkitCase.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT);
+                    = sleuthkitCase.getBlackboardArtifacts(BlackboardArtifact.Type.TSK_KEYWORD_HIT);
 
             for (BlackboardArtifact art : artList) {
 

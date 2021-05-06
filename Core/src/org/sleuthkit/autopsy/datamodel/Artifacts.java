@@ -57,7 +57,7 @@ import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_HASHSET_HIT;
 import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_INTERESTING_ARTIFACT_HIT;
 import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT;
 import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_GEN_INFO;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_DOWNLOAD_SOURCE;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_DOWNLOAD_SOURCE;
 import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_TL_EVENT;
 import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_ASSOCIATED_OBJECT;
 import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_KEYWORD_HIT;

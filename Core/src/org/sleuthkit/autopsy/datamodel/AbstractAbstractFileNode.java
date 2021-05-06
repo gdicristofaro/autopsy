@@ -448,7 +448,7 @@ public abstract class AbstractAbstractFileNode<T extends AbstractFile> extends A
             description = Bundle.AbstractAbstractFileNode_createSheet_notableFile_description();
         }
         try {
-            if (score == DataResultViewerTable.Score.NO_SCORE && !content.getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT).isEmpty()) {
+            if (score == DataResultViewerTable.Score.NO_SCORE && !content.getArtifacts(BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT).isEmpty()) {
                 score = DataResultViewerTable.Score.INTERESTING_SCORE;
                 description = Bundle.AbstractAbstractFileNode_createSheet_interestingResult_description();
             }

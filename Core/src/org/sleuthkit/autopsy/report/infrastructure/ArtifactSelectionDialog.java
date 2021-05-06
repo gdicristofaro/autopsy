@@ -72,20 +72,20 @@ class ArtifactSelectionDialog extends javax.swing.JDialog {
     private void populateList() {
         try {
             ArrayList<BlackboardArtifact.Type> doNotReport = new ArrayList<>();
-            doNotReport.add(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO.getTypeID(),
-                    BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO.getLabel(),
-                    BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO.getDisplayName()));
-            doNotReport.add(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_TOOL_OUTPUT.getTypeID(),
-                    BlackboardArtifact.ARTIFACT_TYPE.TSK_TOOL_OUTPUT.getLabel(),
-                    BlackboardArtifact.ARTIFACT_TYPE.TSK_TOOL_OUTPUT.getDisplayName())); // output is too unstructured for table review 
+            doNotReport.add(new BlackboardArtifact.Type(BlackboardArtifact.Type.TSK_GEN_INFO.getTypeID(),
+                    BlackboardArtifact.Type.TSK_GEN_INFO.getLabel(),
+                    BlackboardArtifact.Type.TSK_GEN_INFO.getDisplayName()));
+            doNotReport.add(new BlackboardArtifact.Type(BlackboardArtifact.Type.TSK_TOOL_OUTPUT.getTypeID(),
+                    BlackboardArtifact.Type.TSK_TOOL_OUTPUT.getLabel(),
+                    BlackboardArtifact.Type.TSK_TOOL_OUTPUT.getDisplayName())); // output is too unstructured for table review 
             doNotReport.add(new BlackboardArtifact.Type(
-                BlackboardArtifact.ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT.getTypeID(),
-                BlackboardArtifact.ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT.getLabel(),
-                BlackboardArtifact.ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT.getDisplayName()));
+                BlackboardArtifact.Type.TSK_ASSOCIATED_OBJECT.getTypeID(),
+                BlackboardArtifact.Type.TSK_ASSOCIATED_OBJECT.getLabel(),
+                BlackboardArtifact.Type.TSK_ASSOCIATED_OBJECT.getDisplayName()));
             doNotReport.add(new BlackboardArtifact.Type(
-                BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT.getTypeID(),
-                BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT.getLabel(),
-                BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT.getDisplayName()));
+                BlackboardArtifact.Type.TSK_TL_EVENT.getTypeID(),
+                BlackboardArtifact.Type.TSK_TL_EVENT.getLabel(),
+                BlackboardArtifact.Type.TSK_TL_EVENT.getDisplayName()));
             
             artifactTypes = Case.getCurrentCaseThrows().getSleuthkitCase().getArtifactTypesInUse();
             artifactTypes.removeAll(doNotReport);

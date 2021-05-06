@@ -102,7 +102,7 @@ final class AddLogicalImageTask implements Runnable {
         }
     }
 
-    private final static BlackboardArtifact.Type INTERESTING_FILE_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT);
+    private final static BlackboardArtifact.Type INTERESTING_FILE_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT);
 
     private final static Logger LOGGER = Logger.getLogger(AddLogicalImageTask.class.getName());
     private final static String SEARCH_RESULTS_TXT = "SearchResults.txt"; //NON-NLS

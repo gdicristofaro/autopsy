@@ -157,10 +157,10 @@ final class EncryptionDetectionFileIngestModule extends FileIngestModuleAdapter 
                  */
                 String mimeType = fileTypeDetector.getMIMEType(file);
                 if (mimeType.equals("application/octet-stream") && isFileEncryptionSuspected(file)) {
-                    return flagFile(file, BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_SUSPECTED,
+                    return flagFile(file, BlackboardArtifact.Type.TSK_ENCRYPTION_SUSPECTED,
                             String.format(Bundle.EncryptionDetectionFileIngestModule_artifactComment_suspected(), calculatedEntropy));
                 } else if (isFilePasswordProtected(file)) {
-                    return flagFile(file, BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED, Bundle.EncryptionDetectionFileIngestModule_artifactComment_password());
+                    return flagFile(file, BlackboardArtifact.Type.TSK_ENCRYPTION_DETECTED, Bundle.EncryptionDetectionFileIngestModule_artifactComment_password());
                 }
             }
         } catch (ReadContentInputStreamException | SAXException | TikaException | UnsupportedCodecException ex) {
@@ -222,7 +222,7 @@ final class EncryptionDetectionFileIngestModule extends FileIngestModuleAdapter 
              */
             StringBuilder detailsSb = new StringBuilder();
             detailsSb.append("File: ").append(file.getParentPath()).append(file.getName());
-            if (artifactType.equals(BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_SUSPECTED)) {
+            if (artifactType.equals(BlackboardArtifact.Type.TSK_ENCRYPTION_SUSPECTED)) {
                 detailsSb.append("<br/>\nEntropy: ").append(calculatedEntropy);
             }
 

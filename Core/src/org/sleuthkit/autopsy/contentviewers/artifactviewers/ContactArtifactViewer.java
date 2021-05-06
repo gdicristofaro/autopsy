@@ -156,7 +156,7 @@ public class ContactArtifactViewer extends javax.swing.JPanel implements Artifac
     @Override
     public boolean isSupported(BlackboardArtifact artifact) {
         return (artifact != null)
-                && (artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT.getTypeID());
+                && (artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_CONTACT.getTypeID());
     }
 
     /**
@@ -570,7 +570,7 @@ public class ContactArtifactViewer extends javax.swing.JPanel implements Artifac
         }
 
         BlackboardArtifact.ARTIFACT_TYPE artifactType = BlackboardArtifact.ARTIFACT_TYPE.fromID(artifact.getArtifactTypeID());
-        if (artifactType != BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT) {
+        if (artifactType != BlackboardArtifact.Type.TSK_CONTACT) {
             return imageIcon;
         }
 

@@ -252,7 +252,7 @@ class EvalFileObj extends EvaluatableObject {
                             boolean passedTests = true;
 
                             if (obj.isIsMasqueraded() != null) {
-                                List<BlackboardArtifact> arts = file.getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_EXT_MISMATCH_DETECTED);
+                                List<BlackboardArtifact> arts = file.getArtifacts(BlackboardArtifact.Type.TSK_EXT_MISMATCH_DETECTED);
                                 boolean isMasq = false;
                                 if (!arts.isEmpty()) {
                                     isMasq = true;

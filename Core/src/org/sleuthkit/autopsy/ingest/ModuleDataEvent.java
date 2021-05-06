@@ -21,7 +21,6 @@ package org.sleuthkit.autopsy.ingest;
 import java.util.Collection;
 import javax.swing.event.ChangeEvent;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 
 /**
  * Event data that are fired off by ingest modules when they have posted new

@@ -58,7 +58,7 @@ final class HashSetFilterPanel extends AbstractDiscoveryFilterPanel {
     private void setUpHashFilter() {
         try {
             hashSetList.clearList();
-            List<String> setNames = DiscoveryUiUtils.getSetNames(BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT,
+            List<String> setNames = DiscoveryUiUtils.getSetNames(BlackboardArtifact.Type.TSK_HASHSET_HIT,
                     BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME);
             for (String name : setNames) {
                 hashSetList.addElement(name, null, name);
