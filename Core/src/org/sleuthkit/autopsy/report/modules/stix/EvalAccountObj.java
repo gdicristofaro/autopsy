@@ -26,11 +26,15 @@ import org.sleuthkit.datamodel.TskCoreException;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Optional;
 
 import org.mitre.cybox.objects.AccountObjectType;
 import org.mitre.cybox.objects.UserAccountObjectType;
 import org.mitre.cybox.objects.WindowsUserAccount;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
+import org.sleuthkit.datamodel.OsAccount;
+import org.sleuthkit.datamodel.OsAccountInstance;
+import org.sleuthkit.datamodel.OsAccountManager;
 
 /**
  *
@@ -103,46 +107,41 @@ class EvalAccountObj extends EvaluatableObject {
         // The assumption here is that there aren't going to be too many network shares, so we
         // can cycle through all of them.
         try {
-            List<BlackboardArtifact> finalHits = new ArrayList<>();
+            List<OsAccount> finalHits = new ArrayList<>();
 
             Case case1 = Case.getCurrentCaseThrows();
             SleuthkitCase sleuthkitCase = case1.getSleuthkitCase();
-            List<BlackboardArtifact> artList
-                    = sleuthkitCase.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_OS_ACCOUNT);
+            OsAccountManager osAccountMgr = sleuthkitCase.getOsAccountManager();
+            List<OsAccount> osAccountList = osAccountMgr.getOsAccounts();
 
-            for (BlackboardArtifact art : artList) {
-                boolean foundHomeDirMatch = false;
-                boolean foundUsernameMatch = false;
-                boolean foundSIDMatch = false;
-
-                for (BlackboardAttribute attr : art.getAttributes()) {
-                    if ((attr.getAttributeType().getTypeID() == BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH.getTypeID())
-                            && (haveHomeDir)) {
-                        foundHomeDirMatch = compareStringObject(userAccountObj.getHomeDirectory(), attr.getValueString());
-                    }
-                    if ((attr.getAttributeType().getTypeID() == BlackboardAttribute.ATTRIBUTE_TYPE.TSK_USER_NAME.getTypeID())
-                            && (haveUsername)) {
-                        foundUsernameMatch = compareStringObject(userAccountObj.getUsername(), attr.getValueString());
-                    }
-                    if ((attr.getAttributeType().getTypeID() == BlackboardAttribute.ATTRIBUTE_TYPE.TSK_USER_ID.getTypeID())
-                            && (haveSID) && (winUserObj != null)) {
-                        foundSIDMatch = compareStringObject(winUserObj.getSecurityID(), attr.getValueString());
-                    }
+            for (OsAccount osAccount : osAccountList) {
+                Optional<String> userName = osAccount.getLoginName();
+                if (userName.isPresent() && !compareStringObject(userAccountObj.getUsername(), userName.get())) {
+                    continue;
                 }
-
-                if (((!haveHomeDir) || foundHomeDirMatch)
-                        && ((!haveUsername) || foundUsernameMatch)
-                        && ((!haveSID) || foundSIDMatch)) {
-                    finalHits.add(art);
+                Optional<String> userSid = osAccount.getAddr();
+                if (userSid.isPresent() && winUserObj != null && 
+                        !compareStringObject(winUserObj.getSecurityID(), userSid.get())) {
+                    continue;
                 }
-
+                
+                Optional<String> path = osAccount.getExtendedOsAccountAttributes().stream()
+                        .filter(attr -> attr.getAttributeType() != null && 
+                                attr.getAttributeType().getTypeID() == BlackboardAttribute.Type.TSK_PATH.getTypeID())
+                        .map(attr -> attr.getValueString())
+                        .findFirst();
+                if (path.isPresent() && !compareStringObject(userAccountObj.getHomeDirectory(), path.get())) {
+                    continue;
+                }
+                
+                finalHits.add(osAccount);
             }
 
             // Check if we found any matches
             if (!finalHits.isEmpty()) {
                 List<StixArtifactData> artData = new ArrayList<StixArtifactData>();
-                for (BlackboardArtifact a : finalHits) {
-                    artData.add(new StixArtifactData(a.getObjectID(), id, "Account")); //NON-NLS
+                for (OsAccount osAccount : finalHits) {
+                    artData.add(new StixArtifactData(osAccount.getId(), id, "Account")); //NON-NLS
                 }
                 return new ObservableResult(id, "AccountObject: Found a match for " + searchString, //NON-NLS
                         spacing, ObservableResult.ObservableState.TRUE, artData);
