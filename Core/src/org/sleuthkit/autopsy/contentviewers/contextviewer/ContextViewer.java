@@ -38,7 +38,7 @@ import org.sleuthkit.autopsy.corecomponentinterfaces.DataContentViewer;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_ASSOCIATED_OBJECT;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -57,7 +57,7 @@ public final class ContextViewer extends javax.swing.JPanel implements DataConte
     private static final int ATTRIBUTE_STR_MAX_LEN = 200;
 
     // defines a list of artifacts that provide context for a file
-    private static final List<BlackboardArtifact.ARTIFACT_TYPE> CONTEXT_ARTIFACTS = new ArrayList<>();
+    private static final List<BlackboardArtifact.Type> CONTEXT_ARTIFACTS = new ArrayList<>();
     private final List<ContextSourcePanel> contextSourcePanels = new ArrayList<>();
     private final List<ContextUsagePanel> contextUsagePanels = new ArrayList<>();
 
@@ -225,10 +225,10 @@ public final class ContextViewer extends javax.swing.JPanel implements DataConte
         // check if the node has an abstract file and the file has any context defining artifacts.
         if (node.getLookup().lookup(AbstractFile.class) != null) {
             AbstractFile abstractFile = node.getLookup().lookup(AbstractFile.class);
-            for (BlackboardArtifact.ARTIFACT_TYPE artifactType : CONTEXT_ARTIFACTS) {
+            for (BlackboardArtifact.Type artifactType : CONTEXT_ARTIFACTS) {
                 List<BlackboardArtifact> artifactsList;
                 try {
-                    artifactsList = abstractFile.getArtifacts(artifactType);
+                    artifactsList = abstractFile.getArtifacts(artifactType.getTypeID());
                     if (!artifactsList.isEmpty()) {
                         return true;
                     }
@@ -266,7 +266,7 @@ public final class ContextViewer extends javax.swing.JPanel implements DataConte
         
         // Check for all context artifacts
         boolean foundASource = false;
-        for (BlackboardArtifact.ARTIFACT_TYPE artifactType : CONTEXT_ARTIFACTS) {
+        for (BlackboardArtifact.Type artifactType : CONTEXT_ARTIFACTS) {
             List<BlackboardArtifact> artifactsList = tskCase.getBlackboardArtifacts(artifactType, sourceFile.getId());
 
             foundASource = !artifactsList.isEmpty();

@@ -330,7 +330,7 @@ public class DataResultFilterNode extends FilterNode {
                 n = new LocalFileNode((AbstractFile) c);
                 if (FileTypeExtensions.getArchiveExtensions().contains("." + ((AbstractFile) c).getNameExtension().toLowerCase())) {
                     try {
-                        if (c.getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED).size() > 0) {
+                        if (c.getArtifacts(BlackboardArtifact.Type.TSK_ENCRYPTION_DETECTED.getTypeID()).size() > 0) {
                             actionsList.add(new ExtractArchiveWithPasswordAction((AbstractFile) c));
                         }
                     } catch (TskCoreException ex) {

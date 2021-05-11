@@ -50,7 +50,7 @@ import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationDataSource;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.Blackboard;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_INTERESTING_ARTIFACT_HIT;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.autopsy.coreutils.ThreadUtils;
 import static org.sleuthkit.autopsy.ingest.IngestManager.IngestModuleEvent.DATA_ADDED;
@@ -269,7 +269,7 @@ public class IngestEventsListener {
             // Create artifact if it doesn't already exist.
             if (!blackboard.artifactExists(abstractFile, TSK_INTERESTING_ARTIFACT_HIT, attributesForNewArtifact)) {
                 BlackboardArtifact newInterestingArtifact = abstractFile.newAnalysisResult(
-                        new BlackboardArtifact.Type(TSK_INTERESTING_ARTIFACT_HIT),
+                        TSK_INTERESTING_ARTIFACT_HIT,
                         Score.SCORE_UNKNOWN, null, null, null, attributesForNewArtifact)
                         .getAnalysisResult();
 

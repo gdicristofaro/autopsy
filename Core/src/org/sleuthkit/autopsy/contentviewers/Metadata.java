@@ -196,7 +196,7 @@ public class Metadata extends javax.swing.JPanel implements DataContentViewer {
             }
             
             try {
-                List<BlackboardArtifact> associatedObjectArtifacts = file.getArtifacts(ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT);
+                List<BlackboardArtifact> associatedObjectArtifacts = file.getArtifacts(BlackboardArtifact.Type.TSK_ASSOCIATED_OBJECT.getTypeID());
                 if (!associatedObjectArtifacts.isEmpty()) {
                     BlackboardArtifact artifact = associatedObjectArtifacts.get(0);
                     BlackboardAttribute associatedArtifactAttribute = artifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT));

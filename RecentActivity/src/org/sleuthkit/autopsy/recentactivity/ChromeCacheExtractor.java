@@ -541,12 +541,12 @@ final class ChromeCacheExtractor {
         webAttr.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH_ID,
                 moduleName, cachedItemFile.getId()));
 
-        BlackboardArtifact webCacheArtifact = cacheEntryFile.newDataArtifact(new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_WEB_CACHE), webAttr);
+        BlackboardArtifact webCacheArtifact = cacheEntryFile.newDataArtifact(BlackboardArtifact.Type.TSK_WEB_CACHE, webAttr);
         artifactsAdded.add(webCacheArtifact);
 
         // Create a TSK_ASSOCIATED_OBJECT on the f_XXX or derived file file back to the CACHE entry
         BlackboardArtifact associatedObjectArtifact = cachedItemFile.newDataArtifact(
-                new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT), 
+                BlackboardArtifact.Type.TSK_ASSOCIATED_OBJECT, 
                 Arrays.asList(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT, 
                         moduleName, webCacheArtifact.getArtifactID())));
         

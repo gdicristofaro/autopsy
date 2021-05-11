@@ -47,7 +47,6 @@ import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.services.FileManager;
 import org.sleuthkit.autopsy.datamodel.ContentUtils;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.Content;
@@ -56,7 +55,9 @@ import org.sleuthkit.autopsy.ingest.DataSourceIngestModuleProcessTerminator;
 import org.sleuthkit.autopsy.ingest.DataSourceIngestModuleProgress;
 import org.sleuthkit.autopsy.ingest.IngestJobContext;
 import org.sleuthkit.datamodel.AbstractFile;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_BOOKMARK;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_COOKIE;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_HISTORY;
 import org.sleuthkit.datamodel.ReadContentInputStream;
 import org.sleuthkit.datamodel.TskCoreException;
 
@@ -171,9 +172,9 @@ class ExtractIE extends Extract {
             }
 
             try {
-                bbartifacts.add(createArtifactWithAttributes(ARTIFACT_TYPE.TSK_WEB_BOOKMARK, fav, bbattributes));
+                bbartifacts.add(createArtifactWithAttributes(TSK_WEB_BOOKMARK, fav, bbattributes));
             } catch (TskCoreException ex) {
-                logger.log(Level.SEVERE, String.format("Failed to create %s for file %d",ARTIFACT_TYPE.TSK_WEB_BOOKMARK.getDisplayName(), fav.getId() ), ex);
+                logger.log(Level.SEVERE, String.format("Failed to create %s for file %d", TSK_WEB_BOOKMARK.getDisplayName(), fav.getId() ), ex);
             }
         }
 
@@ -285,9 +286,9 @@ class ExtractIE extends Extract {
             }
 
             try {
-                bbartifacts.add(createArtifactWithAttributes(ARTIFACT_TYPE.TSK_WEB_COOKIE, cookiesFile, bbattributes));
+                bbartifacts.add(createArtifactWithAttributes(TSK_WEB_COOKIE, cookiesFile, bbattributes));
             } catch (TskCoreException ex) {
-                logger.log(Level.SEVERE, String.format("Failed to create %s for file %d",ARTIFACT_TYPE.TSK_WEB_COOKIE.getDisplayName(), cookiesFile.getId() ), ex);
+                logger.log(Level.SEVERE, String.format("Failed to create %s for file %d", TSK_WEB_COOKIE.getDisplayName(), cookiesFile.getId() ), ex);
             }
         }
 
@@ -379,7 +380,7 @@ class ExtractIE extends Extract {
             if (bPascProcSuccess) {
                 // Don't add TSK_OS_ACCOUNT artifacts to the ModuleDataEvent
                 bbartifacts.addAll(parsePascoOutput(indexFile, filename, moduleTempResultsDir).stream()
-                        .filter(bbart -> bbart.getArtifactTypeID() == ARTIFACT_TYPE.TSK_WEB_HISTORY.getTypeID())
+                        .filter(bbart -> bbart.getArtifactTypeID() == TSK_WEB_HISTORY.getTypeID())
                         .collect(Collectors.toList()));
                 if (context.dataSourceIngestIsCancelled()) {
                     return;
@@ -591,7 +592,7 @@ class ExtractIE extends Extract {
             try {
                 bbartifacts.add(createArtifactWithAttributes(TSK_WEB_HISTORY, origFile, bbattributes));
             } catch (TskCoreException ex) {
-                logger.log(Level.SEVERE, String.format("Failed to create %s for file %d",ARTIFACT_TYPE.TSK_WEB_HISTORY.getDisplayName(), origFile.getId() ), ex);
+                logger.log(Level.SEVERE, String.format("Failed to create %s for file %d", TSK_WEB_HISTORY.getDisplayName(), origFile.getId() ), ex);
             }
         }
         fileScanner.close();

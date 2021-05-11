@@ -157,10 +157,10 @@ final class EncryptionDetectionFileIngestModule extends FileIngestModuleAdapter 
                  */
                 String mimeType = fileTypeDetector.getMIMEType(file);
                 if (mimeType.equals("application/octet-stream") && isFileEncryptionSuspected(file)) {
-                    return flagFile(file, BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_SUSPECTED,
+                    return flagFile(file, BlackboardArtifact.Type.TSK_ENCRYPTION_SUSPECTED,
                             String.format(Bundle.EncryptionDetectionFileIngestModule_artifactComment_suspected(), calculatedEntropy));
                 } else if (isFilePasswordProtected(file)) {
-                    return flagFile(file, BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED, Bundle.EncryptionDetectionFileIngestModule_artifactComment_password());
+                    return flagFile(file, BlackboardArtifact.Type.TSK_ENCRYPTION_DETECTED, Bundle.EncryptionDetectionFileIngestModule_artifactComment_password());
                 }
             }
         } catch (ReadContentInputStreamException | SAXException | TikaException | UnsupportedCodecException ex) {
@@ -196,13 +196,13 @@ final class EncryptionDetectionFileIngestModule extends FileIngestModuleAdapter 
      * @return 'OK' if the file was processed successfully, or 'ERROR' if there
      *         was a problem.
      */
-    private IngestModule.ProcessResult flagFile(AbstractFile file, BlackboardArtifact.ARTIFACT_TYPE artifactType, String comment) {
+    private IngestModule.ProcessResult flagFile(AbstractFile file, BlackboardArtifact.Type artifactType, String comment) {
         try {
             if (context.fileIngestIsCancelled()) {
                 return IngestModule.ProcessResult.OK;
             }
 
-            BlackboardArtifact artifact = file.newAnalysisResult(new BlackboardArtifact.Type(artifactType), Score.SCORE_UNKNOWN, null, null, null, 
+            BlackboardArtifact artifact = file.newAnalysisResult(artifactType, Score.SCORE_UNKNOWN, null, null, null, 
                     Arrays.asList(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_COMMENT,
                     EncryptionDetectionModuleFactory.getModuleName(), comment)))
                     .getAnalysisResult();

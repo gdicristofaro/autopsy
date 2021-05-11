@@ -198,7 +198,7 @@ public abstract class DrawableFile {
 
             //why doesn't file.getArtifacts() work?
             //TODO: this seams like overkill, use a more targeted query
-            ArrayList<BlackboardArtifact> artifacts = file.getArtifacts(artType);// getAllArtifacts();
+            ArrayList<BlackboardArtifact> artifacts = file.getArtifacts(artType.getTypeID());// getAllArtifacts();
 
             for (BlackboardArtifact artf : artifacts) {
                 if (artf.getArtifactTypeID() == artType.getTypeID()) {

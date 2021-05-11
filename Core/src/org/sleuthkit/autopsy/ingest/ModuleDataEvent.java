@@ -55,7 +55,10 @@ public class ModuleDataEvent extends ChangeEvent {
     /**
      * @param moduleName   Module name
      * @param artifactType Type of artifact that was posted to blackboard
+     * @deprecated         Please use a different constructor.
      */
+    @Deprecated
+    @SuppressWarnings("Deprecation")
     public ModuleDataEvent(String moduleName, ARTIFACT_TYPE artifactType) {
         super(artifactType);
         this.blackboardArtifactType = new BlackboardArtifact.Type(artifactType);
@@ -89,7 +92,10 @@ public class ModuleDataEvent extends ChangeEvent {
      * @param artifactType Type of artifact that was posted to blackboard
      * @param artifacts    List of specific artifact values that were added to
      *                     blackboard
+     * @deprecated         Please use a different constructor.
      */
+    @Deprecated
+    @SuppressWarnings("Deprecation")
     public ModuleDataEvent(String moduleName, ARTIFACT_TYPE artifactType, Collection<BlackboardArtifact> artifacts) {
         this(moduleName, artifactType);
         this.artifacts = artifacts;

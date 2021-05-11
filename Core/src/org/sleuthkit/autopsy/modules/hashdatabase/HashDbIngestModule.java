@@ -443,7 +443,7 @@ public class HashDbIngestModule implements FileIngestModule {
         attributesList.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_SET_NAME, HashLookupModuleFactory.getModuleName(), hashSetName));
         try {
             Blackboard tskBlackboard = skCase.getBlackboard();
-            if (tskBlackboard.artifactExists(file, BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT, attributesList) == false) {
+            if (tskBlackboard.artifactExists(file, BlackboardArtifact.Type.TSK_HASHSET_HIT, attributesList) == false) {
                 postHashSetHitToBlackboard(file, file.getMd5Hash(), hashSetName, comment, db.getSendIngestMessages());
             }
         } catch (TskCoreException ex) {
@@ -526,7 +526,7 @@ public class HashDbIngestModule implements FileIngestModule {
             attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_COMMENT, moduleName, comment));
 
             BlackboardArtifact badFile = abstractFile.newAnalysisResult(
-                    new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_HASHSET_HIT), Score.SCORE_UNKNOWN, null, null, null, attributes)
+                    BlackboardArtifact.Type.TSK_HASHSET_HIT, Score.SCORE_UNKNOWN, null, null, null, attributes)
                     .getAnalysisResult();
             try {
                 /*

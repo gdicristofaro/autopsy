@@ -34,8 +34,8 @@ import org.sleuthkit.autopsy.ingest.DataSourceIngestModuleProgress;
 import org.sleuthkit.autopsy.ingest.IngestJobContext;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_ASSOCIATED_OBJECT;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_DOWNLOAD;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH_ID;
 import org.sleuthkit.datamodel.Content;
@@ -152,7 +152,7 @@ final class ExtractZoneIdentifier extends Extract {
                 BlackboardArtifact downloadBba = createDownloadArtifact(zoneFile, zoneInfo, downloadFile);
                 downloadArtifacts.add(downloadBba);
                 // create a TSK_ASSOCIATED_OBJECT for the downloaded file, associating it with the TSK_WEB_DOWNLOAD artifact.
-                if (downloadFile.getArtifactsCount(TSK_ASSOCIATED_OBJECT) == 0) {
+                if (downloadFile.getArtifactsCount(BlackboardArtifact.Type.TSK_ASSOCIATED_OBJECT.getTypeID()) == 0) {
                      associatedObjectArtifacts.add(createAssociatedArtifact(downloadFile, downloadBba));
                 }
             }
@@ -229,9 +229,9 @@ final class ExtractZoneIdentifier extends Extract {
      *
      * @throws TskCoreException
      */
-    private Set<Long> getPathIDsForType(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
+    private Set<Long> getPathIDsForType(BlackboardArtifact.Type type) throws TskCoreException {
         Set<Long> idList = new HashSet<>();
-        for (BlackboardArtifact artifact : currentCase.getSleuthkitCase().getBlackboardArtifacts(type)) {
+        for (BlackboardArtifact artifact : currentCase.getSleuthkitCase().getBlackboardArtifacts(type.getTypeID())) {
             BlackboardAttribute pathIDAttribute = artifact.getAttribute(new BlackboardAttribute.Type(TSK_PATH_ID));
 
             if (pathIDAttribute != null) {

@@ -162,7 +162,7 @@ public final class ContactCache {
      */
     private Map<String, List<BlackboardArtifact>> buildMap() throws TskCoreException, SQLException {
         Map<String, List<BlackboardArtifact>> acctMap = new HashMap<>();
-        List<BlackboardArtifact> contactList = Case.getCurrentCase().getSleuthkitCase().getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT);
+        List<BlackboardArtifact> contactList = Case.getCurrentCase().getSleuthkitCase().getBlackboardArtifacts(BlackboardArtifact.Type.TSK_CONTACT.getTypeID());
 
         for (BlackboardArtifact contactArtifact : contactList) {
             List<BlackboardAttribute> contactAttributes = contactArtifact.getAttributes();

@@ -92,7 +92,7 @@ class EvalNetworkShareObj extends EvaluatableObject {
             Case case1 = Case.getCurrentCaseThrows();
             SleuthkitCase sleuthkitCase = case1.getSleuthkitCase();
             List<BlackboardArtifact> artList
-                    = sleuthkitCase.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_REMOTE_DRIVE);
+                    = sleuthkitCase.getBlackboardArtifacts(BlackboardArtifact.Type.TSK_REMOTE_DRIVE.getTypeID());
 
             for (BlackboardArtifact art : artList) {
                 boolean foundRemotePathMatch = false;

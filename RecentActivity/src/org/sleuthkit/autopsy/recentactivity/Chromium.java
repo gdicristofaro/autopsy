@@ -53,8 +53,13 @@ import org.sleuthkit.autopsy.ingest.IngestJobContext;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.Blackboard;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_BOOKMARK;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_BOOKMARK;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_ENCRYPTION_DETECTED;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_SERVICE_ACCOUNT;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_COOKIE;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_DOWNLOAD;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_FORM_AUTOFILL;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_HISTORY;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.Content;
@@ -274,7 +279,7 @@ class Chromium extends Extract {
                         (NetworkUtils.extractDomain((result.get("url").toString() != null) ? result.get("url").toString() : "")))); //NON-NLS
 
                 try {
-                     bbartifacts.add(createArtifactWithAttributes(ARTIFACT_TYPE.TSK_WEB_HISTORY, historyFile, bbattributes));
+                     bbartifacts.add(createArtifactWithAttributes(TSK_WEB_HISTORY, historyFile, bbattributes));
                 } catch (TskCoreException ex) {
                     logger.log(Level.SEVERE, String.format("Failed to create history artifact for file (%d)", historyFile.getId()), ex);
                 }
@@ -517,7 +522,7 @@ class Chromium extends Extract {
                         RecentActivityExtracterModuleFactory.getModuleName(), domain));
 
                 try {
-                    bbartifacts.add(createArtifactWithAttributes(ARTIFACT_TYPE.TSK_WEB_COOKIE, cookiesFile, bbattributes));
+                    bbartifacts.add(createArtifactWithAttributes(TSK_WEB_COOKIE, cookiesFile, bbattributes));
                 } catch (TskCoreException ex) {
                     logger.log(Level.SEVERE, String.format("Failed to create cookie artifact for file (%d)", cookiesFile.getId()), ex);
                 }
@@ -628,7 +633,7 @@ class Chromium extends Extract {
 
                     // find the downloaded file and create a TSK_ASSOCIATED_OBJECT for it, associating it with the TSK_WEB_DOWNLOAD artifact.
                 try {
-                    BlackboardArtifact webDownloadArtifact = createArtifactWithAttributes(ARTIFACT_TYPE.TSK_WEB_DOWNLOAD, downloadFile, bbattributes);
+                    BlackboardArtifact webDownloadArtifact = createArtifactWithAttributes(TSK_WEB_DOWNLOAD, downloadFile, bbattributes);
                     bbartifacts.add(webDownloadArtifact);
                     String normalizedFullPath = FilenameUtils.normalize(fullPath, true);
                     for (AbstractFile downloadedFile : fileManager.findFiles(dataSource, FilenameUtils.getName(normalizedFullPath), FilenameUtils.getPath(normalizedFullPath))) {
@@ -739,7 +744,7 @@ class Chromium extends Extract {
                         RecentActivityExtracterModuleFactory.getModuleName(), browser));
 
                 try {
-                    bbartifacts.add(createArtifactWithAttributes(ARTIFACT_TYPE.TSK_SERVICE_ACCOUNT, loginDataFile, bbattributes));
+                    bbartifacts.add(createArtifactWithAttributes(TSK_SERVICE_ACCOUNT, loginDataFile, bbattributes));
                 } catch (TskCoreException ex) {
                     logger.log(Level.SEVERE, String.format("Failed to create service account artifact for file (%d)", loginDataFile.getId()), ex);
                 }
@@ -827,7 +832,7 @@ class Chromium extends Extract {
                    bbattributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_COMMENT,
                             RecentActivityExtracterModuleFactory.getModuleName(), 
                             String.format("%s Autofill Database Encryption Detected", browser)));
-                   bbartifacts.add(createArtifactWithAttributes(ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED, webDataFile, bbattributes)); 
+                   bbartifacts.add(createArtifactWithAttributes(TSK_ENCRYPTION_DETECTED, webDataFile, bbattributes)); 
                 }
             } catch (NoCurrentCaseException | TskCoreException | Blackboard.BlackboardException ex) {
                 logger.log(Level.SEVERE, String.format("Error adding artifacts to the case database "
@@ -899,7 +904,7 @@ class Chromium extends Extract {
             
             // Add an artifact
             try {
-                bbartifacts.add(createArtifactWithAttributes(ARTIFACT_TYPE.TSK_WEB_FORM_AUTOFILL, webDataFile, bbattributes));
+                bbartifacts.add(createArtifactWithAttributes(TSK_WEB_FORM_AUTOFILL, webDataFile, bbattributes));
             } catch (TskCoreException ex) {
                 logger.log(Level.SEVERE, String.format("Failed to create web form autopfill artifact for file (%d)", webDataFile.getId()), ex);
             }

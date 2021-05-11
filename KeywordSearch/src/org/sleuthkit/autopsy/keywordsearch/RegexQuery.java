@@ -614,7 +614,7 @@ final class RegexQuery implements KeywordSearchQuery {
         }
 
         try {
-            return content.newAnalysisResult(new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_KEYWORD_HIT), Score.SCORE_UNKNOWN, null, null, null, attributes)
+            return content.newAnalysisResult(BlackboardArtifact.Type.TSK_KEYWORD_HIT, Score.SCORE_UNKNOWN, null, null, null, attributes)
                     .getAnalysisResult();
         } catch (TskCoreException e) {
             LOGGER.log(Level.SEVERE, "Error adding bb attributes for terms search artifact", e); //NON-NLS

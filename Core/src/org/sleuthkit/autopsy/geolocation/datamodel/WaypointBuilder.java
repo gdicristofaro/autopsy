@@ -214,7 +214,7 @@ public final class WaypointBuilder {
     public static List<Waypoint> getTrackpointWaypoints(SleuthkitCase skCase) throws GeoLocationDataException {
         List<BlackboardArtifact> artifacts = null;
         try {
-            artifacts = skCase.getBlackboardArtifacts(ARTIFACT_TYPE.TSK_GPS_TRACKPOINT);
+            artifacts = skCase.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACKPOINT.getTypeID());
         } catch (TskCoreException ex) {
             throw new GeoLocationDataException("Unable to get artifacts for type: TSK_GPS_TRACKPOINT", ex);//NON-NLS
         }
@@ -262,7 +262,7 @@ public final class WaypointBuilder {
     static public List<Waypoint> getEXIFWaypoints(SleuthkitCase skCase) throws GeoLocationDataException {
         List<BlackboardArtifact> artifacts = null;
         try {
-            artifacts = skCase.getBlackboardArtifacts(ARTIFACT_TYPE.TSK_METADATA_EXIF);
+            artifacts = skCase.getBlackboardArtifacts(BlackboardArtifact.Type.TSK_METADATA_EXIF.getTypeID());
         } catch (TskCoreException ex) {
             throw new GeoLocationDataException("Unable to get artifacts for type: TSK_GPS_LAST_KNOWN_LOCATION", ex);//NON-NLS
         }
@@ -314,7 +314,7 @@ public final class WaypointBuilder {
     public static List<Waypoint> getSearchWaypoints(SleuthkitCase skCase) throws GeoLocationDataException {
         List<BlackboardArtifact> artifacts = null;
         try {
-            artifacts = skCase.getBlackboardArtifacts(ARTIFACT_TYPE.TSK_GPS_SEARCH);
+            artifacts = skCase.getBlackboardArtifacts(BlackboardArtifact.Type.TSK_GPS_SEARCH.getTypeID());
         } catch (TskCoreException ex) {
             throw new GeoLocationDataException("Unable to get artifacts for type: TSK_GPS_SEARCH", ex);//NON-NLS
         }
@@ -364,7 +364,7 @@ public final class WaypointBuilder {
     public static List<Waypoint> getLastKnownWaypoints(SleuthkitCase skCase) throws GeoLocationDataException {
         List<BlackboardArtifact> artifacts = null;
         try {
-            artifacts = skCase.getBlackboardArtifacts(ARTIFACT_TYPE.TSK_GPS_LAST_KNOWN_LOCATION);
+            artifacts = skCase.getBlackboardArtifacts(BlackboardArtifact.Type.TSK_GPS_LAST_KNOWN_LOCATION.getTypeID());
         } catch (TskCoreException ex) {
             throw new GeoLocationDataException("Unable to get artifacts for type: TSK_GPS_LAST_KNOWN_LOCATION", ex);//NON-NLS
         }
@@ -415,7 +415,7 @@ public final class WaypointBuilder {
     public static List<Waypoint> getBookmarkWaypoints(SleuthkitCase skCase) throws GeoLocationDataException {
         List<BlackboardArtifact> artifacts = null;
         try {
-            artifacts = skCase.getBlackboardArtifacts(ARTIFACT_TYPE.TSK_GPS_BOOKMARK);
+            artifacts = skCase.getBlackboardArtifacts(BlackboardArtifact.Type.TSK_GPS_BOOKMARK.getTypeID());
         } catch (TskCoreException ex) {
             throw new GeoLocationDataException("Unable to get artifacts for type: TSK_GPS_BOOKMARK", ex);//NON-NLS
         }

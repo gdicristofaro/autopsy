@@ -98,7 +98,7 @@ class DataSourceUsageAnalyzer extends Extract {
      */
     private void createOSInfoDataSourceUsageArtifacts() throws TskCoreException {
         boolean windowsOsDetected = false;
-        List<BlackboardArtifact> osInfoArtifacts = tskCase.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_OS_INFO);
+        List<BlackboardArtifact> osInfoArtifacts = tskCase.getBlackboardArtifacts(BlackboardArtifact.Type.TSK_OS_INFO.getTypeID());
         for (BlackboardArtifact osInfoArt : osInfoArtifacts) {
             //if it is the current data source
             if (osInfoArt.getDataSource().getId() == dataSource.getId()) {
@@ -138,7 +138,7 @@ class DataSourceUsageAnalyzer extends Extract {
      */
     private void createDataSourceUsageArtifact(String dataSourceUsageDescription) throws TskCoreException {
         //if the data source usage description is not empty create a data source usage artifact if an Usage artifact does not already exist with the same description
-        List<BlackboardArtifact> artifacts = tskCase.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_DATA_SOURCE_USAGE, dataSource.getId());
+        List<BlackboardArtifact> artifacts = tskCase.getBlackboardArtifacts(BlackboardArtifact.Type.TSK_DATA_SOURCE_USAGE, dataSource.getId());
         for (BlackboardArtifact artifact : artifacts) {
             if (artifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DESCRIPTION)).getValueString().equals(dataSourceUsageDescription)) {
                 return; //already exists don't create a duplicate
@@ -148,7 +148,7 @@ class DataSourceUsageAnalyzer extends Extract {
         bbattributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DESCRIPTION,
                 Bundle.DataSourceUsageAnalyzer_parentModuleName(),
                 dataSourceUsageDescription)); //NON-NLS
-        postArtifact(createArtifactWithAttributes(BlackboardArtifact.ARTIFACT_TYPE.TSK_DATA_SOURCE_USAGE, dataSource, bbattributes));
+        postArtifact(createArtifactWithAttributes(BlackboardArtifact.Type.TSK_DATA_SOURCE_USAGE, dataSource, bbattributes));
     }
 
     /**

@@ -48,7 +48,7 @@ import org.sleuthkit.autopsy.ingest.IngestModule.IngestModuleException;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.Blackboard;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_ASSOCIATED_OBJECT;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.OsAccount;
@@ -133,19 +133,6 @@ abstract class Extract {
         errorMessages.add(message);
     }
     
-    /**
-     * Generic method for creating artifacts.
-     *
-     * @param type       The type of artifact.
-     * @param file       The file the artifact originated from.
-     * @param attributes A list of the attributes to associate with the
-     *                   artifact.
-     *
-     * @return The newly created artifact.
-     */
-    BlackboardArtifact createArtifactWithAttributes(BlackboardArtifact.ARTIFACT_TYPE type, Content content, Collection<BlackboardAttribute> attributes) throws TskCoreException {
-       return createArtifactWithAttributes(new BlackboardArtifact.Type(type), content, attributes);
-    }
     
     /**
      * Generic method for creating artifacts.

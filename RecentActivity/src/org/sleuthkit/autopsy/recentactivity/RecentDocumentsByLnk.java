@@ -36,12 +36,12 @@ import org.sleuthkit.autopsy.coreutils.JLnkParserException;
 import org.sleuthkit.autopsy.ingest.DataSourceIngestModuleProgress;
 import org.sleuthkit.autopsy.ingest.IngestJobContext;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.AbstractFile;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_RECENT_OBJECT;
 import org.sleuthkit.datamodel.ReadContentInputStream;
 import org.sleuthkit.datamodel.TskData;
 
@@ -124,7 +124,7 @@ class RecentDocumentsByLnk extends Extract {
                             "RecentDocumentsByLnk.parentModuleName.noSpace"),
                     recentFile.getCrtime()));
             try{
-                BlackboardArtifact bba = createArtifactWithAttributes(ARTIFACT_TYPE.TSK_RECENT_OBJECT, recentFile, bbattributes);
+                BlackboardArtifact bba = createArtifactWithAttributes(TSK_RECENT_OBJECT, recentFile, bbattributes);
                 if(bba != null) {
                     bbartifacts.add(bba);
                     bba = createAssociatedArtifact(path, bba);

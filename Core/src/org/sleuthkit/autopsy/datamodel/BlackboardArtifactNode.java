@@ -902,7 +902,7 @@ public class BlackboardArtifactNode extends AbstractContentNode<BlackboardArtifa
          */
         if (score == Score.NO_SCORE) {
             try {
-                if (!srcContent.getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT).isEmpty()) {
+                if (!srcContent.getArtifacts(BlackboardArtifact.Type.TSK_INTERESTING_ARTIFACT_HIT.getTypeID()).isEmpty()) {
                     score = Score.INTERESTING_SCORE;
                     description = Bundle.BlackboardArtifactNode_createSheet_interestingResult_description();
                 }

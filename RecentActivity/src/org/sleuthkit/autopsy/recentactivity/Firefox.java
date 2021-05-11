@@ -56,7 +56,11 @@ import org.sleuthkit.autopsy.ingest.IngestJobContext;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.Blackboard;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_BOOKMARK;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_COOKIE;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_DOWNLOAD;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_FORM_AUTOFILL;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_HISTORY;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.Content;
@@ -243,7 +247,7 @@ class Firefox extends Extract {
                 }
 
                 try {
-                    bbartifacts.add(createArtifactWithAttributes(ARTIFACT_TYPE.TSK_WEB_HISTORY, historyFile, bbattributes));
+                    bbartifacts.add(createArtifactWithAttributes(TSK_WEB_HISTORY, historyFile, bbattributes));
                 } catch (TskCoreException ex) {
                     logger.log(Level.SEVERE, String.format("Failed to create TSK_WEB_HISTORY artifact for file %d", historyFile.getId()), ex);
                 }
@@ -341,7 +345,7 @@ class Firefox extends Extract {
                 }
 
                 try {
-                    bbartifacts.add(createArtifactWithAttributes(ARTIFACT_TYPE.TSK_WEB_BOOKMARK, bookmarkFile, bbattributes));
+                    bbartifacts.add(createArtifactWithAttributes(TSK_WEB_BOOKMARK, bookmarkFile, bbattributes));
                 } catch (TskCoreException ex) {
                     logger.log(Level.SEVERE, String.format("Failed to create TSK_WEB_BOOKMARK artifact for file %d", bookmarkFile.getId()), ex);
                 }
@@ -459,7 +463,7 @@ class Firefox extends Extract {
                 }
 
                 try {
-                    bbartifacts.add(createArtifactWithAttributes(ARTIFACT_TYPE.TSK_WEB_COOKIE, cookiesFile, bbattributes));
+                    bbartifacts.add(createArtifactWithAttributes(TSK_WEB_COOKIE, cookiesFile, bbattributes));
                 } catch (TskCoreException ex) {
                     logger.log(Level.SEVERE, String.format("Failed to create TSK_WEB_COOKIE artifact for file %d", cookiesFile.getId()), ex);
                 }
@@ -588,7 +592,7 @@ class Firefox extends Extract {
                             domain)); //NON-NLS
                 }
                 try {
-                    BlackboardArtifact webDownloadArtifact = createArtifactWithAttributes(ARTIFACT_TYPE.TSK_WEB_DOWNLOAD, downloadsFile, bbattributes);
+                    BlackboardArtifact webDownloadArtifact = createArtifactWithAttributes(TSK_WEB_DOWNLOAD, downloadsFile, bbattributes);
                     bbartifacts.add(webDownloadArtifact);
 
                     // find the downloaded file and create a TSK_ASSOCIATED_OBJECT for it, associating it with the TSK_WEB_DOWNLOAD artifact.
@@ -723,7 +727,7 @@ class Firefox extends Extract {
                         RecentActivityExtracterModuleFactory.getModuleName(), domain)); //NON-NLS
                 }
                 try {
-                    BlackboardArtifact webDownloadArtifact = createArtifactWithAttributes(ARTIFACT_TYPE.TSK_WEB_DOWNLOAD, downloadsFile, bbattributes);
+                    BlackboardArtifact webDownloadArtifact = createArtifactWithAttributes(TSK_WEB_DOWNLOAD, downloadsFile, bbattributes);
                     bbartifacts.add(webDownloadArtifact);
 
                     // find the downloaded file and create a TSK_ASSOCIATED_OBJECT for it, associating it with the TSK_WEB_DOWNLOAD artifact.
@@ -857,7 +861,7 @@ class Firefox extends Extract {
                 }
                 try {
                     // Add artifact
-                    bbartifacts.add(createArtifactWithAttributes(ARTIFACT_TYPE.TSK_WEB_FORM_AUTOFILL, formHistoryFile, bbattributes));
+                    bbartifacts.add(createArtifactWithAttributes(TSK_WEB_FORM_AUTOFILL, formHistoryFile, bbattributes));
                 } catch (TskCoreException ex) {
                     logger.log(Level.SEVERE, String.format("Failed to create TSK_WEB_FORM_AUTOFILL artifact for file %d", formHistoryFile.getId()), ex);
                 }

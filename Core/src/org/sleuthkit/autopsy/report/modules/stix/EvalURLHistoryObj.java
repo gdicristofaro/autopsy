@@ -142,7 +142,7 @@ class EvalURLHistoryObj extends EvaluatableObject {
                     Case case1 = Case.getCurrentCaseThrows();
                     SleuthkitCase sleuthkitCase = case1.getSleuthkitCase();
                     List<BlackboardArtifact> artList
-                            = sleuthkitCase.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY);
+                            = sleuthkitCase.getBlackboardArtifacts(BlackboardArtifact.Type.TSK_WEB_HISTORY.getTypeID());
 
                     for (BlackboardArtifact art : artList) {
                         boolean foundURLMatch = false;
@@ -235,7 +235,7 @@ class EvalURLHistoryObj extends EvaluatableObject {
                 Case case1 = Case.getCurrentCaseThrows();
                 SleuthkitCase sleuthkitCase = case1.getSleuthkitCase();
                 List<BlackboardArtifact> artList
-                        = sleuthkitCase.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY);
+                        = sleuthkitCase.getBlackboardArtifacts(BlackboardArtifact.Type.TSK_WEB_HISTORY.getTypeID());
 
                 for (BlackboardArtifact art : artList) {
                     boolean foundBrowserNameMatch = false;

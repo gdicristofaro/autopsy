@@ -392,7 +392,7 @@ public class PortableCaseReportModule implements ReportModule {
         // Copy interesting files and results
         if (!setNames.isEmpty()) {
             try {
-                List<BlackboardArtifact> interestingFiles = currentCase.getSleuthkitCase().getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT);
+                List<BlackboardArtifact> interestingFiles = currentCase.getSleuthkitCase().getBlackboardArtifacts(BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT.getTypeID());
                 for (BlackboardArtifact art : interestingFiles) {
                     // Check for cancellation 
                     if (progressPanel.getStatus() == ReportProgressPanel.ReportStatus.CANCELED) {
@@ -411,7 +411,7 @@ public class PortableCaseReportModule implements ReportModule {
             }
 
             try {
-                List<BlackboardArtifact> interestingResults = currentCase.getSleuthkitCase().getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT);
+                List<BlackboardArtifact> interestingResults = currentCase.getSleuthkitCase().getBlackboardArtifacts(BlackboardArtifact.Type.TSK_INTERESTING_ARTIFACT_HIT.getTypeID());
                 for (BlackboardArtifact art : interestingResults) {
                     // Check for cancellation 
                     if (progressPanel.getStatus() == ReportProgressPanel.ReportStatus.CANCELED) {
@@ -574,9 +574,9 @@ public class PortableCaseReportModule implements ReportModule {
         Multimap<Long, BlackboardArtifact> artifactsWithSetName = ArrayListMultimap.create();
         if (!setNames.isEmpty()) {
             List<BlackboardArtifact> allArtifacts = skCase.getBlackboardArtifacts(
-                    BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT);
+                    BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT.getTypeID());
             allArtifacts.addAll(skCase.getBlackboardArtifacts(
-                    BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT));
+                    BlackboardArtifact.Type.TSK_INTERESTING_ARTIFACT_HIT.getTypeID()));
 
             for (BlackboardArtifact bArt : allArtifacts) {
                 BlackboardAttribute setAttr = bArt.getAttribute(

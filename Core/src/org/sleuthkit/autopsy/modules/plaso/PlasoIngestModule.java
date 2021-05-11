@@ -58,7 +58,7 @@ import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.Blackboard;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_TL_EVENT;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DESCRIPTION;
@@ -346,8 +346,8 @@ public class PlasoIngestModule implements DataSourceIngestModule {
 
                 try {
                     BlackboardArtifact bbart = resolvedFile instanceof AbstractFile 
-                            ? ((AbstractFile) resolvedFile).newDataArtifact(new BlackboardArtifact.Type(TSK_TL_EVENT), bbattributes)
-                            : resolvedFile.newDataArtifact(new BlackboardArtifact.Type(TSK_TL_EVENT), bbattributes, null);
+                            ? ((AbstractFile) resolvedFile).newDataArtifact(TSK_TL_EVENT, bbattributes)
+                            : resolvedFile.newDataArtifact(TSK_TL_EVENT, bbattributes, null);
                     try {
                         /*
                          * Post the artifact which will index the artifact for

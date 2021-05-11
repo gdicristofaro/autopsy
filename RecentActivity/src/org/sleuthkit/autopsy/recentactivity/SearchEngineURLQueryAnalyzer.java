@@ -43,7 +43,7 @@ import org.sleuthkit.autopsy.ingest.IngestJobContext;
 import org.sleuthkit.autopsy.ingest.IngestModule.IngestModuleException;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_SEARCH_QUERY;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.Content;
@@ -307,7 +307,7 @@ class SearchEngineURLQueryAnalyzer extends Extract {
         try {
             //from blackboard_artifacts
             Collection<BlackboardArtifact> listArtifacts = currentCase.getSleuthkitCase().getBlackboard().getArtifacts(
-                    Arrays.asList(new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_WEB_BOOKMARK), new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_WEB_HISTORY)),
+                    Arrays.asList(BlackboardArtifact.Type.TSK_WEB_BOOKMARK, BlackboardArtifact.Type.TSK_WEB_HISTORY),
                     Arrays.asList(dataSource.getId()));
             logger.log(Level.INFO, "Processing {0} blackboard artifacts.", listArtifacts.size()); //NON-NLS
 
@@ -382,7 +382,7 @@ class SearchEngineURLQueryAnalyzer extends Extract {
                     bbattributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED,
                             NbBundle.getMessage(this.getClass(),
                                     "SearchEngineURLQueryAnalyzer.parentModuleName"), last_accessed));
-                    postArtifact(createArtifactWithAttributes(ARTIFACT_TYPE.TSK_WEB_SEARCH_QUERY, file, bbattributes));
+                    postArtifact(createArtifactWithAttributes(TSK_WEB_SEARCH_QUERY, file, bbattributes));
                     ++totalQueries;
                 }
             }

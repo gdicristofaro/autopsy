@@ -54,16 +54,15 @@ public class RecentFilesSummary implements DefaultArtifactUpdateGovernor {
     private final static BlackboardAttribute.Type ASSOCATED_ATT = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT);
     private final static BlackboardAttribute.Type EMAIL_FROM_ATT = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL_FROM);
     private final static BlackboardAttribute.Type MSG_DATEIME_SENT_ATT = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_SENT);
-    private final static BlackboardArtifact.Type ASSOCATED_OBJ_ART = new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT);
 
     private static final DateFormat DATETIME_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault());
 
     private static final Set<Integer> ARTIFACT_UPDATE_TYPE_IDS = new HashSet<>(Arrays.asList(
-            ARTIFACT_TYPE.TSK_RECENT_OBJECT.getTypeID(),
-            ARTIFACT_TYPE.TSK_WEB_DOWNLOAD.getTypeID(),
-            ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT.getTypeID(),
-            ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(),
-            ARTIFACT_TYPE.TSK_MESSAGE.getTypeID()
+            BlackboardArtifact.Type.TSK_RECENT_OBJECT.getTypeID(),
+            BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID(),
+            BlackboardArtifact.Type.TSK_ASSOCIATED_OBJECT.getTypeID(),
+            BlackboardArtifact.Type.TSK_EMAIL_MSG.getTypeID(),
+            BlackboardArtifact.Type.TSK_MESSAGE.getTypeID()
     ));
 
     private final SleuthkitCaseProvider provider;
@@ -155,7 +154,7 @@ public class RecentFilesSummary implements DefaultArtifactUpdateGovernor {
         throwOnNonPositiveCount(maxCount);
 
         List<RecentFileDetails> details = provider.get().getBlackboard()
-                .getArtifacts(ARTIFACT_TYPE.TSK_RECENT_OBJECT.getTypeID(), dataSource.getId()).stream()
+                .getArtifacts(BlackboardArtifact.Type.TSK_RECENT_OBJECT.getTypeID(), dataSource.getId()).stream()
                 .map(art -> getRecentlyOpenedDocument(art))
                 .filter(d -> d != null)
                 .collect(Collectors.toList());
@@ -215,7 +214,7 @@ public class RecentFilesSummary implements DefaultArtifactUpdateGovernor {
         throwOnNonPositiveCount(maxCount);
 
         List<RecentDownloadDetails> details = provider.get().getBlackboard()
-                .getArtifacts(ARTIFACT_TYPE.TSK_WEB_DOWNLOAD.getTypeID(), dataSource.getId()).stream()
+                .getArtifacts(BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID(), dataSource.getId()).stream()
                 .map(art -> getRecentDownload(art))
                 .filter(d -> d != null)
                 .collect(Collectors.toList());
@@ -245,7 +244,7 @@ public class RecentFilesSummary implements DefaultArtifactUpdateGovernor {
         SleuthkitCase skCase = provider.get();
 
         List<BlackboardArtifact> associatedArtifacts = skCase.getBlackboard()
-                .getArtifacts(ASSOCATED_OBJ_ART.getTypeID(), dataSource.getId());
+                .getArtifacts(BlackboardArtifact.Type.TSK_ASSOCIATED_OBJECT.getTypeID(), dataSource.getId());
 
         List<RecentAttachmentDetails> details = new ArrayList<>();
         for (BlackboardArtifact artifact : associatedArtifacts) {
@@ -311,8 +310,8 @@ public class RecentFilesSummary implements DefaultArtifactUpdateGovernor {
      */
     private boolean isMessageArtifact(BlackboardArtifact nodeArtifact) {
         final int artifactTypeID = nodeArtifact.getArtifactTypeID();
-        return artifactTypeID == ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID()
-                || artifactTypeID == ARTIFACT_TYPE.TSK_MESSAGE.getTypeID();
+        return artifactTypeID == BlackboardArtifact.Type.TSK_EMAIL_MSG.getTypeID()
+                || artifactTypeID == BlackboardArtifact.Type.TSK_MESSAGE.getTypeID();
 
     }
 

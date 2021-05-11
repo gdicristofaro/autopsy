@@ -379,14 +379,14 @@ public final class FileTypes implements AutopsyVisitableItem {
         }
 
         @Deprecated
-        @SuppressWarnings("Deprecated")
+        @SuppressWarnings("Deprecation")
         @Override
         public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
             return content.newArtifact(artifactTypeID);
         }
 
         @Deprecated
-        @SuppressWarnings("Deprecated")
+        @SuppressWarnings("Deprecation")
         @Override
         public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
             return content.newArtifact(type);
@@ -422,6 +422,8 @@ public final class FileTypes implements AutopsyVisitableItem {
             return content.getArtifacts(artifactTypeID);
         }
 
+        @Deprecated
+        @SuppressWarnings("Deprecation")
         @Override
         public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
             return content.getArtifacts(type);
@@ -448,6 +450,8 @@ public final class FileTypes implements AutopsyVisitableItem {
         }
 
         @Override
+        @Deprecated
+        @SuppressWarnings("Deprecation")
         public long getArtifactsCount(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
             return content.getArtifactsCount(type);
         }

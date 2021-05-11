@@ -348,11 +348,11 @@ public class AnnotationsContentViewer extends javax.swing.JPanel implements Data
             }
 
             boolean hashsetRendered = appendEntries(parent, HASHSET_CONFIG,
-                    getFileSetHits(sourceFile, ARTIFACT_TYPE.TSK_HASHSET_HIT),
+                    getFileSetHits(sourceFile, BlackboardArtifact.Type.TSK_HASHSET_HIT),
                     isSubheader);
 
             boolean interestingFileRendered = appendEntries(parent, INTERESTING_FILE_CONFIG,
-                    getFileSetHits(sourceFile, ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT),
+                    getFileSetHits(sourceFile, BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT),
                     isSubheader);
 
             contentRendered = contentRendered || hashsetRendered || interestingFileRendered;
@@ -407,7 +407,7 @@ public class AnnotationsContentViewer extends javax.swing.JPanel implements Data
      *
      * @return The artifacts found matching this type.
      */
-    private static List<BlackboardArtifact> getFileSetHits(AbstractFile sourceFile, ARTIFACT_TYPE type) {
+    private static List<BlackboardArtifact> getFileSetHits(AbstractFile sourceFile, BlackboardArtifact.Type type) {
         try {
             SleuthkitCase tskCase = Case.getCurrentCaseThrows().getSleuthkitCase();
             return tskCase.getBlackboardArtifacts(type, sourceFile.getId()).stream()

@@ -143,7 +143,7 @@ public class FileExtMismatchIngestModule implements FileIngestModule {
             if (mismatchDetected) {
                 // add artifact               
                 BlackboardArtifact bart = abstractFile.newAnalysisResult(
-                        new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_EXT_MISMATCH_DETECTED), Score.SCORE_UNKNOWN, null, null, null, Collections.emptyList())
+                        BlackboardArtifact.Type.TSK_EXT_MISMATCH_DETECTED, Score.SCORE_UNKNOWN, null, null, null, Collections.emptyList())
                         .getAnalysisResult();
 
                 try {

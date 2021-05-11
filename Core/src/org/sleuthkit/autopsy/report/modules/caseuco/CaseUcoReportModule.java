@@ -208,13 +208,13 @@ public final class CaseUcoReportModule implements GeneralReportModule {
 
                 // Write all standard artifacts that are contained within the 
                 // selected data sources.
-                for (ARTIFACT_TYPE artType : currentCase.getSleuthkitCase().getBlackboardArtifactTypesInUse()) {
-                    if(artType.equals(BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT)) {
+                for (BlackboardArtifact.Type artType : currentCase.getSleuthkitCase().getArtifactTypesInUse()) {
+                    if(artType.getTypeID() == BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID()) {
                         // Keyword hits cannot be represented in CASE.
                         continue;
                     }
                     
-                    for (BlackboardArtifact artifact : currentCase.getSleuthkitCase().getBlackboardArtifacts(artType)) {
+                    for (BlackboardArtifact artifact : currentCase.getSleuthkitCase().getBlackboardArtifacts(artType.getTypeID())) {
                         if (dataSourceIds.contains(artifact.getDataSource().getId())) {
                             try {
                                 for (JsonElement element : exporter.exportBlackboardArtifact(artifact)) {

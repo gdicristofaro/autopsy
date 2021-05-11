@@ -86,9 +86,6 @@ public class UserActivitySummary implements DefaultArtifactUpdateGovernor {
             }
     );
 
-    private static final BlackboardArtifact.Type TYPE_DEVICE_ATTACHED = new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_DEVICE_ATTACHED);
-    private static final BlackboardArtifact.Type TYPE_WEB_HISTORY = new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_WEB_HISTORY);
-
     private static final BlackboardAttribute.Type TYPE_DATETIME = new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME);
     private static final BlackboardAttribute.Type TYPE_DATETIME_ACCESSED = new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED);
     private static final BlackboardAttribute.Type TYPE_DEVICE_ID = new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DEVICE_ID);
@@ -296,7 +293,7 @@ public class UserActivitySummary implements DefaultArtifactUpdateGovernor {
      * @throws SleuthkitCaseProviderException
      */
     private Pair<Long, Map<String, List<Pair<BlackboardArtifact, Long>>>> getDomainGroupsAndMostRecent(DataSource dataSource) throws TskCoreException, SleuthkitCaseProviderException {
-        List<BlackboardArtifact> artifacts = DataSourceInfoUtilities.getArtifacts(caseProvider.get(), TYPE_WEB_HISTORY,
+        List<BlackboardArtifact> artifacts = DataSourceInfoUtilities.getArtifacts(caseProvider.get(), BlackboardArtifact.Type.TSK_WEB_HISTORY,
                 dataSource, TYPE_DATETIME_ACCESSED, DataSourceInfoUtilities.SortOrder.DESCENDING, 0);
 
         Long mostRecentMs = null;
@@ -496,7 +493,7 @@ public class UserActivitySummary implements DefaultArtifactUpdateGovernor {
             return Collections.emptyList();
         }
 
-        Collection<TopDeviceAttachedResult> results = DataSourceInfoUtilities.getArtifacts(caseProvider.get(), TYPE_DEVICE_ATTACHED,
+        Collection<TopDeviceAttachedResult> results = DataSourceInfoUtilities.getArtifacts(caseProvider.get(), BlackboardArtifact.Type.TSK_DEVICE_ATTACHED,
                 dataSource, TYPE_DATETIME, DataSourceInfoUtilities.SortOrder.DESCENDING, 0)
                 .stream()
                 .map(artifact -> {

@@ -41,7 +41,7 @@ public class DomainSearchArtifactsLoader extends CacheLoader<DomainSearchArtifac
     public Map<String, List<BlackboardArtifact>> load(DomainSearchArtifactsCache.ArtifactCacheKey artifactKey) throws TskCoreException, InterruptedException {
         final SleuthkitCase caseDb = artifactKey.getSleuthkitCase();
         final ARTIFACT_TYPE type = artifactKey.getType();
-        List<BlackboardArtifact> artifacts = caseDb.getBlackboardArtifacts(type);
+        List<BlackboardArtifact> artifacts = caseDb.getBlackboardArtifacts(type.getTypeID());
         
         Map<String, List<BlackboardArtifact>> artifactsByDomain = new HashMap<>();
             

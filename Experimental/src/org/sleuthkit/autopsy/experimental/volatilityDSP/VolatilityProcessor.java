@@ -384,9 +384,9 @@ class VolatilityProcessor {
                         );
 
                         // Create artifact if it doesn't already exist.
-                        if (!blackboard.artifactExists(resolvedFile, BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT, attributes)) {
+                        if (!blackboard.artifactExists(resolvedFile, BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT, attributes)) {
                             BlackboardArtifact volArtifact = resolvedFile.newAnalysisResult(
-                                    new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT), 
+                                    BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT, 
                                     Score.SCORE_UNKNOWN, null, null, null, attributes)
                                     .getAnalysisResult();
 

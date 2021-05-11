@@ -1127,10 +1127,10 @@ public final class DrawableDB {
      */
     Set<String> getHashSetsForFile(long fileID) throws TskCoreException {
         Set<String> hashNames = new HashSet<>();
-        ArrayList<BlackboardArtifact> artifacts = caseDb.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT, fileID);
+        ArrayList<BlackboardArtifact> artifacts = caseDb.getBlackboardArtifacts(BlackboardArtifact.Type.TSK_HASHSET_HIT, fileID);
 
         for (BlackboardArtifact a : artifacts) {
-            BlackboardAttribute attribute = a.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME));
+            BlackboardAttribute attribute = a.getAttribute(BlackboardAttribute.Type.TSK_SET_NAME);
             if (attribute != null) {
                 hashNames.add(attribute.getValueString());
             }

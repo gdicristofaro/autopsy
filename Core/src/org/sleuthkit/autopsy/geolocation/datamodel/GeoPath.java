@@ -52,7 +52,7 @@ public class GeoPath {
     static public List<Route> getRoutes(SleuthkitCase skCase) throws GeoLocationDataException {
         List<BlackboardArtifact> artifacts = null;
         try {
-            artifacts = skCase.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_ROUTE);
+            artifacts = skCase.getBlackboardArtifacts(BlackboardArtifact.Type.TSK_GPS_ROUTE.getTypeID());
         } catch (TskCoreException ex) {
             throw new GeoLocationDataException("Unable to get artifacts for type: TSK_GPS_BOOKMARK", ex);
         }
@@ -82,7 +82,7 @@ public class GeoPath {
         boolean allParsedSuccessfully = true;
         List<Track> tracks = new ArrayList<>();
         try {
-            artifacts = skCase.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK);
+            artifacts = skCase.getBlackboardArtifacts(BlackboardArtifact.Type.TSK_GPS_TRACK.getTypeID());
             for (BlackboardArtifact artifact : artifacts) {
                 if (sourceList == null || sourceList.contains(artifact.getDataSource())) {
                     try {
@@ -117,7 +117,7 @@ public class GeoPath {
         boolean allParsedSuccessfully = true;
         List<Area> areas = new ArrayList<>();
         try {
-            artifacts = skCase.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA);
+            artifacts = skCase.getBlackboardArtifacts(BlackboardArtifact.Type.TSK_GPS_AREA.getTypeID());
             for (BlackboardArtifact artifact : artifacts) {
                 if (sourceList == null || sourceList.contains(artifact.getDataSource())) {
                     try {

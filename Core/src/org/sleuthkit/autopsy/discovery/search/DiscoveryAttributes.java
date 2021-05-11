@@ -46,7 +46,7 @@ import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskData;
 import java.util.StringJoiner;
 import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationAttributeNormalizer;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CATEGORIZATION;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_CATEGORIZATION;
 
 /**
  * Class which contains the search attributes which can be specified for
@@ -176,7 +176,7 @@ public class DiscoveryAttributes {
         private Map<String, Set<String>> getDomainsWithWebCategories(SleuthkitCase caseDb) throws TskCoreException, InterruptedException {
             Map<String, Set<String>> domainToCategory = new HashMap<>();
 
-            for (BlackboardArtifact artifact : caseDb.getBlackboardArtifacts(TSK_WEB_CATEGORIZATION)) {
+            for (BlackboardArtifact artifact : caseDb.getBlackboardArtifacts(TSK_WEB_CATEGORIZATION.getTypeID())) {
                 if (Thread.currentThread().isInterrupted()) {
                     throw new InterruptedException();
                 }

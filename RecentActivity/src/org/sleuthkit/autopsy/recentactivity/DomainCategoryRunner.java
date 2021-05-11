@@ -52,6 +52,7 @@ import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.autopsy.url.analytics.DomainCategorizer;
 import org.sleuthkit.autopsy.url.analytics.DomainCategorizerException;
 import org.sleuthkit.autopsy.url.analytics.DomainCategory;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_CATEGORIZATION;
 
 /**
  * Analyzes a URL to determine if the url host is one of a certain kind of
@@ -439,7 +440,7 @@ class DomainCategoryRunner extends Extract {
                 new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_HOST, moduleName, artHost.getHost()),
                 new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_NAME, moduleName, domainCategory)
         );
-        postArtifact(createArtifactWithAttributes(ARTIFACT_TYPE.TSK_WEB_CATEGORIZATION, artHost.getAbstractFile(), bbattributes));
+        postArtifact(createArtifactWithAttributes(TSK_WEB_CATEGORIZATION, artHost.getAbstractFile(), bbattributes));
     }
 
     @Override

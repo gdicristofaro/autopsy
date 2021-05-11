@@ -48,8 +48,8 @@ import org.sleuthkit.autopsy.coreutils.MessageNotifyUtil;
 import org.sleuthkit.autopsy.modules.pictureanalyzer.PictureAnalyzerIngestModuleFactory;
 import org.sleuthkit.datamodel.Blackboard;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_METADATA_EXIF;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_USER_CONTENT_SUSPECTED;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_METADATA_EXIF;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_USER_CONTENT_SUSPECTED;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.Content;
@@ -150,10 +150,10 @@ public class EXIFProcessor implements PictureProcessor {
 
             if (!attributes.isEmpty() && !blackboard.artifactExists(file, TSK_METADATA_EXIF, attributes)) {
 
-                final BlackboardArtifact exifArtifact = file.newDataArtifact(new BlackboardArtifact.Type(TSK_METADATA_EXIF), attributes);
+                final BlackboardArtifact exifArtifact = file.newDataArtifact(TSK_METADATA_EXIF, attributes);
                 
                 final BlackboardArtifact userSuspectedArtifact = file.newAnalysisResult(
-                        new BlackboardArtifact.Type(TSK_USER_CONTENT_SUSPECTED), Score.SCORE_UNKNOWN, null, null, null,
+                        TSK_USER_CONTENT_SUSPECTED, Score.SCORE_UNKNOWN, null, null, null,
                         Arrays.asList(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_COMMENT, MODULE_NAME, Bundle.ExifProcessor_userContent_description())))
                         .getAnalysisResult();
                 
