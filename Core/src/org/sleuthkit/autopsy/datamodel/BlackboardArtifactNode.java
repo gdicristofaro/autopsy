@@ -322,29 +322,6 @@ public class BlackboardArtifactNode extends AbstractContentNode<BlackboardArtifa
      * Creates a Lookup object for this node and populates it with both the
      * artifact this node represents and its source content.
      *
-     * @param artifact The artifact this node represents.
-     *
-     * @return The Lookup.
-     */
-    private static Lookup createLookup(BlackboardArtifact artifact) {
-        final long objectID = artifact.getObjectID();
-        try {
-            Content content = contentCache.get(objectID, () -> artifact.getSleuthkitCase().getContentById(objectID));
-            if (content == null) {
-                return Lookups.fixed(artifact);
-            } else {
-                return Lookups.fixed(artifact, content);
-            }
-        } catch (ExecutionException ex) {
-            logger.log(Level.SEVERE, MessageFormat.format("Error getting source content (artifact objID={0}", artifact.getId()), ex); //NON-NLS
-            return Lookups.fixed(artifact);
-        }
-    }
-
-    /**
-     * Creates a Lookup object for this node and populates it with both the
-     * artifact this node represents and its source content.
-     *
      * @param artifact               The artifact this node represents.
      * @param lookupIsAssociatedFile True if the Content lookup should be made
      *                               for the associated file instead of the
@@ -353,23 +330,37 @@ public class BlackboardArtifactNode extends AbstractContentNode<BlackboardArtifa
      * @return The Lookup.
      */
     private static Lookup createLookup(BlackboardArtifact artifact, boolean lookupIsAssociatedFile) {
+        // Get artifact type in order to determine the category
+        BlackboardArtifact.Type artType = null;
+        try {
+            artType = (artifact == null) ? null : artifact.getType();
+        } catch (TskCoreException ex) {
+            logger.log(Level.WARNING, "No artifact type found for artifact with id of: " + artifact.getId(), ex);
+        }
+        
+        // if artifact type and that artifact type is not a data category, 
+        // attempt to get parent content to be used in lookup
         Content content = null;
-        if (lookupIsAssociatedFile) {
+        if (artType != null && BlackboardArtifact.Category.DATA_ARTIFACT != artType.getCategory()) {
             try {
-                content = getPathIdFile(artifact);
+                if (lookupIsAssociatedFile) {
+                    content = getPathIdFile(artifact);
+                } else {
+                    final long objectID = artifact.getObjectID();
+                    content = contentCache.get(objectID, () -> artifact.getSleuthkitCase().getContentById(objectID)); 
+                }
             } catch (ExecutionException ex) {
                 logger.log(Level.SEVERE, MessageFormat.format("Error getting source content (artifact objID={0}", artifact.getId()), ex); //NON-NLS
                 content = null;
-            }
-            if (content == null) {
-                return Lookups.fixed(artifact);
-            } else {
-                return Lookups.fixed(artifact, content);
-            }
-        } else {
-            return createLookup(artifact);
+            } 
         }
 
+        // if there is found content, put it in the lookup
+        if (content == null) {
+            return Lookups.fixed(artifact);
+        } else {
+            return Lookups.fixed(artifact, content);
+        }
     }
 
     /**
