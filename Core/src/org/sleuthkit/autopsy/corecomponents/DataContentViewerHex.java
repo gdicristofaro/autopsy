@@ -606,6 +606,23 @@ public class DataContentViewerHex extends javax.swing.JPanel implements DataCont
         if (node == null) {
             return false;
         }
+        
+        // if artifact node, this node can only be supported if 
+        // a) not a data artifact
+        // b) is either a web cache orweb download artifact
+        BlackboardArtifact artifact = node.getLookup().lookup(BlackboardArtifact.class);
+        if (artifact != null) {
+            try {
+                if (BlackboardArtifact.Category.DATA_ARTIFACT == artifact.getType().getCategory() && 
+                        BlackboardArtifact.Type.TSK_WEB_CACHE.getTypeID() != artifact.getArtifactTypeID() && 
+                        BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID() != artifact.getArtifactTypeID()) {
+                    return false;
+                }
+            } catch (TskCoreException ex) {
+                logger.log(Level.SEVERE, "Unable to get artifact type for artifact: " + artifact.getId(), ex);
+            }
+        }
+        
         Content content = DataContentViewerUtility.getDefaultContent(node);
         return content != null  && !(content instanceof BlackboardArtifact) && content.getSize() > 0;
     }

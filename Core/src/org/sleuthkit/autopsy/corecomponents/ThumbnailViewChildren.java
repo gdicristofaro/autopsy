@@ -54,7 +54,10 @@ import static org.sleuthkit.autopsy.corecomponents.ResultViewerPersistence.loadS
 import org.sleuthkit.autopsy.coreutils.ImageUtils;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.datamodel.AbstractFile;
+import org.sleuthkit.datamodel.BlackboardArtifact;
+import org.sleuthkit.datamodel.BlackboardArtifact.Category;
 import org.sleuthkit.datamodel.Content;
+import org.sleuthkit.datamodel.TskCoreException;
 
 /**
  * Wraps around original data result children nodes of the passed in parent
@@ -217,6 +220,23 @@ class ThumbnailViewChildren extends Children.Keys<Integer> {
     }
 
     private static boolean isSupported(Node node) {
+
+        // if artifact node, this node can only be supported if 
+        // a) not a data artifact
+        // b) is either a web cache orweb download artifact
+        BlackboardArtifact artifact = node.getLookup().lookup(BlackboardArtifact.class);
+        if (artifact != null) {
+            try {
+                if (BlackboardArtifact.Category.DATA_ARTIFACT == artifact.getType().getCategory() && 
+                        BlackboardArtifact.Type.TSK_WEB_CACHE.getTypeID() != artifact.getArtifactTypeID() && 
+                        BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID() != artifact.getArtifactTypeID()) {
+                    return false;
+                }
+            } catch (TskCoreException ex) {
+                logger.log(Level.SEVERE, "Unable to get artifact type for artifact: " + artifact.getId(), ex);
+            }
+        }
+        
         if (node != null) {
             Content content = node.getLookup().lookup(AbstractFile.class);
             if (content != null) {

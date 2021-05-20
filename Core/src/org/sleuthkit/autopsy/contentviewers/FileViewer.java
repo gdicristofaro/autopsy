@@ -30,6 +30,8 @@ import org.sleuthkit.autopsy.corecomponentinterfaces.DataContentViewer;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.modules.filetypeid.FileTypeDetector;
 import org.sleuthkit.datamodel.AbstractFile;
+import org.sleuthkit.datamodel.BlackboardArtifact;
+import org.sleuthkit.datamodel.TskCoreException;
 
 /**
  * Generic Application content viewer
@@ -187,6 +189,22 @@ public class FileViewer extends javax.swing.JPanel implements DataContentViewer 
 
         if (node == null) {
             return false;
+        }
+        
+        // if artifact node, this node can only be supported if 
+        // a) not a data artifact
+        // b) is either a web cache orweb download artifact
+        BlackboardArtifact artifact = node.getLookup().lookup(BlackboardArtifact.class);
+        if (artifact != null) {
+            try {
+                if (BlackboardArtifact.Category.DATA_ARTIFACT == artifact.getType().getCategory() && 
+                        BlackboardArtifact.Type.TSK_WEB_CACHE.getTypeID() != artifact.getArtifactTypeID() && 
+                        BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID() != artifact.getArtifactTypeID()) {
+                    return false;
+                }
+            } catch (TskCoreException ex) {
+                LOGGER.log(Level.SEVERE, "Unable to get artifact type for artifact: " + artifact.getId(), ex);
+            }
         }
 
         AbstractFile aFile = node.getLookup().lookup(AbstractFile.class);

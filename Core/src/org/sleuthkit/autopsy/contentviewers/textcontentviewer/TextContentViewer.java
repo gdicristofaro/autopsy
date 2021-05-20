@@ -19,18 +19,22 @@
 package org.sleuthkit.autopsy.contentviewers.textcontentviewer;
 
 import java.awt.Component;
+import java.util.logging.Level;
 import org.openide.nodes.Node;
 import org.openide.util.NbBundle.Messages;
 import org.openide.util.lookup.ServiceProvider;
 import org.sleuthkit.autopsy.corecomponentinterfaces.DataContentViewer;
+import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.datamodel.AbstractFile;
+import org.sleuthkit.datamodel.BlackboardArtifact;
+import org.sleuthkit.datamodel.TskCoreException;
 
 /**
  * A DataContentViewer that displays text with the TextViewers available.
  */
 @ServiceProvider(service = DataContentViewer.class, position = 2)
 public class TextContentViewer implements DataContentViewer {
-
+    private static final Logger logger = Logger.getLogger(TextContentViewer.class.getName());
     private final TextContentViewerPanel panel;
     private volatile Node currentNode = null;
 
@@ -91,6 +95,23 @@ public class TextContentViewer implements DataContentViewer {
         if (node == null) {
             return false;
         }
+        
+        // if artifact node, this node can only be supported if 
+        // a) not a data artifact
+        // b) is either a web cache orweb download artifact
+        BlackboardArtifact artifact = node.getLookup().lookup(BlackboardArtifact.class);
+        if (artifact != null) {
+            try {
+                if (BlackboardArtifact.Category.DATA_ARTIFACT == artifact.getType().getCategory() && 
+                        BlackboardArtifact.Type.TSK_WEB_CACHE.getTypeID() != artifact.getArtifactTypeID() && 
+                        BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID() != artifact.getArtifactTypeID()) {
+                    return false;
+                }
+            } catch (TskCoreException ex) {
+                logger.log(Level.SEVERE, "Unable to get artifact type for artifact: " + artifact.getId(), ex);
+            }
+        }
+        
         // get the node's File, if it has one
         AbstractFile file = node.getLookup().lookup(AbstractFile.class);
         if (file == null) {

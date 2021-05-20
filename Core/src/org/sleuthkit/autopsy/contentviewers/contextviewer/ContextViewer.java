@@ -221,7 +221,22 @@ public final class ContextViewer extends javax.swing.JPanel implements DataConte
 
     @Override
     public boolean isSupported(Node node) {
-
+        // if artifact node, this node can only be supported if 
+        // a) not a data artifact
+        // b) is either a web cache orweb download artifact
+        BlackboardArtifact artifact = node.getLookup().lookup(BlackboardArtifact.class);
+        if (artifact != null) {
+            try {
+                if (BlackboardArtifact.Category.DATA_ARTIFACT == artifact.getType().getCategory() && 
+                        BlackboardArtifact.Type.TSK_WEB_CACHE.getTypeID() != artifact.getArtifactTypeID() && 
+                        BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID() != artifact.getArtifactTypeID()) {
+                    return false;
+                }
+            } catch (TskCoreException ex) {
+                logger.log(Level.SEVERE, "Unable to get artifact type for artifact: " + artifact.getId(), ex);
+            }
+        }
+        
         // check if the node has an abstract file and the file has any context defining artifacts.
         if (node.getLookup().lookup(AbstractFile.class) != null) {
             AbstractFile abstractFile = node.getLookup().lookup(AbstractFile.class);
