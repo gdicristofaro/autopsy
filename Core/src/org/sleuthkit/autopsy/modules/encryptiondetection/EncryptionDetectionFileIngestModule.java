@@ -222,7 +222,7 @@ final class EncryptionDetectionFileIngestModule extends FileIngestModuleAdapter 
              */
             StringBuilder detailsSb = new StringBuilder();
             detailsSb.append("File: ").append(file.getParentPath()).append(file.getName());
-            if (artifactType.equals(BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_SUSPECTED)) {
+            if (artifactType.equals(BlackboardArtifact.Type.TSK_ENCRYPTION_SUSPECTED)) {
                 detailsSb.append("<br/>\nEntropy: ").append(calculatedEntropy);
             }
 

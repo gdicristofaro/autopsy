@@ -121,7 +121,7 @@ class ArtifactMenuMouseAdapter extends java.awt.event.MouseAdapter {
         Long contentId;
         if (pathIdAttr != null) {
             contentId = pathIdAttr.getValueLong();
-        } else if (artifact.getArtifactTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD.getTypeID() && artifact.getArtifactTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD.getTypeID()) {
+        } else if (artifact.getArtifactTypeID() != BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID() && artifact.getArtifactTypeID() != BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID()) {
             contentId = artifact.getObjectID();
         } else {
             contentId = null;

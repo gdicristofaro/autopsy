@@ -78,7 +78,7 @@ import org.sleuthkit.datamodel.LocalDirectory;
 import org.sleuthkit.datamodel.SlackFile;
 import org.sleuthkit.datamodel.TskException;
 import org.sleuthkit.datamodel.VirtualDirectory;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Type;
 import org.sleuthkit.datamodel.Report;
 import org.sleuthkit.datamodel.TskCoreException;
 
@@ -246,8 +246,8 @@ public class DataResultFilterNode extends FilterNode {
             if (art != null && filterArtifacts
                     && ((FilterNodeUtils.showMessagesInDatasourceTree() == false)
                          || (FilterNodeUtils.showMessagesInDatasourceTree()
-                                && art.getArtifactTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID()
-                                && art.getArtifactTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.getTypeID()))) {
+                                && art.getArtifactTypeID() != BlackboardArtifact.Type.TSK_EMAIL_MSG.getTypeID()
+                                && art.getArtifactTypeID() != BlackboardArtifact.Type.TSK_MESSAGE.getTypeID()))) {
                 return new Node[]{};
             }
                 
@@ -281,15 +281,15 @@ public class DataResultFilterNode extends FilterNode {
             BlackboardArtifact ba = ban.getLookup().lookup(BlackboardArtifact.class);
             final int artifactTypeID = ba.getArtifactTypeID();
 
-            if (artifactTypeID == BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID()
-                    || artifactTypeID == BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID()) {
+            if (artifactTypeID == BlackboardArtifact.Type.TSK_HASHSET_HIT.getTypeID()
+                    || artifactTypeID == BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID()) {
                 if (ban.getLookup().lookup(AbstractFile.class) != null) {
                     // We only want the "View File in Directory" actions if we have a file...it is
                     // possible that we have a keyword hit on a Report.
                     actionsList.add(new ViewContextAction(
                             NbBundle.getMessage(this.getClass(), "DataResultFilterNode.action.viewFileInDir.text"), ban));
                 }
-            } else if (artifactTypeID == BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT.getTypeID()) {
+            } else if (artifactTypeID == BlackboardArtifact.Type.TSK_INTERESTING_ARTIFACT_HIT.getTypeID()) {
                 //action to go to the source artifact
                 actionsList.add(new ViewSourceArtifactAction(DataResultFilterNode_viewSourceArtifact_text(), ba));
                 // action to go to the source file of the artifact
@@ -482,8 +482,8 @@ public class DataResultFilterNode extends FilterNode {
             
             BlackboardArtifact artifact = ban.getArtifact();
             try {
-                if ((artifact.getArtifactTypeID() == ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID())
-                        || (artifact.getArtifactTypeID() == ARTIFACT_TYPE.TSK_MESSAGE.getTypeID())) {
+                if ((artifact.getArtifactTypeID() == Type.TSK_EMAIL_MSG.getTypeID())
+                        || (artifact.getArtifactTypeID() == Type.TSK_MESSAGE.getTypeID())) {
                     if (artifact.hasChildren()) {
                         return openChild(ban);
                     }

@@ -642,8 +642,8 @@ public class PortableCaseReportModule implements ReportModule {
         // There may not be a case open when configuring report modules for Command Line execution
         // Get all SET_NAMEs from interesting item artifacts
         String innerSelect = "SELECT (value_text) AS set_name FROM blackboard_attributes WHERE (artifact_type_id = '"
-                + BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT.getTypeID() + "' OR artifact_type_id = '"
-                + BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT.getTypeID() + "') AND attribute_type_id = '"
+                + BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT.getTypeID() + "' OR artifact_type_id = '"
+                + BlackboardArtifact.Type.TSK_INTERESTING_ARTIFACT_HIT.getTypeID() + "') AND attribute_type_id = '"
                 + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID() + "'"; // NON-NLS
 
         // Get the count of each SET_NAME

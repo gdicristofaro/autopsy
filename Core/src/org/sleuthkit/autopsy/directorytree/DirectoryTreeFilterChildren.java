@@ -39,7 +39,7 @@ import org.sleuthkit.autopsy.datamodel.SlackFileNode;
 import org.sleuthkit.autopsy.datamodel.VirtualDirectoryNode;
 import org.sleuthkit.autopsy.datamodel.VolumeNode;
 import org.sleuthkit.datamodel.AbstractFile;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Type;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.Directory;
 import org.sleuthkit.datamodel.LayoutFile;
@@ -253,8 +253,8 @@ class DirectoryTreeFilterChildren extends FilterNode.Children {
         @Override
         public Boolean visit(BlackboardArtifactNode bbafn) {
             // Only show Message arttifacts with children
-            if ( (bbafn.getArtifact().getArtifactTypeID() == ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID()) ||             
-                 (bbafn.getArtifact().getArtifactTypeID() == ARTIFACT_TYPE.TSK_MESSAGE.getTypeID()) ) {
+            if ( (bbafn.getArtifact().getArtifactTypeID() == Type.TSK_EMAIL_MSG.getTypeID()) ||             
+                 (bbafn.getArtifact().getArtifactTypeID() == Type.TSK_MESSAGE.getTypeID()) ) {
                  return bbafn.hasContentChildren();
             }
             
@@ -318,8 +318,8 @@ class DirectoryTreeFilterChildren extends FilterNode.Children {
         public Boolean visit(BlackboardArtifactNode bbafn) {
             
             // Only show Message arttifacts with children
-            if ( (bbafn.getArtifact().getArtifactTypeID() == ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID()) ||             
-                 (bbafn.getArtifact().getArtifactTypeID() == ARTIFACT_TYPE.TSK_MESSAGE.getTypeID()) ) {
+            if ( (bbafn.getArtifact().getArtifactTypeID() == Type.TSK_EMAIL_MSG.getTypeID()) ||             
+                 (bbafn.getArtifact().getArtifactTypeID() == Type.TSK_MESSAGE.getTypeID()) ) {
                  return bbafn.hasContentChildren();
             }
             

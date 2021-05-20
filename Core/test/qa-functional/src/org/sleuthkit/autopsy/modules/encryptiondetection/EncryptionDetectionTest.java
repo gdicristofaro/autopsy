@@ -131,7 +131,7 @@ public class EncryptionDetectionTest extends NbTestCase {
                         String artifactTypeName = artifactsList.get(0).getArtifactTypeName();
                         errorMessage = String.format("Unexpected '%s' artifact for '%s'.",
                                 artifactTypeName, volume.getName());
-                        assertEquals(errorMessage, BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED.toString(), artifactTypeName);
+                        assertEquals(errorMessage, BlackboardArtifact.Type.TSK_ENCRYPTION_DETECTED.toString(), artifactTypeName);
 
                         BlackboardAttribute attribute = artifactsList.get(0).getAttribute(
                                 new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_COMMENT));
@@ -225,7 +225,7 @@ public class EncryptionDetectionTest extends NbTestCase {
 
                             String artifactTypeName = artifactsList.get(0).getArtifactTypeName();
                             errorMessage = String.format("File '%s' (objId=%d) has an unexpected '%s' artifact.", file.getName(), file.getId(), artifactTypeName);
-                            assertEquals(errorMessage, BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED.toString(), artifactTypeName);
+                            assertEquals(errorMessage, BlackboardArtifact.Type.TSK_ENCRYPTION_DETECTED.toString(), artifactTypeName);
                         } else {
                             /*
                              * Check that the unprotected file has no artifacts.
@@ -276,7 +276,7 @@ public class EncryptionDetectionTest extends NbTestCase {
             for (Content datasource : openCase.getDataSources()) { //data source
                 for (Content volumeSystem : datasource.getChildren()) { //volume system 
                     for (Content volume : volumeSystem.getChildren()) { //volumes
-                        numberOfEncryptedVolumes += volume.getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_SUSPECTED).size();
+                        numberOfEncryptedVolumes += volume.getArtifacts(BlackboardArtifact.Type.TSK_ENCRYPTION_SUSPECTED).size();
                     }
                 }
             }
@@ -288,7 +288,7 @@ public class EncryptionDetectionTest extends NbTestCase {
             assertEquals("Expected 1 file named veracryptContainerFile to exist in test image", 1, results.size());
             int numberOfEncryptedContainers = 0;
             for (AbstractFile file : results) {
-                numberOfEncryptedContainers += file.getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_SUSPECTED).size();
+                numberOfEncryptedContainers += file.getArtifacts(BlackboardArtifact.Type.TSK_ENCRYPTION_SUSPECTED).size();
             }
             assertEquals("Encrypted Container file should have one encyption suspected artifact", 1, numberOfEncryptedContainers);
         } catch (TskCoreException | TestUtilsException ex) {
@@ -344,7 +344,7 @@ public class EncryptionDetectionTest extends NbTestCase {
 
                         String artifactTypeName = artifactsList.get(0).getArtifactTypeName();
                         errorMessage = String.format("File '%s' (objId=%d) has an unexpected '%s' artifact.", file.getName(), file.getId(), artifactTypeName);
-                        assertEquals(errorMessage, BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_SUSPECTED.toString(), artifactTypeName);
+                        assertEquals(errorMessage, BlackboardArtifact.Type.TSK_ENCRYPTION_SUSPECTED.toString(), artifactTypeName);
                     } else {
                         /*
                          * Check that the file has no artifacts.

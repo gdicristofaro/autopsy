@@ -38,8 +38,8 @@ import org.sleuthkit.datamodel.TskData;
 public class ContainerSummary implements DefaultArtifactUpdateGovernor {
 
     private static final Set<Integer> ARTIFACT_UPDATE_TYPE_IDS = new HashSet<>(Arrays.asList(
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_OS_INFO.getTypeID(),
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_DATA_SOURCE_USAGE.getTypeID()
+            BlackboardArtifact.Type.TSK_OS_INFO.getTypeID(),
+            BlackboardArtifact.Type.TSK_DATA_SOURCE_USAGE.getTypeID()
     ));
 
     private final SleuthkitCaseProvider provider;
@@ -137,7 +137,7 @@ public class ContainerSummary implements DefaultArtifactUpdateGovernor {
         }
 
         return getConcattedAttrValue(dataSource.getId(),
-                BlackboardArtifact.ARTIFACT_TYPE.TSK_OS_INFO.getTypeID(),
+                BlackboardArtifact.Type.TSK_OS_INFO.getTypeID(),
                 BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME.getTypeID());
     }
 
@@ -162,7 +162,7 @@ public class ContainerSummary implements DefaultArtifactUpdateGovernor {
         }
 
         return getConcattedAttrValue(dataSource.getId(),
-                BlackboardArtifact.ARTIFACT_TYPE.TSK_DATA_SOURCE_USAGE.getTypeID(),
+                BlackboardArtifact.Type.TSK_DATA_SOURCE_USAGE.getTypeID(),
                 BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DESCRIPTION.getTypeID());
     }
 

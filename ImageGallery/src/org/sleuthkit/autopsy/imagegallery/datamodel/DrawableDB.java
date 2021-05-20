@@ -1412,7 +1412,7 @@ public final class DrawableDB {
 
             try {
                 // hash sets
-                try (SleuthkitCase.CaseDbQuery dbQuery = caseDb.executeQuery("SELECT obj_id FROM blackboard_artifacts WHERE artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID())) {
+                try (SleuthkitCase.CaseDbQuery dbQuery = caseDb.executeQuery("SELECT obj_id FROM blackboard_artifacts WHERE artifact_type_id = " + BlackboardArtifact.Type.TSK_HASHSET_HIT.getTypeID())) {
                     ResultSet rs = dbQuery.getResultSet();
                     while (rs.next()) {
                         long id = rs.getLong("obj_id");
@@ -1428,7 +1428,7 @@ public final class DrawableDB {
 
             try {
                 // EXIF
-                try (SleuthkitCase.CaseDbQuery dbQuery = caseDb.executeQuery("SELECT obj_id FROM blackboard_artifacts WHERE artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_METADATA_EXIF.getTypeID())) {
+                try (SleuthkitCase.CaseDbQuery dbQuery = caseDb.executeQuery("SELECT obj_id FROM blackboard_artifacts WHERE artifact_type_id = " + BlackboardArtifact.Type.TSK_METADATA_EXIF.getTypeID())) {
                     ResultSet rs = dbQuery.getResultSet();
                     while (rs.next()) {
                         long id = rs.getLong("obj_id");

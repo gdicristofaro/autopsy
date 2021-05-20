@@ -30,7 +30,7 @@ import org.sleuthkit.autopsy.geolocation.datamodel.Area;
 import org.sleuthkit.autopsy.geolocation.datamodel.Track;
 import org.sleuthkit.autopsy.geolocation.datamodel.Waypoint;
 import org.sleuthkit.autopsy.geolocation.datamodel.WaypointBuilder;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Type;
 
 /**
  * The business logic for filtering waypoints.
@@ -86,7 +86,7 @@ public abstract class AbstractWaypointFetcher implements WaypointBuilder.Waypoin
     @Override
     public void process(GeoLocationParseResult<Waypoint> waypointResults) {
         GeoLocationParseResult<Track> trackResults = null;
-        if (filters.getArtifactTypes().contains(ARTIFACT_TYPE.TSK_GPS_TRACK)) {
+        if (filters.getArtifactTypes().contains(Type.TSK_GPS_TRACK)) {
             try {
                 trackResults = Track.getTracks(Case.getCurrentCase().getSleuthkitCase(), filters.getDataSources());
             } catch (GeoLocationDataException ex) {
@@ -95,7 +95,7 @@ public abstract class AbstractWaypointFetcher implements WaypointBuilder.Waypoin
         }
         
         GeoLocationParseResult<Area> areaResults = null;
-        if (filters.getArtifactTypes().contains(ARTIFACT_TYPE.TSK_GPS_AREA)) {
+        if (filters.getArtifactTypes().contains(Type.TSK_GPS_AREA)) {
             try {
                 areaResults = Area.getAreas(Case.getCurrentCase().getSleuthkitCase(), filters.getDataSources());
             } catch (GeoLocationDataException ex) {

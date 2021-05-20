@@ -159,10 +159,10 @@ final public class FiltersPanel extends JPanel {
                 ModuleDataEvent eventData = (ModuleDataEvent) pce.getOldValue();
                 if (!needsRefresh
                         && null != eventData
-                        && (eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.getTypeID()
-                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT.getTypeID()
-                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG.getTypeID()
-                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID())) {
+                        && (eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_MESSAGE.getTypeID()
+                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_CONTACT.getTypeID()
+                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_CALLLOG.getTypeID()
+                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_EMAIL_MSG.getTypeID())) {
                     needsRefresh = true;
                     validateFilters();
                 }

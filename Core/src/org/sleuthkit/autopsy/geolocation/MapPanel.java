@@ -79,6 +79,7 @@ import javax.swing.SwingUtilities;
 import org.jxmapviewer.painter.CompoundPainter;
 import org.jxmapviewer.painter.Painter;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Type;
 
 /**
  * The map panel. This panel contains the jxmapviewer MapViewer
@@ -117,9 +118,9 @@ final public class MapPanel extends javax.swing.JPanel {
 
     static {
         DOT_WAYPOINT_TYPES.add(ARTIFACT_TYPE.TSK_GPS_TRACKPOINT.getTypeID());
-        DOT_WAYPOINT_TYPES.add(ARTIFACT_TYPE.TSK_GPS_TRACK.getTypeID());
-        DOT_WAYPOINT_TYPES.add(ARTIFACT_TYPE.TSK_GPS_ROUTE.getTypeID());
-        VERY_SMALL_DOT_WAYPOINT_TYPES.add(ARTIFACT_TYPE.TSK_GPS_AREA.getTypeID());
+        DOT_WAYPOINT_TYPES.add(Type.TSK_GPS_TRACK.getTypeID());
+        DOT_WAYPOINT_TYPES.add(Type.TSK_GPS_ROUTE.getTypeID());
+        VERY_SMALL_DOT_WAYPOINT_TYPES.add(Type.TSK_GPS_AREA.getTypeID());
     }
 
     /**

@@ -26,7 +26,7 @@ import org.openide.nodes.Sheet;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.datamodel.NodeProperty;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_MESSAGE;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TEXT;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -58,11 +58,10 @@ final class ThreadNode extends AbstractNode{
         }
         
         Sheet sheet =  messageNode.createSheet();
-        BlackboardArtifact.ARTIFACT_TYPE artifactTypeID = BlackboardArtifact.ARTIFACT_TYPE.fromID(artifact.getArtifactTypeID());
 
         // If its a text message, replace the subject node which is probably 
         // an empty string with the firest 120 characters of the text message
-        if(artifactTypeID != null && artifactTypeID == TSK_MESSAGE) {
+        if(artifact.getArtifactTypeID() == TSK_MESSAGE.getTypeID()) {
             try {
                 BlackboardAttribute attribute = artifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.fromID(TSK_TEXT.getTypeID())));
                 if(attribute != null) {

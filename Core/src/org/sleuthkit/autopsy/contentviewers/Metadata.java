@@ -31,7 +31,7 @@ import org.sleuthkit.autopsy.datamodel.ContentUtils;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Type;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.DataSource;
@@ -310,8 +310,8 @@ public class Metadata extends javax.swing.JPanel implements DataContentViewer {
      */
     private void addDownloadSourceRow(StringBuilder sb, BlackboardArtifact associatedArtifact ) throws TskCoreException {
         if (associatedArtifact != null && 
-                ((associatedArtifact.getArtifactTypeID() == ARTIFACT_TYPE.TSK_WEB_DOWNLOAD.getTypeID()) || 
-                 (associatedArtifact.getArtifactTypeID() == ARTIFACT_TYPE.TSK_WEB_CACHE.getTypeID())) ) {
+                ((associatedArtifact.getArtifactTypeID() == Type.TSK_WEB_DOWNLOAD.getTypeID()) || 
+                 (associatedArtifact.getArtifactTypeID() == Type.TSK_WEB_CACHE.getTypeID())) ) {
             BlackboardAttribute urlAttr = associatedArtifact.getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_URL));
             if (urlAttr != null) {
                 addRow(sb, NbBundle.getMessage(this.getClass(), "Metadata.tableRowTitle.downloadSource"), urlAttr.getValueString());

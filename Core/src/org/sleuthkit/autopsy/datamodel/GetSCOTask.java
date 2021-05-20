@@ -80,14 +80,14 @@ class GetSCOTask implements Runnable {
             if (contentNode instanceof BlackboardArtifactNode) {
                 BlackboardArtifact bbArtifact = ((BlackboardArtifactNode) contentNode).getArtifact();
                 //for specific artifact types we still want to display information for the file instance correlation attribute
-                if (bbArtifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED.getTypeID()
-                        || bbArtifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_SUSPECTED.getTypeID()
-                        || bbArtifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT.getTypeID()
-                        || bbArtifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_METADATA_EXIF.getTypeID()
-                        || bbArtifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID()
-                        || bbArtifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_OBJECT_DETECTED.getTypeID()
-                        || bbArtifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_EXT_MISMATCH_DETECTED.getTypeID()
-                        || bbArtifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID()) {
+                if (bbArtifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_ENCRYPTION_DETECTED.getTypeID()
+                        || bbArtifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_ENCRYPTION_SUSPECTED.getTypeID()
+                        || bbArtifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT.getTypeID()
+                        || bbArtifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_METADATA_EXIF.getTypeID()
+                        || bbArtifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID()
+                        || bbArtifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_OBJECT_DETECTED.getTypeID()
+                        || bbArtifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_EXT_MISMATCH_DETECTED.getTypeID()
+                        || bbArtifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_HASHSET_HIT.getTypeID()) {
                     try {
                         if (bbArtifact.getParent() instanceof AbstractFile) {
                             type = CorrelationAttributeInstance.getDefaultCorrelationTypes().get(CorrelationAttributeInstance.FILES_TYPE_ID);

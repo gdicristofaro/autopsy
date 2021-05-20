@@ -74,6 +74,7 @@ import org.sleuthkit.autopsy.report.infrastructure.TableReportModule;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Type;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.ContentTag;
 import org.sleuthkit.datamodel.Image;
@@ -401,7 +402,7 @@ public class HTMLReport implements TableReportModule {
                     iconFilePath = subPath + File.separator + iconFileName;
                     break;
             }
-        } else if (dataType.startsWith(ARTIFACT_TYPE.TSK_ACCOUNT.getDisplayName())) {
+        } else if (dataType.startsWith(Type.TSK_ACCOUNT.getDisplayName())) {
             /*
              * TSK_ACCOUNT artifacts get separated by their TSK_ACCOUNT_TYPE
              * attribute, with a synthetic compound dataType name, so they are

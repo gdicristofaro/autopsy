@@ -742,12 +742,12 @@ final class DiscoveryDialog extends javax.swing.JDialog {
                          */
                         ModuleDataEvent eventData = (ModuleDataEvent) evt.getOldValue();
                         if (null != eventData) {
-                            if (eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_OBJECT_DETECTED.getTypeID() && eventData.getArtifacts() != null) {
+                            if (eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_OBJECT_DETECTED.getTypeID() && eventData.getArtifacts() != null) {
                                 shouldUpdate = shouldUpdateFilters(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DESCRIPTION.getTypeID(), eventData, objectsDetected);
-                            } else if (eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID()) {
+                            } else if (eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_HASHSET_HIT.getTypeID()) {
                                 shouldUpdate = shouldUpdateFilters(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID(), eventData, hashSets);
-                            } else if (eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT.getTypeID()
-                                    || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT.getTypeID()) {
+                            } else if (eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT.getTypeID()
+                                    || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_INTERESTING_ARTIFACT_HIT.getTypeID()) {
                                 shouldUpdate = shouldUpdateFilters(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID(), eventData, interestingItems);
                             }
 

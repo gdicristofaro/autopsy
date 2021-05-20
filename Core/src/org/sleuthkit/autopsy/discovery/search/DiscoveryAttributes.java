@@ -210,7 +210,7 @@ public class DiscoveryAttributes {
 
             // Get pairs of (object ID, keyword list name) for all files in the list of files that have
             // keyword list hits.
-            String selectQuery = createSetNameClause(results, BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID(),
+            String selectQuery = createSetNameClause(results, BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID(),
                     BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID());
 
             SetKeywordListNamesCallback callback = new SetKeywordListNamesCallback(results);
@@ -624,7 +624,7 @@ public class DiscoveryAttributes {
 
             // Get pairs of (object ID, hash set name) for all files in the list of files that have
             // hash set hits.
-            String selectQuery = createSetNameClause(results, BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID(),
+            String selectQuery = createSetNameClause(results, BlackboardArtifact.Type.TSK_HASHSET_HIT.getTypeID(),
                     BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID());
 
             HashSetNamesCallback callback = new HashSetNamesCallback(results);
@@ -699,7 +699,7 @@ public class DiscoveryAttributes {
 
             // Get pairs of (object ID, interesting item set name) for all files in the list of files that have
             // interesting file set hits.
-            String selectQuery = createSetNameClause(results, BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT.getTypeID(),
+            String selectQuery = createSetNameClause(results, BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT.getTypeID(),
                     BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID());
 
             InterestingFileSetNamesCallback callback = new InterestingFileSetNamesCallback(results);
@@ -812,7 +812,7 @@ public class DiscoveryAttributes {
 
             // Get pairs of (object ID, object type name) for all files in the list of files that have
             // objects detected
-            String selectQuery = createSetNameClause(results, BlackboardArtifact.ARTIFACT_TYPE.TSK_OBJECT_DETECTED.getTypeID(),
+            String selectQuery = createSetNameClause(results, BlackboardArtifact.Type.TSK_OBJECT_DETECTED.getTypeID(),
                     BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DESCRIPTION.getTypeID());
 
             ObjectDetectedNamesCallback callback = new ObjectDetectedNamesCallback(results);

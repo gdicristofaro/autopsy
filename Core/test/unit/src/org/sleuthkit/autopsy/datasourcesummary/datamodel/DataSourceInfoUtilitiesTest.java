@@ -37,7 +37,7 @@ import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.autopsy.testutils.TskMockUtils;
 import static org.mockito.Mockito.*;
 import org.sleuthkit.autopsy.testutils.RandomizationUtils;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Type;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
 
@@ -211,19 +211,19 @@ public class DataSourceInfoUtilitiesTest {
         }
 
         // sort on string
-        testSorted(ARTIFACT_TYPE.TSK_WEB_COOKIE, ATTRIBUTE_TYPE.TSK_NAME, strings, BlackboardAttribute::new, sortOrder, 0);
+        testSorted(Type.TSK_WEB_COOKIE, ATTRIBUTE_TYPE.TSK_NAME, strings, BlackboardAttribute::new, sortOrder, 0);
 
         // sort on int
-        testSorted(ARTIFACT_TYPE.TSK_PROG_RUN, ATTRIBUTE_TYPE.TSK_COUNT, integers, BlackboardAttribute::new, sortOrder, 0);
+        testSorted(Type.TSK_PROG_RUN, ATTRIBUTE_TYPE.TSK_COUNT, integers, BlackboardAttribute::new, sortOrder, 0);
 
         // sort on long
-        testSorted(ARTIFACT_TYPE.TSK_PROG_RUN, ATTRIBUTE_TYPE.TSK_BYTES_SENT, longs, BlackboardAttribute::new, sortOrder, 0);
+        testSorted(Type.TSK_PROG_RUN, ATTRIBUTE_TYPE.TSK_BYTES_SENT, longs, BlackboardAttribute::new, sortOrder, 0);
 
         // sort on date
-        testSorted(ARTIFACT_TYPE.TSK_RECENT_OBJECT, ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, dateTimes, BlackboardAttribute::new, sortOrder, 0);
+        testSorted(Type.TSK_RECENT_OBJECT, ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, dateTimes, BlackboardAttribute::new, sortOrder, 0);
 
         // sort on double
-        testSorted(ARTIFACT_TYPE.TSK_GPS_BOOKMARK, ATTRIBUTE_TYPE.TSK_GEO_LATITUDE, doubles, BlackboardAttribute::new, sortOrder, 0);
+        testSorted(Type.TSK_GPS_BOOKMARK, ATTRIBUTE_TYPE.TSK_GEO_LATITUDE, doubles, BlackboardAttribute::new, sortOrder, 0);
     }
 
     @Test
@@ -239,9 +239,9 @@ public class DataSourceInfoUtilitiesTest {
     @Test
     public void getArtifacts_limits() throws TskCoreException {
         List<Integer> integers = Arrays.asList(22, 31, 42, 50, 60);
-        testSorted(ARTIFACT_TYPE.TSK_PROG_RUN, ATTRIBUTE_TYPE.TSK_COUNT, integers, BlackboardAttribute::new, SortOrder.ASCENDING, 3);
-        testSorted(ARTIFACT_TYPE.TSK_PROG_RUN, ATTRIBUTE_TYPE.TSK_COUNT, integers, BlackboardAttribute::new, SortOrder.ASCENDING, 5);
-        testSorted(ARTIFACT_TYPE.TSK_PROG_RUN, ATTRIBUTE_TYPE.TSK_COUNT, integers, BlackboardAttribute::new, SortOrder.ASCENDING, 10);
+        testSorted(Type.TSK_PROG_RUN, ATTRIBUTE_TYPE.TSK_COUNT, integers, BlackboardAttribute::new, SortOrder.ASCENDING, 3);
+        testSorted(Type.TSK_PROG_RUN, ATTRIBUTE_TYPE.TSK_COUNT, integers, BlackboardAttribute::new, SortOrder.ASCENDING, 5);
+        testSorted(Type.TSK_PROG_RUN, ATTRIBUTE_TYPE.TSK_COUNT, integers, BlackboardAttribute::new, SortOrder.ASCENDING, 10);
     }
 
     /**
@@ -278,7 +278,7 @@ public class DataSourceInfoUtilitiesTest {
     @Test
     public void getArtifacts_failOnJson() throws TskCoreException {
         testFailOnBadAttrType(
-                new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_GPS_ROUTE),
+                BlackboardArtifact.Type.TSK_GPS_ROUTE,
                 new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_GEO_WAYPOINTS),
                 "{ \"data\": \"none\" }",
                 BlackboardAttribute::new);
@@ -298,7 +298,7 @@ public class DataSourceInfoUtilitiesTest {
         long day = 24 * 60 * 60;
         DataSource dataSource = TskMockUtils.getDataSource(1);
 
-        BlackboardArtifact.Type ART_TYPE = new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_PROG_RUN);
+        BlackboardArtifact.Type ART_TYPE = BlackboardArtifact.Type.TSK_PROG_RUN;
 
         BlackboardArtifact mock1 = TskMockUtils.getArtifact(ART_TYPE, 10, dataSource,
                 new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_COUNT, "TEST SOURCE", 5),
@@ -311,7 +311,7 @@ public class DataSourceInfoUtilitiesTest {
                 new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_COUNT, "TEST SOURCE", 7),
                 new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_DATETIME, "TEST SOURCE", 3 * day));
 
-        test(new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_PROG_RUN),
+        test(BlackboardArtifact.Type.TSK_PROG_RUN,
                 dataSource,
                 new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME),
                 SortOrder.ASCENDING,
@@ -327,7 +327,7 @@ public class DataSourceInfoUtilitiesTest {
         long day = 24 * 60 * 60;
         DataSource dataSource = TskMockUtils.getDataSource(1);
 
-        BlackboardArtifact.Type ART_TYPE = new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_PROG_RUN);
+        BlackboardArtifact.Type ART_TYPE = BlackboardArtifact.Type.TSK_PROG_RUN;
 
         BlackboardArtifact mock1 = TskMockUtils.getArtifact(ART_TYPE, 10, dataSource,
                 new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_COUNT, "TEST SOURCE", 7),
@@ -340,7 +340,7 @@ public class DataSourceInfoUtilitiesTest {
                 new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_COUNT, "TEST SOURCE", 5),
                 new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_DATETIME, "TEST SOURCE", 3 * day));
 
-        test(new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_PROG_RUN),
+        test(BlackboardArtifact.Type.TSK_PROG_RUN,
                 dataSource,
                 new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_COUNT),
                 SortOrder.ASCENDING,
@@ -353,7 +353,7 @@ public class DataSourceInfoUtilitiesTest {
 
     @Test
     public void getArtifacts_tskCoreExceptionThrown() throws TskCoreException {
-        test(new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_ACCOUNT),
+        test(BlackboardArtifact.Type.TSK_ACCOUNT,
                 TskMockUtils.getDataSource(1),
                 new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE),
                 SortOrder.ASCENDING,
@@ -366,7 +366,7 @@ public class DataSourceInfoUtilitiesTest {
 
     @Test
     public void getArtifacts_throwOnLessThan0() throws TskCoreException {
-        test(new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_ACCOUNT),
+        test(BlackboardArtifact.Type.TSK_ACCOUNT,
                 TskMockUtils.getDataSource(1),
                 new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE),
                 SortOrder.ASCENDING,
@@ -379,7 +379,7 @@ public class DataSourceInfoUtilitiesTest {
 
     @Test
     public void getArtifacts_emptyListReturned() throws TskCoreException {
-        test(new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_ACCOUNT),
+        test(BlackboardArtifact.Type.TSK_ACCOUNT,
                 TskMockUtils.getDataSource(1),
                 new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE),
                 SortOrder.ASCENDING,
@@ -427,25 +427,25 @@ public class DataSourceInfoUtilitiesTest {
     @Test
     public void getStringOrNull_handlesNull() throws TskCoreException {
         testNullAttrValue("getStringOrNull", DataSourceInfoUtilities::getStringOrNull,
-                ARTIFACT_TYPE.TSK_ACCOUNT, ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE, "Skype");
+                Type.TSK_ACCOUNT, ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE, "Skype");
     }
 
     @Test
     public void getIntOrNull_handlesNull() throws TskCoreException {
         testNullAttrValue("getIntOrNull", DataSourceInfoUtilities::getIntOrNull,
-                ARTIFACT_TYPE.TSK_PROG_RUN, ATTRIBUTE_TYPE.TSK_COUNT, 16);
+                Type.TSK_PROG_RUN, ATTRIBUTE_TYPE.TSK_COUNT, 16);
     }
 
     @Test
     public void getLongOrNull_handlesNull() throws TskCoreException {
         testNullAttrValue("getLongOrNull", DataSourceInfoUtilities::getLongOrNull,
-                ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT, ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT, 1001L);
+                Type.TSK_ASSOCIATED_OBJECT, ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT, 1001L);
     }
 
     @Test
     public void getDateOrNull_handlesNull() throws TskCoreException {
         BlackboardAttribute.Type attrType = new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME);
-        BlackboardArtifact.Type artType = new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_BLUETOOTH_PAIRING);
+        BlackboardArtifact.Type artType = BlackboardArtifact.Type.TSK_BLUETOOTH_PAIRING;
 
         long dateTime = 24 * 60 * 60 * 42;
 

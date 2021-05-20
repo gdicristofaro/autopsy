@@ -109,13 +109,13 @@ public final class GeolocationTopComponent extends TopComponent {
                 ModuleDataEvent eventData = (ModuleDataEvent) pce.getOldValue();
                 if (null != eventData
                         && (eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACKPOINT.getTypeID()
-                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_SEARCH.getTypeID()
-                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_LAST_KNOWN_LOCATION.getTypeID()
-                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_ROUTE.getTypeID()
-                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_METADATA_EXIF.getTypeID()
-                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_BOOKMARK.getTypeID()
-                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK.getTypeID()
-                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA.getTypeID())) {
+                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_GPS_SEARCH.getTypeID()
+                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_GPS_LAST_KNOWN_LOCATION.getTypeID()
+                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_GPS_ROUTE.getTypeID()
+                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_METADATA_EXIF.getTypeID()
+                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_GPS_BOOKMARK.getTypeID()
+                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_GPS_TRACK.getTypeID()
+                        || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_GPS_AREA.getTypeID())) {
 
                     showRefreshPanel(true);
                 }

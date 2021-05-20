@@ -351,7 +351,7 @@ class ExtractIE extends Extract {
             // index<Number>.dat (i.e. index0.dat, index1.dat,..., indexN.dat)
             // where <Number> is the obj_id of the file.
             // Write each index.dat file to a temp directory.
-            //BlackboardArtifact bbart = fsc.newArtifact(ARTIFACT_TYPE.TSK_WEB_HISTORY);
+            //BlackboardArtifact bbart = fsc.newArtifact(Type.TSK_WEB_HISTORY);
             indexFileName = "index" + Integer.toString((int) indexFile.getId()) + ".dat"; //NON-NLS
             //indexFileName = "index" + Long.toString(bbart.getArtifactID()) + ".dat";
             temps = moduleTempDir + File.separator + indexFileName; //NON-NLS

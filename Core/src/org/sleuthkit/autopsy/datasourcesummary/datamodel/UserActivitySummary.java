@@ -46,7 +46,7 @@ import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.autopsy.texttranslation.NoServiceProviderException;
 import org.sleuthkit.autopsy.texttranslation.TextTranslationService;
 import org.sleuthkit.autopsy.texttranslation.TranslationException;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 
 /**
@@ -136,13 +136,13 @@ public class UserActivitySummary implements DefaultArtifactUpdateGovernor {
     };
 
     private static final Set<Integer> ARTIFACT_UPDATE_TYPE_IDS = new HashSet<>(Arrays.asList(
-            ARTIFACT_TYPE.TSK_WEB_SEARCH_QUERY.getTypeID(),
-            ARTIFACT_TYPE.TSK_MESSAGE.getTypeID(),
-            ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(),
-            ARTIFACT_TYPE.TSK_CALLLOG.getTypeID(),
-            ARTIFACT_TYPE.TSK_DEVICE_ATTACHED.getTypeID(),
-            ARTIFACT_TYPE.TSK_WEB_HISTORY.getTypeID(),
-            ARTIFACT_TYPE.TSK_PROG_RUN.getTypeID()
+            Type.TSK_WEB_SEARCH_QUERY.getTypeID(),
+            Type.TSK_MESSAGE.getTypeID(),
+            Type.TSK_EMAIL_MSG.getTypeID(),
+            Type.TSK_CALLLOG.getTypeID(),
+            Type.TSK_DEVICE_ATTACHED.getTypeID(),
+            Type.TSK_WEB_HISTORY.getTypeID(),
+            Type.TSK_PROG_RUN.getTypeID()
     ));
 
     private static final Set<String> DEVICE_EXCLUDE_LIST = new HashSet<>(Arrays.asList("ROOT_HUB", "ROOT_HUB20"));
@@ -387,7 +387,7 @@ public class UserActivitySummary implements DefaultArtifactUpdateGovernor {
 
         // get the artifacts
         List<BlackboardArtifact> webSearchArtifacts = caseProvider.get().getBlackboard()
-                .getArtifacts(ARTIFACT_TYPE.TSK_WEB_SEARCH_QUERY.getTypeID(), dataSource.getId());
+                .getArtifacts(Type.TSK_WEB_SEARCH_QUERY.getTypeID(), dataSource.getId());
 
         // group by search string (case insensitive)
         Collection<TopWebSearchResult> resultGroups = webSearchArtifacts
@@ -587,11 +587,11 @@ public class UserActivitySummary implements DefaultArtifactUpdateGovernor {
             return Collections.emptyList();
         }
 
-        Stream<TopAccountResult> messageResults = caseProvider.get().getBlackboard().getArtifacts(ARTIFACT_TYPE.TSK_MESSAGE.getTypeID(), dataSource.getId())
+        Stream<TopAccountResult> messageResults = caseProvider.get().getBlackboard().getArtifacts(Type.TSK_MESSAGE.getTypeID(), dataSource.getId())
                 .stream()
                 .map((art) -> getMessageAccountResult(art));
 
-        Stream<TopAccountResult> emailResults = caseProvider.get().getBlackboard().getArtifacts(ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(), dataSource.getId())
+        Stream<TopAccountResult> emailResults = caseProvider.get().getBlackboard().getArtifacts(Type.TSK_EMAIL_MSG.getTypeID(), dataSource.getId())
                 .stream()
                 .map((art) -> {
                     return getAccountResult(
@@ -601,7 +601,7 @@ public class UserActivitySummary implements DefaultArtifactUpdateGovernor {
                             TYPE_DATETIME_SENT);
                 });
 
-        Stream<TopAccountResult> calllogResults = caseProvider.get().getBlackboard().getArtifacts(ARTIFACT_TYPE.TSK_CALLLOG.getTypeID(), dataSource.getId())
+        Stream<TopAccountResult> calllogResults = caseProvider.get().getBlackboard().getArtifacts(Type.TSK_CALLLOG.getTypeID(), dataSource.getId())
                 .stream()
                 .map((art) -> {
                     return getAccountResult(
@@ -779,7 +779,7 @@ public class UserActivitySummary implements DefaultArtifactUpdateGovernor {
         }
 
         // Get TopProgramsResults for each TSK_PROG_RUN artifact
-        Collection<TopProgramsResult> results = caseProvider.get().getBlackboard().getArtifacts(ARTIFACT_TYPE.TSK_PROG_RUN.getTypeID(), dataSource.getId())
+        Collection<TopProgramsResult> results = caseProvider.get().getBlackboard().getArtifacts(Type.TSK_PROG_RUN.getTypeID(), dataSource.getId())
                 .stream()
                 // convert to a TopProgramsResult object or null if missing critical information
                 .map((art) -> getTopProgramsResult(art))

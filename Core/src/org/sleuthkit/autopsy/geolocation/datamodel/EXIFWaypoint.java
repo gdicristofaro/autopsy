@@ -71,8 +71,7 @@ final class EXIFWaypoint extends Waypoint {
      */
     private static AbstractFile getImageFromArtifact(BlackboardArtifact artifact) throws GeoLocationDataException {
         AbstractFile abstractFile = null;
-        BlackboardArtifact.ARTIFACT_TYPE artifactType = BlackboardArtifact.ARTIFACT_TYPE.fromID(artifact.getArtifactTypeID());
-        if (artifactType == BlackboardArtifact.ARTIFACT_TYPE.TSK_METADATA_EXIF) {
+        if (artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_METADATA_EXIF.getTypeID()) {
             try {
                 abstractFile = artifact.getSleuthkitCase().getAbstractFileById(artifact.getObjectID());
             } catch (TskCoreException ex) {

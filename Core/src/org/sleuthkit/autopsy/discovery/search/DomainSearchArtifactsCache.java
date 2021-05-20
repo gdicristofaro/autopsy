@@ -29,8 +29,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.sleuthkit.autopsy.discovery.search.DiscoveryEventUtils.SearchStartedEvent;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.SleuthkitCase;
 
 /**
  * Caches artifact requests.

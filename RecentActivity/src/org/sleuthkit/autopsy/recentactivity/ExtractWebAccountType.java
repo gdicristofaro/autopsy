@@ -32,7 +32,7 @@ import org.sleuthkit.autopsy.ingest.DataSourceIngestModuleProgress;
 import org.sleuthkit.autopsy.ingest.IngestJobContext;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Type;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -111,7 +111,7 @@ class ExtractWebAccountType extends Extract {
         roleFound = findWordPressRole(url, domain, artifact, roleProcessor) || roleFound;
         
         // if no other role for this url was found and it is a TSK_SERVICE_ACCOUNT, add a general user role.
-        if (!roleFound && artifact.getArtifactTypeID() == ARTIFACT_TYPE.TSK_SERVICE_ACCOUNT.getTypeID()) {
+        if (!roleFound && artifact.getArtifactTypeID() == Type.TSK_SERVICE_ACCOUNT.getTypeID()) {
             roleProcessor.addRole(domain, domain, Role.USER, url, artifact);
         }
     }

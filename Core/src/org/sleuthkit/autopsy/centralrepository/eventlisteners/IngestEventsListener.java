@@ -66,7 +66,7 @@ import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepository;
 import org.sleuthkit.autopsy.centralrepository.datamodel.Persona;
 import org.sleuthkit.autopsy.centralrepository.datamodel.PersonaAccount;
 import org.sleuthkit.datamodel.Account;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_CONTACT;
 import org.sleuthkit.datamodel.CommunicationsUtils;
 import org.sleuthkit.datamodel.Score;
 

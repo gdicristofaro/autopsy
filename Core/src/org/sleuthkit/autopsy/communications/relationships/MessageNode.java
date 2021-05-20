@@ -41,8 +41,8 @@ import org.sleuthkit.datamodel.TskCoreException;
 import static org.sleuthkit.autopsy.communications.relationships.RelationshipsNodeUtilities.getAttributeDisplayString;
 import org.sleuthkit.autopsy.datamodel.BlackboardArtifactNode;
 import org.sleuthkit.datamodel.Account;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_EMAIL_MSG;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_MESSAGE;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.CommunicationsManager;
 import org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil;
@@ -96,11 +96,8 @@ class MessageNode extends BlackboardArtifactNode {
         sheetSet.put(new NodeProperty<>("Type", Bundle.MessageNode_Node_Property_Type(), "", getDisplayName())); //NON-NLS
 
         final BlackboardArtifact artifact = getArtifact();
-        BlackboardArtifact.ARTIFACT_TYPE fromID = BlackboardArtifact.ARTIFACT_TYPE.fromID(artifact.getArtifactTypeID());
-
-        if (fromID == null
-                || (fromID != TSK_EMAIL_MSG
-                && fromID != TSK_MESSAGE)) {
+        int artifactTypeId = artifact.getArtifactTypeID();
+        if (artifactTypeId != TSK_EMAIL_MSG.getTypeID() && artifactTypeId != TSK_MESSAGE.getTypeID()) {
             return sheet;
         }
         if (threadID != null) {

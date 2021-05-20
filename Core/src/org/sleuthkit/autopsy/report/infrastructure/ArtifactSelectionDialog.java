@@ -71,11 +71,11 @@ class ArtifactSelectionDialog extends javax.swing.JDialog {
     @SuppressWarnings("deprecation")
     private void populateList() {
         try {
-            ArrayList<BlackboardArtifact.Type> doNotReport = new ArrayList<>();
-            doNotReport.add(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO));
-            doNotReport.add(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_TOOL_OUTPUT)); // output is too unstructured for table review 
-            doNotReport.add(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT));
-            doNotReport.add(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT));
+            ArrayList<BlackboardArtifact.ARTIFACT_TYPE> doNotReport = new ArrayList<>();
+            doNotReport.add(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO);
+            doNotReport.add(BlackboardArtifact.ARTIFACT_TYPE.TSK_TOOL_OUTPUT); // output is too unstructured for table review 
+            doNotReport.add(BlackboardArtifact.ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT);
+            doNotReport.add(BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT);
             
             artifactTypes = Case.getCurrentCaseThrows().getSleuthkitCase().getArtifactTypesInUse();
             artifactTypes.removeAll(doNotReport);

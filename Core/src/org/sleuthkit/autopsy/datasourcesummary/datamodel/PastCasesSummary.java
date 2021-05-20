@@ -33,7 +33,7 @@ import org.sleuthkit.autopsy.centralrepository.ingestmodule.CentralRepoIngestMod
 import org.sleuthkit.autopsy.datasourcesummary.datamodel.SleuthkitCaseProvider.SleuthkitCaseProviderException;
 import org.sleuthkit.autopsy.datasourcesummary.uiutils.DefaultArtifactUpdateGovernor;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Type;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.DataSource;
@@ -99,8 +99,8 @@ public class PastCasesSummary implements DefaultArtifactUpdateGovernor {
     }
 
     private static final Set<Integer> ARTIFACT_UPDATE_TYPE_IDS = new HashSet<>(Arrays.asList(
-            ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT.getTypeID(),
-            ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT.getTypeID()
+            Type.TSK_INTERESTING_FILE_HIT.getTypeID(),
+            Type.TSK_INTERESTING_ARTIFACT_HIT.getTypeID()
     ));
 
     private static final String CENTRAL_REPO_INGEST_NAME = CentralRepoIngestModuleFactory.getModuleName().toUpperCase().trim();
@@ -108,10 +108,10 @@ public class PastCasesSummary implements DefaultArtifactUpdateGovernor {
     private static final BlackboardAttribute.Type TYPE_ASSOCIATED_ARTIFACT = new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT);
 
     private static final Set<Integer> CR_DEVICE_TYPE_IDS = new HashSet<>(Arrays.asList(
-            ARTIFACT_TYPE.TSK_DEVICE_ATTACHED.getTypeID(),
-            ARTIFACT_TYPE.TSK_DEVICE_INFO.getTypeID(),
-            ARTIFACT_TYPE.TSK_SIM_ATTACHED.getTypeID(),
-            ARTIFACT_TYPE.TSK_WIFI_NETWORK_ADAPTER.getTypeID()
+            Type.TSK_DEVICE_ATTACHED.getTypeID(),
+            Type.TSK_DEVICE_INFO.getTypeID(),
+            Type.TSK_SIM_ATTACHED.getTypeID(),
+            Type.TSK_WIFI_NETWORK_ADAPTER.getTypeID()
     ));
 
     private static final String CASE_SEPARATOR = ",";
@@ -308,7 +308,7 @@ public class PastCasesSummary implements DefaultArtifactUpdateGovernor {
         List<String> deviceArtifactCases = new ArrayList<>();
         List<String> nonDeviceArtifactCases = new ArrayList<>();
 
-        for (BlackboardArtifact artifact : skCase.getBlackboard().getArtifacts(ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT.getTypeID(), dataSource.getId())) {
+        for (BlackboardArtifact artifact : skCase.getBlackboard().getArtifacts(Type.TSK_INTERESTING_ARTIFACT_HIT.getTypeID(), dataSource.getId())) {
             List<String> cases = getCasesFromArtifact(artifact);
             if (cases == null || cases.isEmpty()) {
                 continue;
@@ -321,7 +321,7 @@ public class PastCasesSummary implements DefaultArtifactUpdateGovernor {
             }
         }
 
-        Stream<String> filesCases = skCase.getBlackboard().getArtifacts(ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT.getTypeID(), dataSource.getId()).stream()
+        Stream<String> filesCases = skCase.getBlackboard().getArtifacts(Type.TSK_INTERESTING_FILE_HIT.getTypeID(), dataSource.getId()).stream()
                 .flatMap((art) -> getCasesFromArtifact(art).stream());
 
         return new PastCasesResult(

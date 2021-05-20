@@ -18,12 +18,9 @@
  */
 package org.sleuthkit.autopsy.contentviewers.contextviewer;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.sleuthkit.autopsy.contentviewers.contextviewer.ContextViewer.DateTimePanel;
 import org.sleuthkit.autopsy.directorytree.DirectoryTreeTopComponent;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT;
 
 /**
  * Displays additional context for the selected file, such as its source, and
@@ -33,14 +30,6 @@ import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_ASSOC
 public final class ContextSourcePanel extends javax.swing.JPanel implements DateTimePanel {
 
     private static final long serialVersionUID = 1L;
-
-    // defines a list of artifacts that provide context for a file
-    private static final List<BlackboardArtifact.ARTIFACT_TYPE> SOURCE_CONTEXT_ARTIFACTS = new ArrayList<>();
-
-    static {
-        SOURCE_CONTEXT_ARTIFACTS.add(TSK_ASSOCIATED_OBJECT);
-    }
-
     private final BlackboardArtifact sourceContextArtifact;
 
     private final Long dateTime;
@@ -116,7 +105,6 @@ public final class ContextSourcePanel extends javax.swing.JPanel implements Date
                 .addGap(0, 0, 0))
         );
     }// </editor-fold>//GEN-END:initComponents
-
     private void jSourceGoToResultButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jSourceGoToResultButtonActionPerformed
 
         final DirectoryTreeTopComponent dtc = DirectoryTreeTopComponent.findInstance();

@@ -88,7 +88,7 @@ class EvalURIObj extends EvaluatableObject {
              * List<BlackboardArtifact> arts = new
              * ArrayList<BlackboardArtifact>(); for (String part : parts) {
              * arts.addAll(sleuthkitCase.getBlackboardArtifacts(
-             * BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT,
+             * BlackboardArtifact.Type.TSK_KEYWORD_HIT,
              * BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD, part)); }
              *
              * if (!arts.isEmpty()) {

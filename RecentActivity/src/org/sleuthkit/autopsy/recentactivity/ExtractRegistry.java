@@ -46,7 +46,7 @@ import org.sleuthkit.autopsy.datamodel.ContentUtils;
 import org.sleuthkit.autopsy.ingest.DataSourceIngestModuleProcessTerminator;
 import org.sleuthkit.autopsy.ingest.IngestJobContext;
 import org.sleuthkit.autopsy.recentactivity.UsbDeviceIdMapper.USBInfo;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Type;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -773,7 +773,7 @@ class ExtractRegistry extends Extract {
 
                                 switch (dataType) {
                                     case "recentdocs": //NON-NLS
-                                        // BlackboardArtifact bbart = tskCase.getContentById(orgId).newArtifact(ARTIFACT_TYPE.TSK_RECENT_OBJECT);
+                                        // BlackboardArtifact bbart = tskCase.getContentById(orgId).newArtifact(Type.TSK_RECENT_OBJECT);
                                         // bbattributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_LAST_ACCESSED.getTypeID(), "RecentActivity", dataType, mtime));
                                         // bbattributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_NAME.getTypeID(), "RecentActivity", dataType, mtimeItem));
                                         // bbattributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_VALUE.getTypeID(), "RecentActivity", dataType, value));
@@ -852,7 +852,7 @@ class ExtractRegistry extends Extract {
                                         //    if (processorArchitecture.equals("AMD64"))
                                         //        processorArchitecture = "x86-64";
 
-                                        //    BlackboardArtifact bbart = regFile.newArtifact(ARTIFACT_TYPE.TSK_OS_INFO);
+                                        //    BlackboardArtifact bbart = regFile.newArtifact(Type.TSK_OS_INFO);
                                         //    bbattributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_PROCESSOR_ARCHITECTURE.getTypeID(), parentModuleName, processorArchitecture));
                                         //    bbart.addAttributes(bbattributes);
                                         //} catch (TskCoreException ex) {

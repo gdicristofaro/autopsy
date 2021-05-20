@@ -55,7 +55,7 @@ import org.sleuthkit.autopsy.texttranslation.TextTranslationService;
 import org.sleuthkit.autopsy.texttranslation.TranslationException;
 import org.sleuthkit.datamodel.Blackboard;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Type;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.DataSource;
@@ -247,7 +247,7 @@ public class UserActivitySummaryTest {
             String deviceId, String deviceMake, String deviceModel, Long date) {
 
         try {
-            return TskMockUtils.getArtifact(new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_DEVICE_ATTACHED), artifactId, dataSource,
+            return TskMockUtils.getArtifact(BlackboardArtifact.Type.TSK_DEVICE_ATTACHED, artifactId, dataSource,
                     TskMockUtils.getAttribute(ATTRIBUTE_TYPE.TSK_DEVICE_ID, deviceId),
                     TskMockUtils.getAttribute(ATTRIBUTE_TYPE.TSK_DATETIME, date),
                     TskMockUtils.getAttribute(ATTRIBUTE_TYPE.TSK_DEVICE_MAKE, deviceMake),
@@ -294,7 +294,7 @@ public class UserActivitySummaryTest {
 
         List<TopDeviceAttachedResult> results = summary.getRecentDevices(ds, count);
 
-        verifyCalled(tskPair.getRight(), ARTIFACT_TYPE.TSK_DEVICE_ATTACHED.getTypeID(), dataSourceId,
+        verifyCalled(tskPair.getRight(), Type.TSK_DEVICE_ATTACHED.getTypeID(), dataSourceId,
                 "Expected getRecentDevices to call getArtifacts with correct arguments.");
         Assert.assertEquals(1, results.size());
         Assert.assertEquals(acceptedDevice, results.get(0).getDeviceModel());
@@ -330,7 +330,7 @@ public class UserActivitySummaryTest {
             UserActivitySummary summary = getTestClass(tskPair.getLeft(), false, null);
 
             List<TopDeviceAttachedResult> results = summary.getRecentDevices(dataSource, countRequested);
-            verifyCalled(tskPair.getRight(), ARTIFACT_TYPE.TSK_DEVICE_ATTACHED.getTypeID(), dataSourceId,
+            verifyCalled(tskPair.getRight(), Type.TSK_DEVICE_ATTACHED.getTypeID(), dataSourceId,
                     "Expected getRecentDevices to call getArtifacts with correct arguments.");
 
             Assert.assertEquals(Math.min(countRequested, returnedCount), results.size());
@@ -361,7 +361,7 @@ public class UserActivitySummaryTest {
 
     private static BlackboardArtifact getWebSearchArtifact(long artifactId, DataSource dataSource, String query, Long date) {
         try {
-            return TskMockUtils.getArtifact(new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_WEB_SEARCH_QUERY), artifactId, dataSource,
+            return TskMockUtils.getArtifact(BlackboardArtifact.Type.TSK_WEB_SEARCH_QUERY, artifactId, dataSource,
                     TskMockUtils.getAttribute(ATTRIBUTE_TYPE.TSK_TEXT, query),
                     TskMockUtils.getAttribute(ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, date)
             );
@@ -398,7 +398,7 @@ public class UserActivitySummaryTest {
         Pair<SleuthkitCase, Blackboard> tskPair = getArtifactsTSKMock(artList);
         UserActivitySummary summary = getTestClass(tskPair.getLeft(), false, null);
         List<TopWebSearchResult> results = summary.getMostRecentWebSearches(ds, 10);
-        verifyCalled(tskPair.getRight(), ARTIFACT_TYPE.TSK_WEB_SEARCH_QUERY.getTypeID(), dataSourceId,
+        verifyCalled(tskPair.getRight(), Type.TSK_WEB_SEARCH_QUERY.getTypeID(), dataSourceId,
                 "Expected getRecentDevices to call getArtifacts with correct arguments.");
 
         Assert.assertEquals("Expected two different search queries", 2, results.size());
@@ -528,7 +528,7 @@ public class UserActivitySummaryTest {
             UserActivitySummary summary = getTestClass(tskPair.getLeft(), false, null);
 
             List<TopWebSearchResult> results = summary.getMostRecentWebSearches(dataSource, countRequested);
-            verifyCalled(tskPair.getRight(), ARTIFACT_TYPE.TSK_WEB_SEARCH_QUERY.getTypeID(), dataSourceId,
+            verifyCalled(tskPair.getRight(), Type.TSK_WEB_SEARCH_QUERY.getTypeID(), dataSourceId,
                     "Expected getRecentDevices to call getArtifacts with correct arguments.");
 
             Assert.assertEquals(Math.min(countRequested, returnedCount), results.size());
@@ -547,7 +547,7 @@ public class UserActivitySummaryTest {
 
         try {
             return TskMockUtils.getArtifact(
-                    new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_WEB_HISTORY), id, dataSource,
+                    BlackboardArtifact.Type.TSK_WEB_HISTORY, id, dataSource,
                     attributes);
         } catch (TskCoreException e) {
             fail("TskCoreException occurred while trying to mock a blackboard artifact");
@@ -593,7 +593,7 @@ public class UserActivitySummaryTest {
 
         List<TopDomainsResult> domains = summary.getRecentDomains(dataSource, 10);
 
-        verifyCalled(tskPair.getRight(), ARTIFACT_TYPE.TSK_WEB_HISTORY.getTypeID(), dataSourceId,
+        verifyCalled(tskPair.getRight(), Type.TSK_WEB_HISTORY.getTypeID(), dataSourceId,
                 "Expected getRecentDomains to call getArtifacts with correct arguments.");
 
         Assert.assertEquals(2, domains.size());
@@ -637,7 +637,7 @@ public class UserActivitySummaryTest {
 
         List<TopDomainsResult> domains = summary.getRecentDomains(dataSource, 10);
 
-        verifyCalled(tskPair.getRight(), ARTIFACT_TYPE.TSK_WEB_HISTORY.getTypeID(), dataSourceId,
+        verifyCalled(tskPair.getRight(), Type.TSK_WEB_HISTORY.getTypeID(), dataSourceId,
                 "Expected getRecentDomains to call getArtifacts with correct arguments.");
 
         Assert.assertEquals(1, domains.size());
@@ -674,7 +674,7 @@ public class UserActivitySummaryTest {
 
         List<TopDomainsResult> domains = summary.getRecentDomains(dataSource, 10);
 
-        verifyCalled(tskPair.getRight(), ARTIFACT_TYPE.TSK_WEB_HISTORY.getTypeID(), dataSourceId,
+        verifyCalled(tskPair.getRight(), Type.TSK_WEB_HISTORY.getTypeID(), dataSourceId,
                 "Expected getRecentDomains to call getArtifacts with correct arguments.");
 
         Assert.assertEquals(2, domains.size());
@@ -722,7 +722,7 @@ public class UserActivitySummaryTest {
             UserActivitySummary summary = getTestClass(tskPair.getLeft(), false, null);
 
             List<TopDomainsResult> results = summary.getRecentDomains(dataSource, countRequested);
-            verifyCalled(tskPair.getRight(), ARTIFACT_TYPE.TSK_WEB_HISTORY.getTypeID(), dataSourceId,
+            verifyCalled(tskPair.getRight(), Type.TSK_WEB_HISTORY.getTypeID(), dataSourceId,
                     "Expected getRecentDevices to call getArtifacts with correct arguments.");
 
             Assert.assertEquals(Math.min(countRequested, returnedCount), results.size());
@@ -751,7 +751,7 @@ public class UserActivitySummaryTest {
         }
 
         try {
-            return TskMockUtils.getArtifact(new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_EMAIL_MSG),
+            return TskMockUtils.getArtifact(BlackboardArtifact.Type.TSK_EMAIL_MSG,
                     artifactId, dataSource, attributes);
         } catch (TskCoreException ignored) {
             fail("Something went wrong while mocking");
@@ -781,7 +781,7 @@ public class UserActivitySummaryTest {
         }
 
         try {
-            return TskMockUtils.getArtifact(new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_CALLLOG),
+            return TskMockUtils.getArtifact(BlackboardArtifact.Type.TSK_CALLLOG,
                     artifactId, dataSource, attributes);
         } catch (TskCoreException ignored) {
             fail("Something went wrong while mocking");
@@ -809,7 +809,7 @@ public class UserActivitySummaryTest {
         }
 
         try {
-            return TskMockUtils.getArtifact(new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_MESSAGE),
+            return TskMockUtils.getArtifact(BlackboardArtifact.Type.TSK_MESSAGE,
                     artifactId, dataSource, attributes);
         } catch (TskCoreException ignored) {
             fail("Something went wrong while mocking");
@@ -853,13 +853,13 @@ public class UserActivitySummaryTest {
 
         List<TopAccountResult> receivedResults = summary.getRecentAccounts(dataSource, count);
 
-        verifyCalled(mockBlackboard, ARTIFACT_TYPE.TSK_MESSAGE.getTypeID(), dataSource.getId(),
+        verifyCalled(mockBlackboard, Type.TSK_MESSAGE.getTypeID(), dataSource.getId(),
                 "Expected getRecentAccounts to call getArtifacts requesting TSK_MESSAGE.");
 
-        verifyCalled(mockBlackboard, ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(), dataSource.getId(),
+        verifyCalled(mockBlackboard, Type.TSK_EMAIL_MSG.getTypeID(), dataSource.getId(),
                 "Expected getRecentAccounts to call getArtifacts requesting TSK_EMAIL_MSG.");
 
-        verifyCalled(mockBlackboard, ARTIFACT_TYPE.TSK_CALLLOG.getTypeID(), dataSource.getId(),
+        verifyCalled(mockBlackboard, Type.TSK_CALLLOG.getTypeID(), dataSource.getId(),
                 "Expected getRecentAccounts to call getArtifacts requesting TSK_CALLLOG.");
 
         Assert.assertEquals(expectedResults.size(), receivedResults.size());
@@ -1010,13 +1010,13 @@ public class UserActivitySummaryTest {
             UserActivitySummary summary = getTestClass(tskPair.getLeft(), false, null);
 
             List<TopAccountResult> results = summary.getRecentAccounts(dataSource, countRequested);
-            verifyCalled(tskPair.getRight(), ARTIFACT_TYPE.TSK_MESSAGE.getTypeID(), dataSource.getId(),
+            verifyCalled(tskPair.getRight(), Type.TSK_MESSAGE.getTypeID(), dataSource.getId(),
                     "Expected getRecentAccounts to call getArtifacts requesting TSK_MESSAGE.");
 
-            verifyCalled(tskPair.getRight(), ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(), dataSource.getId(),
+            verifyCalled(tskPair.getRight(), Type.TSK_EMAIL_MSG.getTypeID(), dataSource.getId(),
                     "Expected getRecentAccounts to call getArtifacts requesting TSK_EMAIL_MSG.");
 
-            verifyCalled(tskPair.getRight(), ARTIFACT_TYPE.TSK_CALLLOG.getTypeID(), dataSource.getId(),
+            verifyCalled(tskPair.getRight(), Type.TSK_CALLLOG.getTypeID(), dataSource.getId(),
                     "Expected getRecentAccounts to call getArtifacts requesting TSK_CALLLOG.");
 
             Assert.assertEquals(Math.min(countRequested, returnedCount), results.size());
@@ -1073,7 +1073,7 @@ public class UserActivitySummaryTest {
         }
 
         try {
-            return TskMockUtils.getArtifact(new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_PROG_RUN),
+            return TskMockUtils.getArtifact(BlackboardArtifact.Type.TSK_PROG_RUN,
                     artifactId, dataSource, attributes);
         } catch (TskCoreException ignored) {
             fail("Something went wrong while mocking");
@@ -1242,7 +1242,7 @@ public class UserActivitySummaryTest {
             UserActivitySummary summary = getTestClass(tskPair.getLeft(), false, null);
 
             List<TopProgramsResult> results = summary.getTopPrograms(dataSource, countRequested);
-            verifyCalled(tskPair.getRight(), ARTIFACT_TYPE.TSK_PROG_RUN.getTypeID(), dataSourceId,
+            verifyCalled(tskPair.getRight(), Type.TSK_PROG_RUN.getTypeID(), dataSourceId,
                     "Expected getRecentDevices to call getArtifacts with correct arguments.");
 
             Assert.assertEquals(Math.min(countRequested, returnedCount), results.size());
@@ -1256,7 +1256,7 @@ public class UserActivitySummaryTest {
             UserActivitySummary summaryAlphabetical = getTestClass(tskPairAlphabetical.getLeft(), false, null);
 
             List<TopProgramsResult> resultsAlphabetical = summaryAlphabetical.getTopPrograms(dataSource, countRequested);
-            verifyCalled(tskPairAlphabetical.getRight(), ARTIFACT_TYPE.TSK_PROG_RUN.getTypeID(), dataSourceId,
+            verifyCalled(tskPairAlphabetical.getRight(), Type.TSK_PROG_RUN.getTypeID(), dataSourceId,
                     "Expected getRecentDevices to call getArtifacts with correct arguments.");
 
             // ensure alphabetical by name

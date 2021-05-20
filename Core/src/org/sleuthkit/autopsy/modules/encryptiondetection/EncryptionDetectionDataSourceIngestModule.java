@@ -184,7 +184,7 @@ final class EncryptionDetectionDataSourceIngestModule implements DataSourceInges
                 detailsSb.append(volume.getParent().getUniquePath());
             }
             detailsSb.append(volume.getName());
-            if (artifactType.equals(BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_SUSPECTED)) {
+            if (artifactType.equals(BlackboardArtifact.Type.TSK_ENCRYPTION_SUSPECTED)) {
                 detailsSb.append("<br/>\nEntropy: ").append(calculatedEntropy);
             }
 

@@ -48,7 +48,7 @@ import org.sleuthkit.autopsy.testutils.RandomizationUtils;
 import org.sleuthkit.autopsy.testutils.TskMockUtils;
 import org.sleuthkit.datamodel.Blackboard;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Type;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.Content;
@@ -255,7 +255,7 @@ public class RecentFilesSummaryTest {
      * @return The mock artifact with pertinent attributes.
      */
     private BlackboardArtifact getRecentDocumentArtifact(DataSource ds, long artifactId, Long dateTime, String path) {
-        return getArtifact(ds, artifactId, ARTIFACT_TYPE.TSK_RECENT_OBJECT, Arrays.asList(
+        return getArtifact(ds, artifactId, Type.TSK_RECENT_OBJECT, Arrays.asList(
                 Pair.of(ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED , dateTime),
                 Pair.of(ATTRIBUTE_TYPE.TSK_PATH, path)
         ));
@@ -344,7 +344,7 @@ public class RecentFilesSummaryTest {
      * @return The mock artifact.
      */
     private BlackboardArtifact getRecentDownloadArtifact(DataSource ds, long artifactId, Long dateTime, String domain, String path) {
-        return getArtifact(ds, artifactId, ARTIFACT_TYPE.TSK_WEB_DOWNLOAD, Arrays.asList(
+        return getArtifact(ds, artifactId, Type.TSK_WEB_DOWNLOAD, Arrays.asList(
                 Pair.of(ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED, dateTime),
                 Pair.of(ATTRIBUTE_TYPE.TSK_DOMAIN, domain),
                 Pair.of(ATTRIBUTE_TYPE.TSK_PATH, path)
@@ -604,7 +604,7 @@ public class RecentFilesSummaryTest {
 
                 Long associatedId = ++objIdCounter;
                 artifacts.put(associatedId, TskMockUtils.getArtifact(
-                        new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT),
+                        BlackboardArtifact.Type.TSK_ASSOCIATED_OBJECT,
                         parent, associatedId, dataSource, associatedAttr));
             }
 
@@ -644,7 +644,7 @@ public class RecentFilesSummaryTest {
         for (int countToGenerate : new int[]{1, 9, 10, 11}) {
             // set up the items in the sleuthkit case
             List<AttachmentArtifactItem> items = IntStream.range(0, countToGenerate)
-                    .mapToObj((idx) -> new AttachmentArtifactItem(ARTIFACT_TYPE.TSK_MESSAGE.getTypeID(),
+                    .mapToObj((idx) -> new AttachmentArtifactItem(Type.TSK_MESSAGE.getTypeID(),
                     emailFromRetriever.apply(idx), dateTimeRetriever.apply(idx),
                     pathRetriever.apply(idx), fileNameRetriever.apply(idx)))
                     .collect(Collectors.toList());
@@ -676,19 +676,19 @@ public class RecentFilesSummaryTest {
         // setup data
         DataSource dataSource = TskMockUtils.getDataSource(1);
 
-        AttachmentArtifactItem successItem = new AttachmentArtifactItem(ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(),
+        AttachmentArtifactItem successItem = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG.getTypeID(),
                 "person@sleuthkit.com", DAY_SECONDS, "/parent/path", "msg.pdf");
-        AttachmentArtifactItem successItem2 = new AttachmentArtifactItem(ARTIFACT_TYPE.TSK_MESSAGE.getTypeID(),
+        AttachmentArtifactItem successItem2 = new AttachmentArtifactItem(Type.TSK_MESSAGE.getTypeID(),
                 "person_on_skype", DAY_SECONDS + 1, "/parent/path/to/skype", "skype.png");
-        AttachmentArtifactItem wrongArtType = new AttachmentArtifactItem(ARTIFACT_TYPE.TSK_CALLLOG.getTypeID(),
+        AttachmentArtifactItem wrongArtType = new AttachmentArtifactItem(Type.TSK_CALLLOG.getTypeID(),
                 "5555675309", DAY_SECONDS + 2, "/path/to/callog/info", "callog.dat");
-        AttachmentArtifactItem missingTimeStamp = new AttachmentArtifactItem(ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(),
+        AttachmentArtifactItem missingTimeStamp = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG.getTypeID(),
                 "person2@sleuthkit.com", null, "/parent/path", "msg2.pdf");
-        AttachmentArtifactItem zeroTimeStamp = new AttachmentArtifactItem(ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(),
+        AttachmentArtifactItem zeroTimeStamp = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG.getTypeID(),
                 "person2a@sleuthkit.com", 0L, "/parent/path", "msg2a.png");
-        AttachmentArtifactItem noParentFile = new AttachmentArtifactItem(ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(),
+        AttachmentArtifactItem noParentFile = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG.getTypeID(),
                 "person4@sleuthkit.com", DAY_SECONDS + 4, "/parent/path", "msg4.jpg", true, false);
-        AttachmentArtifactItem noAssocAttr = new AttachmentArtifactItem(ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(),
+        AttachmentArtifactItem noAssocAttr = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG.getTypeID(),
                 "person3@sleuthkit.com", DAY_SECONDS + 5, "/parent/path", "msg5.gif", false, true);
         AttachmentArtifactItem missingAssocArt = new AttachmentArtifactItem(null,
                 "person3@sleuthkit.com", DAY_SECONDS + 6, "/parent/path", "msg6.pdf");
@@ -725,11 +725,11 @@ public class RecentFilesSummaryTest {
         // setup data
         DataSource dataSource = TskMockUtils.getDataSource(1);
 
-        AttachmentArtifactItem item1 = new AttachmentArtifactItem(ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(),
+        AttachmentArtifactItem item1 = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG.getTypeID(),
                 "person@sleuthkit.com", DAY_SECONDS, "/parent/path", "msg.pdf");
-        AttachmentArtifactItem item2 = new AttachmentArtifactItem(ARTIFACT_TYPE.TSK_MESSAGE.getTypeID(),
+        AttachmentArtifactItem item2 = new AttachmentArtifactItem(Type.TSK_MESSAGE.getTypeID(),
                 "person_on_skype", DAY_SECONDS + 1, "/parent/path", "msg.pdf");
-        AttachmentArtifactItem item3 = new AttachmentArtifactItem(ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(),
+        AttachmentArtifactItem item3 = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG.getTypeID(),
                 "person2@sleuthkit.com", DAY_SECONDS + 2, "/parent/path", "msg.pdf");
 
         List<AttachmentArtifactItem> items = Arrays.asList(item1, item2, item3);

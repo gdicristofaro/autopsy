@@ -116,10 +116,10 @@ abstract class CVTFilterRefresher implements RefreshThrottler.Refresher {
             // Indicate that a refresh may be needed, unless the data added is Keyword or Hashset hits
             ModuleDataEvent eventData = (ModuleDataEvent) evt.getOldValue();
             return (null != eventData
-                    && (eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.getTypeID()
-                    || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT.getTypeID()
-                    || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG.getTypeID()
-                    || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID()));
+                    && (eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_MESSAGE.getTypeID()
+                    || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_CONTACT.getTypeID()
+                    || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_CALLLOG.getTypeID()
+                    || eventData.getBlackboardArtifactType().getTypeID() == BlackboardArtifact.Type.TSK_EMAIL_MSG.getTypeID()));
         }
 
         return false;

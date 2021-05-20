@@ -38,7 +38,7 @@ import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationAttributeIns
 import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationAttributeInstance.Type;
 import org.sleuthkit.autopsy.corecomponents.DataResultViewerTable;
 import org.sleuthkit.autopsy.coreutils.Logger;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.Tag;
@@ -169,8 +169,8 @@ public abstract class AbstractContentNode<T extends Content> extends ContentNode
                     + " ( SELECT obj_id FROM tsk_objects WHERE par_obj_id = " + c.getId() + " AND type = "
                     + TskData.ObjectType.ARTIFACT.getObjectType()
                     + "   INTERSECT SELECT artifact_obj_id FROM blackboard_artifacts WHERE obj_id = " + c.getId()
-                    + "     AND (artifact_type_id = " + ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID()
-                    + " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_MESSAGE.getTypeID() + ") "
+                    + "     AND (artifact_type_id = " + BlackboardArtifact.Type.TSK_EMAIL_MSG.getTypeID()
+                    + " OR artifact_type_id = " + BlackboardArtifact.Type.TSK_MESSAGE.getTypeID() + ") "
                     + "   UNION SELECT obj_id FROM tsk_objects WHERE par_obj_id = " + c.getId()
                     + "     AND type = " + TskData.ObjectType.ABSTRACTFILE.getObjectType() + ") AS OBJECT_IDS"; //NON-NLS;
 

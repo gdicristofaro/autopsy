@@ -101,11 +101,11 @@ class TableReportGenerator {
     @SuppressWarnings("deprecation")
     private void getAllExistingArtiactTypes() throws NoCurrentCaseException, TskCoreException {
         // get all possible artifact types
-        ArrayList<BlackboardArtifact.Type> doNotReport = new ArrayList<>();
-        doNotReport.add(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO));
-        doNotReport.add(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_TOOL_OUTPUT)); // output is too unstructured for table review
-        doNotReport.add(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT));
-        doNotReport.add(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT));
+        ArrayList<BlackboardArtifact.ARTIFACT_TYPE> doNotReport = new ArrayList<>();
+        doNotReport.add(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO);
+        doNotReport.add(BlackboardArtifact.ARTIFACT_TYPE.TSK_TOOL_OUTPUT); // output is too unstructured for table review
+        doNotReport.add(BlackboardArtifact.ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT);
+        doNotReport.add(BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT);
 
         Case.getCurrentCaseThrows().getSleuthkitCase().getArtifactTypes().forEach(artifactTypes::add);
         artifactTypes.removeAll(doNotReport);
@@ -187,10 +187,10 @@ class TableReportGenerator {
                             type.getDisplayName()));
 
             // Keyword hits and hashset hit artifacts get special handling.
-            if (type.getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID()) {
+            if (type.getTypeID() == BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID()) {
                 writeKeywordHits(tableReport, comment, tagNamesFilter);
                 continue;
-            } else if (type.getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID()) {
+            } else if (type.getTypeID() == BlackboardArtifact.Type.TSK_HASHSET_HIT.getTypeID()) {
                 writeHashsetHits(tableReport, comment, tagNamesFilter);
                 continue;
             }
@@ -206,7 +206,7 @@ class TableReportGenerator {
              * attribute, and then handed off to the standard method for writing
              * tables.
              */
-            if (type.getTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()) {
+            if (type.getTypeID() == BlackboardArtifact.Type.TSK_ACCOUNT.getTypeID()) {
                 //Group account artifacts by their account type
                 ListMultimap<String, ArtifactData> groupedArtifacts = Multimaps.index(artifactList,
                         artifactData -> {
@@ -236,7 +236,7 @@ class TableReportGenerator {
                         }
                     }
 
-                    final String compundDataTypeName = BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getDisplayName() + ": " + accountDisplayname;
+                    final String compundDataTypeName = BlackboardArtifact.Type.TSK_ACCOUNT.getDisplayName() + ": " + accountDisplayname;
                     writeTableForDataType(new ArrayList<>(groupedArtifacts.get(accountTypeStr)), type, compundDataTypeName, comment);
                 }
             } else {
@@ -323,7 +323,7 @@ class TableReportGenerator {
 
         // Tell the modules reporting on content tags is beginning.
         // @@@ This casting is a tricky little workaround to allow the HTML report module to slip in a content hyperlink.
-        // @@@ Alos Using the obsolete ARTIFACT_TYPE.TSK_TAG_FILE is also an expedient hack.
+        // @@@ Alos Using the obsolete Type.TSK_TAG_FILE is also an expedient hack.
         progressPanel.updateStatusLabel(
                 NbBundle.getMessage(this.getClass(), "ReportGenerator.progress.processing",
                         BlackboardArtifact.ARTIFACT_TYPE.TSK_TAG_FILE.getDisplayName()));
@@ -429,7 +429,7 @@ class TableReportGenerator {
         }
 
         // Tell the modules reporting on blackboard artifact tags data type is beginning.
-        // @@@ Using the obsolete ARTIFACT_TYPE.TSK_TAG_ARTIFACT is an expedient hack.
+        // @@@ Using the obsolete Type.TSK_TAG_ARTIFACT is an expedient hack.
         progressPanel.updateStatusLabel(
                 NbBundle.getMessage(this.getClass(), "ReportGenerator.progress.processing",
                         BlackboardArtifact.ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getDisplayName()));
@@ -648,13 +648,13 @@ class TableReportGenerator {
         if (!tagIDList.isEmpty()) {
             adHocCountQuery += ", blackboard_artifact_tags as tag "; //NON-NLS
         }
-        adHocCountQuery += "WHERE (att1.artifact_id = art.artifact_id) AND (art.artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID() + ") "; // NON-NLS
+        adHocCountQuery += "WHERE (att1.artifact_id = art.artifact_id) AND (art.artifact_type_id = " + BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID() + ") "; // NON-NLS
         if (!tagIDList.isEmpty()) {
             adHocCountQuery += " AND (art.artifact_id = tag.artifact_id) AND (tag.tag_name_id IN (" + tagIDList + ")) "; //NON-NLS
         }
         adHocCountQuery += "EXCEPT "
                 + // NON-NLS
-                "SELECT art.artifact_id FROM blackboard_artifacts AS art, blackboard_attributes AS att1 WHERE (att1.artifact_id = art.artifact_id) AND (art.artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID() + ") AND (att1.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID() + ")) AS adHocHits"; //NON-NLS
+                "SELECT art.artifact_id FROM blackboard_artifacts AS art, blackboard_attributes AS att1 WHERE (att1.artifact_id = art.artifact_id) AND (art.artifact_type_id = " + BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID() + ") AND (att1.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID() + ")) AS adHocHits"; //NON-NLS
 
         int adHocCount = 0;
         try (SleuthkitCase.CaseDbQuery dbQuery = openCase.getSleuthkitCase().executeQuery(adHocCountQuery)) {
@@ -685,7 +685,7 @@ class TableReportGenerator {
         }
         keywordListQuery += "WHERE att.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID() + " "
                 + //NON-NLS
-                "AND art.artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID() + " "
+                "AND art.artifact_type_id = " + BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID() + " "
                 + //NON-NLS
                 "AND att.artifact_id = art.artifact_id ";
         if (!tagIDList.isEmpty()) {
@@ -712,11 +712,11 @@ class TableReportGenerator {
             }
 
             // Make keyword data type and give them set index
-            tableModule.startDataType(BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getDisplayName(), comment);
+            tableModule.startDataType(BlackboardArtifact.Type.TSK_KEYWORD_HIT.getDisplayName(), comment);
             tableModule.addSetIndex(lists);
             progressPanel.updateStatusLabel(
                     NbBundle.getMessage(this.getClass(), "ReportGenerator.progress.processing",
-                            BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getDisplayName()));
+                            BlackboardArtifact.Type.TSK_KEYWORD_HIT.getDisplayName()));
         } catch (TskCoreException | SQLException ex) {
             errorList.add(NbBundle.getMessage(this.getClass(), "ReportGenerator.errList.failedQueryKWLists"));
             logger.log(Level.SEVERE, "Failed to query keyword lists with query " + keywordListQuery, ex); //NON-NLS
@@ -754,7 +754,7 @@ class TableReportGenerator {
                 + //NON-NLS
                 "AND (att3.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID() + ") "
                 + //NON-NLS
-                "AND (art.artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID() + ") ";
+                "AND (art.artifact_type_id = " + BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID() + ") ";
 
         // Query for keywords that are not part of a list
         String keywordAdHocQuery
@@ -764,11 +764,11 @@ class TableReportGenerator {
                 + // NON-NLS
                 "WHERE "
                 + // NON-NLS
-                " (art.artifact_id IN (SELECT art.artifact_id FROM blackboard_artifacts AS art, blackboard_attributes AS att1 WHERE (att1.artifact_id = art.artifact_id) AND (art.artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID() + ") "
+                " (art.artifact_id IN (SELECT art.artifact_id FROM blackboard_artifacts AS art, blackboard_attributes AS att1 WHERE (att1.artifact_id = art.artifact_id) AND (art.artifact_type_id = " + BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID() + ") "
                 + // NON-NLS
                 "EXCEPT "
                 + // NON-NLS
-                "SELECT art.artifact_id FROM blackboard_artifacts AS art, blackboard_attributes AS att1 WHERE (att1.artifact_id = art.artifact_id) AND (art.artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID() + ") AND (att1.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID() + "))) "
+                "SELECT art.artifact_id FROM blackboard_artifacts AS art, blackboard_attributes AS att1 WHERE (att1.artifact_id = art.artifact_id) AND (art.artifact_type_id = " + BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID() + ") AND (att1.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID() + "))) "
                 + //NON-NLS
                 "AND (att1.artifact_id = art.artifact_id) "
                 + //NON-NLS
@@ -780,7 +780,7 @@ class TableReportGenerator {
                 + // NON-NLS
                 "AND (att2.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD_PREVIEW.getTypeID() + ") "
                 + // NON-NLS
-                "AND (art.artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID() + ") "; // NON-NLS
+                "AND (art.artifact_type_id = " + BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID() + ") "; // NON-NLS
 
         String keywordsQuery = "SELECT * FROM ( " + keywordListsQuery + " UNION " + keywordAdHocQuery + " ) kwHits " + orderByClause;
 
@@ -835,7 +835,7 @@ class TableReportGenerator {
                     tableModule.startSet(currentList);
                     progressPanel.updateStatusLabel(
                             NbBundle.getMessage(this.getClass(), "ReportGenerator.progress.processingList",
-                                    BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getDisplayName(), currentList));
+                                    BlackboardArtifact.Type.TSK_KEYWORD_HIT.getDisplayName(), currentList));
                 }
                 if (!keyword.equals(currentKeyword)) {
                     // End the previous table if one exists.
@@ -898,7 +898,7 @@ class TableReportGenerator {
                 + //NON-NLS
                 "WHERE att.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID() + " "
                 + //NON-NLS
-                "AND art.artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID() + " "
+                "AND art.artifact_type_id = " + BlackboardArtifact.Type.TSK_HASHSET_HIT.getTypeID() + " "
                 + //NON-NLS
                 "AND att.artifact_id = art.artifact_id "
                 + //NON-NLS
@@ -912,11 +912,11 @@ class TableReportGenerator {
                 lists.add(listsRs.getString("list")); //NON-NLS
             }
 
-            tableModule.startDataType(BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT.getDisplayName(), comment);
+            tableModule.startDataType(BlackboardArtifact.Type.TSK_HASHSET_HIT.getDisplayName(), comment);
             tableModule.addSetIndex(lists);
             progressPanel.updateStatusLabel(
                     NbBundle.getMessage(this.getClass(), "ReportGenerator.progress.processing",
-                            BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT.getDisplayName()));
+                            BlackboardArtifact.Type.TSK_HASHSET_HIT.getDisplayName()));
         } catch (TskCoreException | SQLException ex) {
             errorList.add(NbBundle.getMessage(this.getClass(), "ReportGenerator.errList.failedQueryHashsetLists"));
             logger.log(Level.SEVERE, "Failed to query hashset lists: ", ex); //NON-NLS
@@ -942,7 +942,7 @@ class TableReportGenerator {
                 + //NON-NLS
                 "AND (att.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME.getTypeID() + ") "
                 + //NON-NLS
-                "AND (art.artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID() + ") "
+                "AND (art.artifact_type_id = " + BlackboardArtifact.Type.TSK_HASHSET_HIT.getTypeID() + ") "
                 + //NON-NLS
                 orderByClause; //NON-NLS
 
@@ -998,7 +998,7 @@ class TableReportGenerator {
                     tableModule.startTable(columnHeaderNames);
                     progressPanel.updateStatusLabel(
                             NbBundle.getMessage(this.getClass(), "ReportGenerator.progress.processingList",
-                                    BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT.getDisplayName(), currentSet));
+                                    BlackboardArtifact.Type.TSK_HASHSET_HIT.getDisplayName(), currentSet));
                 }
 
                 // Add a row for this hit to every module
@@ -1139,7 +1139,7 @@ class TableReportGenerator {
         private List<String> getOrderedRowDataAsStrings() throws TskCoreException {
 
             List<String> orderedRowData = new ArrayList<>();
-            if (BlackboardArtifact.ARTIFACT_TYPE.TSK_EXT_MISMATCH_DETECTED.getTypeID() == getArtifact().getArtifactTypeID()) {
+            if (BlackboardArtifact.Type.TSK_EXT_MISMATCH_DETECTED.getTypeID() == getArtifact().getArtifactTypeID()) {
                 if (content != null && content instanceof AbstractFile) {
                     AbstractFile file = (AbstractFile) content;
                     orderedRowData.add(file.getName());
@@ -1160,7 +1160,7 @@ class TableReportGenerator {
                 }
                 orderedRowData.add(makeCommaSeparatedList(getTags()));
 
-            } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT.getTypeID() == getArtifact().getArtifactTypeID()) {
+            } else if (BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT.getTypeID() == getArtifact().getArtifactTypeID()) {
                 String[] attributeDataArray = new String[5];
                 // Array is used so that order of the attributes is maintained.
                 for (BlackboardAttribute attr : attributes) {
@@ -1271,7 +1271,7 @@ class TableReportGenerator {
 
         // Long switch statement to retain ordering of attribute types that are 
         // attached to pre-defined artifact types.
-        if (BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_BOOKMARK.getTypeID() == artifactTypeId) {
+        if (BlackboardArtifact.Type.TSK_WEB_BOOKMARK.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.url"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL)));
 
@@ -1284,7 +1284,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.program"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_COOKIE.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_WEB_COOKIE.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.url"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL)));
 
@@ -1300,7 +1300,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.program"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_WEB_HISTORY.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.url"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL)));
 
@@ -1319,7 +1319,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.urlDomainDecoded"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL_DECODED)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.dest"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH)));
 
@@ -1333,7 +1333,7 @@ class TableReportGenerator {
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME)));
 
             attributeTypeSet.remove(new Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH_ID));
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_RECENT_OBJECT.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_RECENT_OBJECT.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.path"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH)));
 
@@ -1341,22 +1341,22 @@ class TableReportGenerator {
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED )));
 
             attributeTypeSet.remove(new Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH_ID));
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_INSTALLED_PROG.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_INSTALLED_PROG.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.progName"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME)));
 
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.instDateTime"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID() == artifactTypeId) {
             columns.add(new HeaderOnlyColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.preview")));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_HASHSET_HIT.getTypeID() == artifactTypeId) {
             columns.add(new SourceFileColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.file")));
 
             columns.add(new HeaderOnlyColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.size")));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_DEVICE_ATTACHED.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_DEVICE_ATTACHED.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.devMake"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DEVICE_MAKE)));
 
@@ -1369,7 +1369,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.dateTime"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_SEARCH_QUERY.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_WEB_SEARCH_QUERY.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.text"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TEXT)));
 
@@ -1382,7 +1382,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.progName"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_METADATA_EXIF.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_METADATA_EXIF.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.dateTaken"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED)));
 
@@ -1401,7 +1401,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.altitude"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_ALTITUDE)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_CONTACT.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.personName"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME)));
 
@@ -1420,7 +1420,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.email"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_MESSAGE.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.msgType"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_MESSAGE_TYPE)));
 
@@ -1451,7 +1451,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.text"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TEXT)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_CALLLOG.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.personName"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME)));
 
@@ -1467,7 +1467,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.direction"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DIRECTION)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_CALENDAR_ENTRY.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_CALENDAR_ENTRY.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.calendarEntryType"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_CALENDAR_ENTRY_TYPE)));
 
@@ -1483,7 +1483,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.location"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_LOCATION)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_SPEED_DIAL_ENTRY.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_SPEED_DIAL_ENTRY.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.shortCut"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SHORTCUT)));
 
@@ -1493,7 +1493,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.phoneNumber"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_BLUETOOTH_PAIRING.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_BLUETOOTH_PAIRING.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.deviceName"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DEVICE_NAME)));
 
@@ -1513,7 +1513,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.dateTime"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_BOOKMARK.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_GPS_BOOKMARK.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.latitude"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_LATITUDE)));
 
@@ -1532,7 +1532,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.dateTime"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_LAST_KNOWN_LOCATION.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_GPS_LAST_KNOWN_LOCATION.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.latitude"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_LATITUDE)));
 
@@ -1551,7 +1551,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.dateTime"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_SEARCH.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_GPS_SEARCH.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.latitude"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_LATITUDE)));
 
@@ -1570,7 +1570,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.dateTime"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_SERVICE_ACCOUNT.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_SERVICE_ACCOUNT.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.category"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_CATEGORY)));
 
@@ -1601,12 +1601,12 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.mailServer"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SERVER_NAME)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED.getTypeID() == artifactTypeId
-                || BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_SUSPECTED.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_ENCRYPTION_DETECTED.getTypeID() == artifactTypeId
+                || BlackboardArtifact.Type.TSK_ENCRYPTION_SUSPECTED.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.name"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_EXT_MISMATCH_DETECTED.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_EXT_MISMATCH_DETECTED.getTypeID() == artifactTypeId) {
             columns.add(new HeaderOnlyColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.file")));
 
             columns.add(new HeaderOnlyColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.extension.text")));
@@ -1615,7 +1615,7 @@ class TableReportGenerator {
 
             columns.add(new HeaderOnlyColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.path")));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_OS_INFO.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_OS_INFO.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.processorArchitecture.text"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROCESSOR_ARCHITECTURE)));
 
@@ -1625,7 +1625,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.osInstallDate.text"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_EMAIL_MSG.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.tskEmailTo"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL_TO)));
 
@@ -1653,7 +1653,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.tskMsgId"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_MSG_ID)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.tskSetName"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME)));
 
@@ -1669,7 +1669,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.description"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DESCRIPTION)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_ROUTE.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_GPS_ROUTE.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.tskGpsRouteCategory"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_CATEGORY)));
 
@@ -1697,7 +1697,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.program"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_INTERESTING_ARTIFACT_HIT.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.tskSetName"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME)));
 
@@ -1707,7 +1707,7 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.program"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_PROG_RUN.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_PROG_RUN.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.program"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME)));
 
@@ -1727,19 +1727,19 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.userId"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_USER_ID)));
 
-        } else if (BlackboardArtifact.ARTIFACT_TYPE.TSK_REMOTE_DRIVE.getTypeID() == artifactTypeId) {
+        } else if (BlackboardArtifact.Type.TSK_REMOTE_DRIVE.getTypeID() == artifactTypeId) {
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.localPath"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_LOCAL_PATH)));
 
             columns.add(new AttributeColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.remotePath"),
                     new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_REMOTE_PATH)));
-        } else if (artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()) {
+        } else if (artifactTypeId == BlackboardArtifact.Type.TSK_ACCOUNT.getTypeID()) {
             columns.add(new StatusColumn());
             attributeTypeSet.remove(new Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE));
             attributeTypeSet.remove(new Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT));
             attributeTypeSet.remove(new Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME));
             attributeTypeSet.remove(new Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD_SEARCH_DOCUMENT_ID));
-        } else if (artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CACHE.getTypeID()) {
+        } else if (artifactTypeId == BlackboardArtifact.Type.TSK_WEB_CACHE.getTypeID()) {
             attributeTypeSet.remove(new Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH_ID));
         } else {
             // This is the case that it is a custom type. The reason an else is 
@@ -1764,30 +1764,30 @@ class TableReportGenerator {
             columns.add(new AttributeColumn(type.getDisplayName(), type));
         }
         // Source file column is added here for ordering purposes.
-        if (artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_BOOKMARK.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_COOKIE.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_RECENT_OBJECT.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_INSTALLED_PROG.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_DEVICE_ATTACHED.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_SEARCH_QUERY.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_METADATA_EXIF.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_CALENDAR_ENTRY.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_SPEED_DIAL_ENTRY.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_BLUETOOTH_PAIRING.getTypeID()
+        if (artifactTypeId == BlackboardArtifact.Type.TSK_WEB_BOOKMARK.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_WEB_COOKIE.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_WEB_HISTORY.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_RECENT_OBJECT.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_INSTALLED_PROG.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_DEVICE_ATTACHED.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_WEB_SEARCH_QUERY.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_METADATA_EXIF.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_CONTACT.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_MESSAGE.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_CALLLOG.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_CALENDAR_ENTRY.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_SPEED_DIAL_ENTRY.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_BLUETOOTH_PAIRING.getTypeID()
                 || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACKPOINT.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_BOOKMARK.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_LAST_KNOWN_LOCATION.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_SEARCH.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_SERVICE_ACCOUNT.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_SUSPECTED.getTypeID()
-                || artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_OS_INFO.getTypeID()) {
+                || artifactTypeId == BlackboardArtifact.Type.TSK_GPS_BOOKMARK.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_GPS_LAST_KNOWN_LOCATION.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_GPS_SEARCH.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_GPS_AREA.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_SERVICE_ACCOUNT.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_ENCRYPTION_DETECTED.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_ENCRYPTION_SUSPECTED.getTypeID()
+                || artifactTypeId == BlackboardArtifact.Type.TSK_OS_INFO.getTypeID()) {
             columns.add(new SourceFileColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.srcFile")));
         }
         columns.add(new TaggedResultsColumn(NbBundle.getMessage(this.getClass(), "ReportGenerator.artTableColHdr.tags")));

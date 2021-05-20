@@ -33,7 +33,7 @@ import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.Account;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Type;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.HashUtility;
@@ -52,11 +52,11 @@ public class CorrelationAttributeUtil {
 
     // artifact ids that specifically have a TSK_DOMAIN attribute that should be handled by CR
     private static Set<Integer> DOMAIN_ARTIFACT_TYPE_IDS = new HashSet<>(Arrays.asList(
-            ARTIFACT_TYPE.TSK_WEB_BOOKMARK.getTypeID(),
-            ARTIFACT_TYPE.TSK_WEB_COOKIE.getTypeID(),
-            ARTIFACT_TYPE.TSK_WEB_DOWNLOAD.getTypeID(),
-            ARTIFACT_TYPE.TSK_WEB_HISTORY.getTypeID(),
-            ARTIFACT_TYPE.TSK_WEB_CACHE.getTypeID()
+            BlackboardArtifact.Type.TSK_WEB_BOOKMARK.getTypeID(),
+            BlackboardArtifact.Type.TSK_WEB_COOKIE.getTypeID(),
+            BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID(),
+            BlackboardArtifact.Type.TSK_WEB_HISTORY.getTypeID(),
+            BlackboardArtifact.Type.TSK_WEB_CACHE.getTypeID()
     ));
 
     /**
@@ -84,15 +84,15 @@ public class CorrelationAttributeUtil {
         {
             addAll(DOMAIN_ARTIFACT_TYPE_IDS);
 
-            add(ARTIFACT_TYPE.TSK_DEVICE_ATTACHED.getTypeID());
-            add(ARTIFACT_TYPE.TSK_WIFI_NETWORK.getTypeID());
-            add(ARTIFACT_TYPE.TSK_WIFI_NETWORK_ADAPTER.getTypeID());
-            add(ARTIFACT_TYPE.TSK_BLUETOOTH_PAIRING.getTypeID());
-            add(ARTIFACT_TYPE.TSK_BLUETOOTH_ADAPTER.getTypeID());
-            add(ARTIFACT_TYPE.TSK_DEVICE_INFO.getTypeID());
-            add(ARTIFACT_TYPE.TSK_SIM_ATTACHED.getTypeID());
-            add(ARTIFACT_TYPE.TSK_WEB_FORM_ADDRESS.getTypeID());
-            add(ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID());
+            add(BlackboardArtifact.Type.TSK_DEVICE_ATTACHED.getTypeID());
+            add(BlackboardArtifact.Type.TSK_WIFI_NETWORK.getTypeID());
+            add(BlackboardArtifact.Type.TSK_WIFI_NETWORK_ADAPTER.getTypeID());
+            add(BlackboardArtifact.Type.TSK_BLUETOOTH_PAIRING.getTypeID());
+            add(BlackboardArtifact.Type.TSK_BLUETOOTH_ADAPTER.getTypeID());
+            add(BlackboardArtifact.Type.TSK_DEVICE_INFO.getTypeID());
+            add(BlackboardArtifact.Type.TSK_SIM_ATTACHED.getTypeID());
+            add(BlackboardArtifact.Type.TSK_WEB_FORM_ADDRESS.getTypeID());
+            add(BlackboardArtifact.Type.TSK_ACCOUNT.getTypeID());
         }
     };
 
@@ -150,7 +150,7 @@ public class CorrelationAttributeUtil {
             BlackboardArtifact sourceArtifact = getCorrAttrSourceArtifact(artifact);
             if (sourceArtifact != null) {
                 int artifactTypeID = sourceArtifact.getArtifactTypeID();
-                if (artifactTypeID == ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID()) {
+                if (artifactTypeID == BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID()) {
                     BlackboardAttribute setNameAttr = sourceArtifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME));
                     if (setNameAttr != null && CorrelationAttributeUtil.getEmailAddressAttrDisplayName().equals(setNameAttr.getValueString())) {
                         makeCorrAttrFromArtifactAttr(correlationAttrs, sourceArtifact, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD, CorrelationAttributeInstance.EMAIL_TYPE_ID);
@@ -161,37 +161,37 @@ public class CorrelationAttributeUtil {
                             && !domainsToSkip.contains(domainAttr.getValueString())) {
                         makeCorrAttrFromArtifactAttr(correlationAttrs, sourceArtifact, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN, CorrelationAttributeInstance.DOMAIN_TYPE_ID);
                     }
-                } else if (artifactTypeID == ARTIFACT_TYPE.TSK_DEVICE_ATTACHED.getTypeID()) {
+                } else if (artifactTypeID == BlackboardArtifact.Type.TSK_DEVICE_ATTACHED.getTypeID()) {
                     makeCorrAttrFromArtifactAttr(correlationAttrs, sourceArtifact, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DEVICE_ID, CorrelationAttributeInstance.USBID_TYPE_ID);
                     makeCorrAttrFromArtifactAttr(correlationAttrs, sourceArtifact, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_MAC_ADDRESS, CorrelationAttributeInstance.MAC_TYPE_ID);
 
-                } else if (artifactTypeID == ARTIFACT_TYPE.TSK_WIFI_NETWORK.getTypeID()) {
+                } else if (artifactTypeID == BlackboardArtifact.Type.TSK_WIFI_NETWORK.getTypeID()) {
                     makeCorrAttrFromArtifactAttr(correlationAttrs, sourceArtifact, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SSID, CorrelationAttributeInstance.SSID_TYPE_ID);
 
-                } else if (artifactTypeID == ARTIFACT_TYPE.TSK_WIFI_NETWORK_ADAPTER.getTypeID()
-                        || artifactTypeID == ARTIFACT_TYPE.TSK_BLUETOOTH_PAIRING.getTypeID()
-                        || artifactTypeID == ARTIFACT_TYPE.TSK_BLUETOOTH_ADAPTER.getTypeID()) {
+                } else if (artifactTypeID == BlackboardArtifact.Type.TSK_WIFI_NETWORK_ADAPTER.getTypeID()
+                        || artifactTypeID == BlackboardArtifact.Type.TSK_BLUETOOTH_PAIRING.getTypeID()
+                        || artifactTypeID == BlackboardArtifact.Type.TSK_BLUETOOTH_ADAPTER.getTypeID()) {
                     makeCorrAttrFromArtifactAttr(correlationAttrs, sourceArtifact, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_MAC_ADDRESS, CorrelationAttributeInstance.MAC_TYPE_ID);
 
-                } else if (artifactTypeID == ARTIFACT_TYPE.TSK_DEVICE_INFO.getTypeID()) {
+                } else if (artifactTypeID == BlackboardArtifact.Type.TSK_DEVICE_INFO.getTypeID()) {
                     makeCorrAttrFromArtifactAttr(correlationAttrs, sourceArtifact, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_IMEI, CorrelationAttributeInstance.IMEI_TYPE_ID);
                     makeCorrAttrFromArtifactAttr(correlationAttrs, sourceArtifact, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_IMSI, CorrelationAttributeInstance.IMSI_TYPE_ID);
                     makeCorrAttrFromArtifactAttr(correlationAttrs, sourceArtifact, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ICCID, CorrelationAttributeInstance.ICCID_TYPE_ID);
 
-                } else if (artifactTypeID == ARTIFACT_TYPE.TSK_SIM_ATTACHED.getTypeID()) {
+                } else if (artifactTypeID == BlackboardArtifact.Type.TSK_SIM_ATTACHED.getTypeID()) {
                     makeCorrAttrFromArtifactAttr(correlationAttrs, sourceArtifact, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_IMSI, CorrelationAttributeInstance.IMSI_TYPE_ID);
                     makeCorrAttrFromArtifactAttr(correlationAttrs, sourceArtifact, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ICCID, CorrelationAttributeInstance.ICCID_TYPE_ID);
 
-                } else if (artifactTypeID == ARTIFACT_TYPE.TSK_WEB_FORM_ADDRESS.getTypeID()) {
+                } else if (artifactTypeID == BlackboardArtifact.Type.TSK_WEB_FORM_ADDRESS.getTypeID()) {
                     makeCorrAttrFromArtifactAttr(correlationAttrs, sourceArtifact, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER, CorrelationAttributeInstance.PHONE_TYPE_ID);
                     makeCorrAttrFromArtifactAttr(correlationAttrs, sourceArtifact, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL, CorrelationAttributeInstance.EMAIL_TYPE_ID);
 
-                } else if (artifactTypeID == ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()) {
+                } else if (artifactTypeID == BlackboardArtifact.Type.TSK_ACCOUNT.getTypeID()) {
                     makeCorrAttrFromAcctArtifact(correlationAttrs, sourceArtifact);
 
-                } else if (artifactTypeID == ARTIFACT_TYPE.TSK_CONTACT.getTypeID()
-                        || artifactTypeID == ARTIFACT_TYPE.TSK_CALLLOG.getTypeID()
-                        || artifactTypeID == ARTIFACT_TYPE.TSK_MESSAGE.getTypeID()) {
+                } else if (artifactTypeID == BlackboardArtifact.Type.TSK_CONTACT.getTypeID()
+                        || artifactTypeID == BlackboardArtifact.Type.TSK_CALLLOG.getTypeID()
+                        || artifactTypeID == BlackboardArtifact.Type.TSK_MESSAGE.getTypeID()) {
                     makeCorrAttrsFromCommunicationArtifacts(correlationAttrs, sourceArtifact);
                 }
             }
@@ -271,7 +271,7 @@ public class CorrelationAttributeUtil {
      */
     private static BlackboardArtifact getCorrAttrSourceArtifact(BlackboardArtifact artifact) throws NoCurrentCaseException, TskCoreException {
         BlackboardArtifact sourceArtifact = null;
-        if (BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT.getTypeID() == artifact.getArtifactTypeID()) {
+        if (BlackboardArtifact.Type.TSK_INTERESTING_ARTIFACT_HIT.getTypeID() == artifact.getArtifactTypeID()) {
             BlackboardAttribute assocArtifactAttr = artifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT));
             if (assocArtifactAttr != null) {
                 sourceArtifact = Case.getCurrentCaseThrows().getSleuthkitCase().getBlackboardArtifact(assocArtifactAttr.getValueLong());

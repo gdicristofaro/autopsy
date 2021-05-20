@@ -28,7 +28,7 @@ import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.datamodel.BlackboardArtifactNode;
 import org.sleuthkit.autopsy.datamodel.NodeProperty;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_CONTACT;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME_PERSON;
@@ -72,8 +72,7 @@ final class ContactNode extends BlackboardArtifactNode {
         Sheet sheet = new Sheet();
 
         final BlackboardArtifact artifact = getArtifact();
-        BlackboardArtifact.ARTIFACT_TYPE fromID = BlackboardArtifact.ARTIFACT_TYPE.fromID(artifact.getArtifactTypeID());
-        if (fromID != TSK_CONTACT) {
+        if (artifact.getArtifactTypeID() != TSK_CONTACT.getTypeID()) {
             return sheet;
         }
 

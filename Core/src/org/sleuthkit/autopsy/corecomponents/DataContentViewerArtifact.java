@@ -33,7 +33,7 @@ import org.openide.util.lookup.ServiceProvider;
 import org.sleuthkit.autopsy.corecomponentinterfaces.DataContentViewer;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Type;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -352,14 +352,14 @@ public class DataContentViewerArtifact extends javax.swing.JPanel implements Dat
         // browsing, or if the artifact is something that means the user really wants to see the original
         // file and not more details about the artifact
         if ((artifact == null)
-                || (artifact.getArtifactTypeID() == ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID())
-                || (artifact.getArtifactTypeID() == ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID())
-                || (artifact.getArtifactTypeID() == ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT.getTypeID())
-                || (artifact.getArtifactTypeID() == ARTIFACT_TYPE.TSK_OBJECT_DETECTED.getTypeID())
-                || (artifact.getArtifactTypeID() == ARTIFACT_TYPE.TSK_METADATA_EXIF.getTypeID())
-                || (artifact.getArtifactTypeID() == ARTIFACT_TYPE.TSK_EXT_MISMATCH_DETECTED.getTypeID())
-                || (artifact.getArtifactTypeID() == ARTIFACT_TYPE.TSK_WEB_DOWNLOAD.getTypeID())
-                || (artifact.getArtifactTypeID() == ARTIFACT_TYPE.TSK_WEB_CACHE.getTypeID())) {
+                || (artifact.getArtifactTypeID() == Type.TSK_HASHSET_HIT.getTypeID())
+                || (artifact.getArtifactTypeID() == Type.TSK_KEYWORD_HIT.getTypeID())
+                || (artifact.getArtifactTypeID() == Type.TSK_INTERESTING_FILE_HIT.getTypeID())
+                || (artifact.getArtifactTypeID() == Type.TSK_OBJECT_DETECTED.getTypeID())
+                || (artifact.getArtifactTypeID() == Type.TSK_METADATA_EXIF.getTypeID())
+                || (artifact.getArtifactTypeID() == Type.TSK_EXT_MISMATCH_DETECTED.getTypeID())
+                || (artifact.getArtifactTypeID() == Type.TSK_WEB_DOWNLOAD.getTypeID())
+                || (artifact.getArtifactTypeID() == Type.TSK_WEB_CACHE.getTypeID())) {
             return 3;
         } else {
             return 6;

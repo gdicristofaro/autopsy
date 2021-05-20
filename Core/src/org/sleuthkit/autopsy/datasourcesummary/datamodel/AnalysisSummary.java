@@ -32,7 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.sleuthkit.autopsy.datasourcesummary.datamodel.SleuthkitCaseProvider.SleuthkitCaseProviderException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Type;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.DataSource;
@@ -49,10 +49,10 @@ public class AnalysisSummary implements DefaultArtifactUpdateGovernor {
     private static final Set<String> EXCLUDED_KEYWORD_SEARCH_ITEMS = new HashSet<>();
 
     private static final Set<Integer> ARTIFACT_UPDATE_TYPE_IDS = new HashSet<>(Arrays.asList(
-            ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT.getTypeID(),
-            ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT.getTypeID(),
-            ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID(),
-            ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID()
+            Type.TSK_INTERESTING_FILE_HIT.getTypeID(),
+            Type.TSK_INTERESTING_ARTIFACT_HIT.getTypeID(),
+            Type.TSK_HASHSET_HIT.getTypeID(),
+            Type.TSK_KEYWORD_HIT.getTypeID()
     ));
 
     private final SleuthkitCaseProvider provider;
@@ -89,7 +89,7 @@ public class AnalysisSummary implements DefaultArtifactUpdateGovernor {
      * @throws TskCoreException
      */
     public List<Pair<String, Long>> getHashsetCounts(DataSource dataSource) throws SleuthkitCaseProviderException, TskCoreException {
-        return getCountsData(dataSource, TYPE_SET_NAME, ARTIFACT_TYPE.TSK_HASHSET_HIT);
+        return getCountsData(dataSource, TYPE_SET_NAME, Type.TSK_HASHSET_HIT);
     }
 
     /**
@@ -103,7 +103,7 @@ public class AnalysisSummary implements DefaultArtifactUpdateGovernor {
      * @throws TskCoreException
      */
     public List<Pair<String, Long>> getKeywordCounts(DataSource dataSource) throws SleuthkitCaseProviderException, TskCoreException {
-        return getCountsData(dataSource, TYPE_SET_NAME, ARTIFACT_TYPE.TSK_KEYWORD_HIT).stream()
+        return getCountsData(dataSource, TYPE_SET_NAME, Type.TSK_KEYWORD_HIT).stream()
                 // make sure we have a valid set and that that set does not belong to the set of excluded items
                 .filter((pair) -> pair != null && pair.getKey() != null && !EXCLUDED_KEYWORD_SEARCH_ITEMS.contains(pair.getKey().toUpperCase().trim()))
                 .collect(Collectors.toList());
@@ -122,7 +122,7 @@ public class AnalysisSummary implements DefaultArtifactUpdateGovernor {
      * @throws TskCoreException
      */
     public List<Pair<String, Long>> getInterestingItemCounts(DataSource dataSource) throws SleuthkitCaseProviderException, TskCoreException {
-        return getCountsData(dataSource, TYPE_SET_NAME, ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT, ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT);
+        return getCountsData(dataSource, TYPE_SET_NAME, Type.TSK_INTERESTING_FILE_HIT, Type.TSK_INTERESTING_ARTIFACT_HIT);
     }
 
     /**
@@ -139,7 +139,7 @@ public class AnalysisSummary implements DefaultArtifactUpdateGovernor {
      * @throws SleuthkitCaseProviderException
      * @throws TskCoreException
      */
-    private List<Pair<String, Long>> getCountsData(DataSource dataSource, BlackboardAttribute.Type keyType, ARTIFACT_TYPE... artifactTypes)
+    private List<Pair<String, Long>> getCountsData(DataSource dataSource, BlackboardAttribute.Type keyType, BlackboardArtifact.Type... artifactTypes)
             throws SleuthkitCaseProviderException, TskCoreException {
 
         if (dataSource == null) {
@@ -150,7 +150,7 @@ public class AnalysisSummary implements DefaultArtifactUpdateGovernor {
         SleuthkitCase skCase = provider.get();
 
         // get all artifacts in one list for each artifact type
-        for (ARTIFACT_TYPE type : artifactTypes) {
+        for (BlackboardArtifact.Type type : artifactTypes) {
             artifacts.addAll(skCase.getBlackboard().getArtifacts(type.getTypeID(), dataSource.getId()));
         }
 

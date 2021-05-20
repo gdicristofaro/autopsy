@@ -382,7 +382,7 @@ public class ExtractedTextViewer implements TextViewer {
         BlackboardArtifact artifact = node.getLookup().lookup(BlackboardArtifact.class);
         if (artifact == null) {
             return 4;
-        } else if (artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID()) {
+        } else if (artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID()) {
             return 7;
         } else if (artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_ACCOUNT.getTypeID()) {
             try {

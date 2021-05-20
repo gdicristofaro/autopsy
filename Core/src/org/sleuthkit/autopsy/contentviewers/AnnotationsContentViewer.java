@@ -32,7 +32,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import static org.openide.util.NbBundle.Messages;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.openide.nodes.Node;
 import org.openide.util.lookup.ServiceProvider;
@@ -307,8 +307,8 @@ public class AnnotationsContentViewer extends javax.swing.JPanel implements Data
         }
 
         // if artifact is a hashset hit or interesting file and has a non-blank comment
-        if ((ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID() == bba.getArtifactTypeID()
-                || ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT.getTypeID() == bba.getArtifactTypeID())
+        if ((Type.TSK_HASHSET_HIT.getTypeID() == bba.getArtifactTypeID()
+                || Type.TSK_INTERESTING_FILE_HIT.getTypeID() == bba.getArtifactTypeID())
                 && (hasTskComment(bba))) {
 
             boolean filesetRendered = appendEntries(parent, ARTIFACT_COMMENT_CONFIG, Arrays.asList(bba), false);

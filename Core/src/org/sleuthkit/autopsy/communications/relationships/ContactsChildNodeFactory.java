@@ -27,7 +27,7 @@ import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_CONTACT;
 import org.sleuthkit.datamodel.CommunicationsManager;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -84,9 +84,7 @@ final class ContactsChildNodeFactory extends ChildFactory<BlackboardArtifact>{
         relationshipSources.stream().filter((content) -> (content instanceof BlackboardArtifact)).forEachOrdered((content) -> {
 
             BlackboardArtifact bba = (BlackboardArtifact) content;
-            BlackboardArtifact.ARTIFACT_TYPE fromID = BlackboardArtifact.ARTIFACT_TYPE.fromID(bba.getArtifactTypeID());
-
-            if (fromID == TSK_CONTACT) {
+            if (bba.getArtifactTypeID() == TSK_CONTACT.getTypeID()) {
                 list.add(bba);
             }
         });

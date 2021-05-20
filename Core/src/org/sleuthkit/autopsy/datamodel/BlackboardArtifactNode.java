@@ -69,7 +69,6 @@ import org.sleuthkit.autopsy.timeline.actions.ViewArtifactInTimelineAction;
 import org.sleuthkit.autopsy.timeline.actions.ViewFileInTimelineAction;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.Content;
@@ -114,10 +113,10 @@ public class BlackboardArtifactNode extends AbstractContentNode<BlackboardArtifa
      * should be displayed in the node's property sheet.
      */
     private static final Integer[] SHOW_UNIQUE_PATH = new Integer[]{
-        BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID(),
-        BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID(),
-        BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT.getTypeID(),
-        BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT.getTypeID()
+        BlackboardArtifact.Type.TSK_HASHSET_HIT.getTypeID(),
+        BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID(),
+        BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT.getTypeID(),
+        BlackboardArtifact.Type.TSK_INTERESTING_ARTIFACT_HIT.getTypeID()
     };
 
     /*
@@ -125,7 +124,7 @@ public class BlackboardArtifactNode extends AbstractContentNode<BlackboardArtifa
      * should be displayed in the node's property sheet.
      */
     private static final Integer[] SHOW_FILE_METADATA = new Integer[]{
-        BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT.getTypeID()
+        BlackboardArtifact.Type.TSK_INTERESTING_FILE_HIT.getTypeID()
     };
 
     private final BlackboardArtifact artifact;
@@ -575,7 +574,7 @@ public class BlackboardArtifactNode extends AbstractContentNode<BlackboardArtifa
          * hit, add the type and description of the interesting artifact to the
          * sheet.
          */
-        if (artifact.getArtifactTypeID() == ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT.getTypeID()) {
+        if (artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_INTERESTING_ARTIFACT_HIT.getTypeID()) {
             try {
                 BlackboardAttribute attribute = artifact.getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT));
                 if (attribute != null) {
@@ -624,7 +623,7 @@ public class BlackboardArtifactNode extends AbstractContentNode<BlackboardArtifa
          * the sheet.
          */
         final int artifactTypeId = artifact.getArtifactTypeID();
-        if (artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_EXT_MISMATCH_DETECTED.getTypeID()) {
+        if (artifactTypeId == BlackboardArtifact.Type.TSK_EXT_MISMATCH_DETECTED.getTypeID()) {
             String ext = ""; //NON-NLS
             String actualMimeType = ""; //NON-NLS
             if (srcContent instanceof AbstractFile) {
@@ -734,7 +733,7 @@ public class BlackboardArtifactNode extends AbstractContentNode<BlackboardArtifa
          * If the artifact represented by this node is an EXIF artifact, add the
          * source file size and path to the sheet.
          */
-        if (artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_METADATA_EXIF.getTypeID()) {
+        if (artifactTypeId == BlackboardArtifact.Type.TSK_METADATA_EXIF.getTypeID()) {
             long size = 0;
             String path = ""; //NON-NLS
             if (srcContent instanceof AbstractFile) {
@@ -881,7 +880,7 @@ public class BlackboardArtifactNode extends AbstractContentNode<BlackboardArtifa
          * If the artifact is a hash set hit, is the hash set a notable hashes
          * hash set?
          */
-        if (score == Score.NO_SCORE && artifact.getArtifactTypeID() == ARTIFACT_TYPE.TSK_HASHSET_HIT.getTypeID()) {
+        if (score == Score.NO_SCORE && artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_HASHSET_HIT.getTypeID()) {
             try {
                 BlackboardAttribute attr = artifact.getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_SET_NAME));
                 List<HashDbManager.HashDb> notableHashsets = HashDbManager.getInstance().getKnownBadFileHashSets();
@@ -1030,11 +1029,11 @@ public class BlackboardArtifactNode extends AbstractContentNode<BlackboardArtifa
                     /*
                      * Do nothing.
                      */
-                } else if (artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID()) {
+                } else if (artifact.getArtifactTypeID() == BlackboardArtifact.Type.TSK_EMAIL_MSG.getTypeID()) {
                     addEmailMsgProperty(map, attribute);
                 } else if (attribute.getAttributeType().getValueType() == BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME) {
                     map.put(attribute.getAttributeType().getDisplayName(), ContentUtils.getStringTime(attribute.getValueLong(), srcContent));
-                } else if (artifact.getArtifactTypeID() == ARTIFACT_TYPE.TSK_TOOL_OUTPUT.getTypeID()
+                } else if (artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_TOOL_OUTPUT.getTypeID()
                         && attributeTypeID == ATTRIBUTE_TYPE.TSK_TEXT.getTypeID()) {
                     /*
                      * The truncation of text attributes appears to have been

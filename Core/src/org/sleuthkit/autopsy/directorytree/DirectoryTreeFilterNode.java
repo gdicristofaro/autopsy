@@ -35,7 +35,7 @@ import org.sleuthkit.autopsy.datamodel.AbstractContentNode;
 import org.sleuthkit.autopsy.datamodel.BlackboardArtifactNode;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Type;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.Host;
 import org.sleuthkit.datamodel.Person;
@@ -140,8 +140,8 @@ class DirectoryTreeFilterNode extends FilterNode {
                         // and hence email/messages with attachments are shown in the directory tree.
                         BlackboardArtifact bba = (BlackboardArtifact) child;
                         // Only message type artifacts are displayed in the tree
-                        if ((bba.getArtifactTypeID() != ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID())
-                                && (bba.getArtifactTypeID() != ARTIFACT_TYPE.TSK_MESSAGE.getTypeID())) {
+                        if ((bba.getArtifactTypeID() != Type.TSK_EMAIL_MSG.getTypeID())
+                                && (bba.getArtifactTypeID() != Type.TSK_MESSAGE.getTypeID())) {
                             numVisibleChildren--;
                         }
                     } else {
