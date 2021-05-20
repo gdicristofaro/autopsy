@@ -98,7 +98,7 @@ public class TextContentViewer implements DataContentViewer {
         
         // if artifact node, this node can only be supported if 
         // a) not a data artifact
-        // b) is either a web cache orweb download artifact
+        // b) is either a web cache or web download artifact
         BlackboardArtifact artifact = node.getLookup().lookup(BlackboardArtifact.class);
         if (artifact != null) {
             try {
