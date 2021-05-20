@@ -276,7 +276,7 @@ public class EncryptionDetectionTest extends NbTestCase {
             for (Content datasource : openCase.getDataSources()) { //data source
                 for (Content volumeSystem : datasource.getChildren()) { //volume system 
                     for (Content volume : volumeSystem.getChildren()) { //volumes
-                        numberOfEncryptedVolumes += volume.getArtifacts(BlackboardArtifact.Type.TSK_ENCRYPTION_SUSPECTED).size();
+                        numberOfEncryptedVolumes += volume.getArtifacts(BlackboardArtifact.Type.TSK_ENCRYPTION_SUSPECTED.getTypeID()).size();
                     }
                 }
             }
@@ -288,7 +288,7 @@ public class EncryptionDetectionTest extends NbTestCase {
             assertEquals("Expected 1 file named veracryptContainerFile to exist in test image", 1, results.size());
             int numberOfEncryptedContainers = 0;
             for (AbstractFile file : results) {
-                numberOfEncryptedContainers += file.getArtifacts(BlackboardArtifact.Type.TSK_ENCRYPTION_SUSPECTED).size();
+                numberOfEncryptedContainers += file.getArtifacts(BlackboardArtifact.Type.TSK_ENCRYPTION_SUSPECTED.getTypeID()).size();
             }
             assertEquals("Encrypted Container file should have one encyption suspected artifact", 1, numberOfEncryptedContainers);
         } catch (TskCoreException | TestUtilsException ex) {

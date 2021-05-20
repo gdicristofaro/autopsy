@@ -142,12 +142,12 @@ public class DataSourceInfoUtilitiesTest {
      *
      * @throws TskCoreException
      */
-    private <T> List<BlackboardArtifact> getArtifacts(ARTIFACT_TYPE artifactType, BlackboardAttribute.Type attrType,
+    private <T> List<BlackboardArtifact> getArtifacts(BlackboardArtifact.Type artifactType, BlackboardAttribute.Type attrType,
             DataSource dataSource, List<T> values, AttrMaker<T> attrMaker) throws TskCoreException {
 
         List<BlackboardArtifact> toRet = new ArrayList<>();
         for (int i = 0; i < values.size(); i++) {
-            toRet.add(TskMockUtils.getArtifact(new BlackboardArtifact.Type(artifactType), 1000 + i, dataSource,
+            toRet.add(TskMockUtils.getArtifact(artifactType, 1000 + i, dataSource,
                     attrMaker.make(attrType, "TEST SOURCE", values.get(i))));
         }
 
@@ -168,7 +168,7 @@ public class DataSourceInfoUtilitiesTest {
      *
      * @throws TskCoreException
      */
-    private <T> void testSorted(ARTIFACT_TYPE artifactType, ATTRIBUTE_TYPE attrType, List<T> values,
+    private <T> void testSorted(BlackboardArtifact.Type artifactType, ATTRIBUTE_TYPE attrType, List<T> values,
             AttrMaker<T> attrMaker, SortOrder sortOrder, int count) throws TskCoreException {
 
         DataSource dataSource = TskMockUtils.getDataSource(1);
@@ -181,7 +181,7 @@ public class DataSourceInfoUtilitiesTest {
                 ? sortedArtifacts
                 : sortedArtifacts.subList(0, Math.min(sortedArtifacts.size(), count));
 
-        test(new BlackboardArtifact.Type(artifactType), dataSource, new BlackboardAttribute.Type(attrType),
+        test(artifactType, dataSource, new BlackboardAttribute.Type(attrType),
                 sortOrder, count, mixedUpArtifacts, null, expectedArtifacts, null);
 
     }
@@ -403,13 +403,11 @@ public class DataSourceInfoUtilitiesTest {
         T getOrNull(BlackboardArtifact artifact, BlackboardAttribute.Type type);
     }
 
-    private <T> void testNullAttrValue(String id, GetAttrVal<T> getter, ARTIFACT_TYPE artifactType,
+    private <T> void testNullAttrValue(String id, GetAttrVal<T> getter, BlackboardArtifact.Type artType,
             ATTRIBUTE_TYPE attributeType, T nonNullVal)
             throws TskCoreException {
 
         BlackboardAttribute.Type attrType = new BlackboardAttribute.Type(attributeType);
-        BlackboardArtifact.Type artType = new BlackboardArtifact.Type(artifactType);
-
         BlackboardArtifact noAttribute = TskMockUtils.getArtifact(artType, 1000,
                 TskMockUtils.getDataSource(1), new ArrayList<>());
 

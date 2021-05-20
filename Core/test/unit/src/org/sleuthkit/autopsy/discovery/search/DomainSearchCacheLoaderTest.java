@@ -28,7 +28,7 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 import org.sleuthkit.autopsy.discovery.search.DiscoveryKeyUtils.GroupKey;
 import org.sleuthkit.autopsy.discovery.search.DiscoveryKeyUtils.SearchKey;
-import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_CATEGORIZATION;
+import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CATEGORIZATION;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
 

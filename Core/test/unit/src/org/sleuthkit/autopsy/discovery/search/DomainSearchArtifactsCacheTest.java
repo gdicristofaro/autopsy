@@ -25,7 +25,7 @@ import org.junit.Test;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.Type;
+import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase;
@@ -33,13 +33,13 @@ import org.sleuthkit.datamodel.TskCoreException;
 
 public class DomainSearchArtifactsCacheTest {
 
-    private static final ARTIFACT_TYPE WEB_ARTIFACT_TYPE = Type.TSK_WEB_BOOKMARK;
+    private static final ARTIFACT_TYPE WEB_ARTIFACT_TYPE = ARTIFACT_TYPE.TSK_WEB_BOOKMARK;
     private static final BlackboardAttribute.Type TSK_DOMAIN = new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DOMAIN);
     private static final BlackboardAttribute.Type TSK_URL = new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_URL);
 
     @Test(expected = IllegalArgumentException.class)
     public void get_NonWebArtifactType_ShouldThrow() throws DiscoveryException {
-        DomainSearchArtifactsRequest request = new DomainSearchArtifactsRequest(null, "google.com", Type.TSK_CALLLOG);
+        DomainSearchArtifactsRequest request = new DomainSearchArtifactsRequest(null, "google.com", ARTIFACT_TYPE.TSK_CALLLOG);
         DomainSearchArtifactsCache cache = new DomainSearchArtifactsCache();
         cache.get(request);
     }

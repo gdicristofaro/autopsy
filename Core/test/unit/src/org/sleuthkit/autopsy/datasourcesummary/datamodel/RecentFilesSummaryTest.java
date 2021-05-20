@@ -228,7 +228,7 @@ public class RecentFilesSummaryTest {
      *
      * @return The mock artifact.
      */
-    private BlackboardArtifact getArtifact(DataSource ds, long artifactId, ARTIFACT_TYPE artType, List<Pair<ATTRIBUTE_TYPE, Object>> attributeArgs) {
+    private BlackboardArtifact getArtifact(DataSource ds, long artifactId, BlackboardArtifact.Type artType, List<Pair<ATTRIBUTE_TYPE, Object>> attributeArgs) {
         try {
             List<BlackboardAttribute> attributes = attributeArgs.stream()
                     .filter((arg) -> arg != null && arg.getLeft() != null && arg.getRight() != null)
@@ -237,7 +237,7 @@ public class RecentFilesSummaryTest {
                     })
                     .collect(Collectors.toList());
 
-            return TskMockUtils.getArtifact(new BlackboardArtifact.Type(artType), artifactId, ds, attributes);
+            return TskMockUtils.getArtifact(artType, artifactId, ds, attributes);
         } catch (TskCoreException ex) {
             fail("There was an error mocking an artifact.");
             return null;
@@ -441,7 +441,7 @@ public class RecentFilesSummaryTest {
      */
     private class AttachmentArtifactItem {
 
-        private final Integer messageArtifactTypeId;
+        private final BlackboardArtifact.Type messageArtifactType;
         private final boolean associatedAttrFormed;
         private final String emailFrom;
         private final Long messageTime;
@@ -452,7 +452,7 @@ public class RecentFilesSummaryTest {
         /**
          * Constructor with all parameters.
          *
-         * @param messageArtifactTypeId The type id for the artifact or null if
+         * @param messageArtifactType The type for the artifact or null if
          * no message artifact to be created.
          * @param emailFrom Who the message is from or null not to include
          * attribute.
@@ -465,11 +465,11 @@ public class RecentFilesSummaryTest {
          * @param hasParent Whether or not the artifact has a parent
          * AbstractFile.
          */
-        AttachmentArtifactItem(Integer messageArtifactTypeId, String emailFrom, Long messageTime,
+        AttachmentArtifactItem(BlackboardArtifact.Type messageArtifactType, String emailFrom, Long messageTime,
                 String fileParentPath, String fileName,
                 boolean associatedAttrFormed, boolean hasParent) {
 
-            this.messageArtifactTypeId = messageArtifactTypeId;
+            this.messageArtifactType = messageArtifactType;
             this.associatedAttrFormed = associatedAttrFormed;
             this.emailFrom = emailFrom;
             this.messageTime = messageTime;
@@ -482,7 +482,7 @@ public class RecentFilesSummaryTest {
          * Convenience constructor where defaults of required attributes and
          * SleuthkitCase assumed.
          *
-         * @param messageArtifactTypeId The type id for the artifact or null if
+         * @param messageArtifactType The type for the artifact or null if
          * no message artifact to be created.
          * @param emailFrom Who the message is from or null not to include
          * attribute.
@@ -491,8 +491,8 @@ public class RecentFilesSummaryTest {
          * @param fileParentPath The parent AbstractFile's path value.
          * @param fileName The parent AbstractFile's filename value.
          */
-        AttachmentArtifactItem(Integer messageArtifactTypeId, String emailFrom, Long messageTime, String fileParentPath, String fileName) {
-            this(messageArtifactTypeId, emailFrom, messageTime, fileParentPath, fileName, true, true);
+        AttachmentArtifactItem(BlackboardArtifact.Type messageArtifactType, String emailFrom, Long messageTime, String fileParentPath, String fileName) {
+            this(messageArtifactType, emailFrom, messageTime, fileParentPath, fileName, true, true);
         }
 
         boolean isAssociatedAttrFormed() {
@@ -519,8 +519,8 @@ public class RecentFilesSummaryTest {
             return fileName;
         }
 
-        Integer getMessageArtifactTypeId() {
-            return messageArtifactTypeId;
+        BlackboardArtifact.Type getMessageArtifactType() {
+            return messageArtifactType;
         }
     }
 
@@ -542,30 +542,23 @@ public class RecentFilesSummaryTest {
 
         BlackboardAttribute associatedAttr = TskMockUtils.getAttribute(ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT, associatedId);
 
-        if (item.getMessageArtifactTypeId() == null) {
+        if (item.getMessageArtifactType() == null) {
             return associatedAttr;
         }
 
-        // find the artifact type or null if not found
-        ARTIFACT_TYPE messageType = Stream.of(ARTIFACT_TYPE.values())
-                .filter((artType) -> artType.getTypeID() == item.getMessageArtifactTypeId())
-                .findFirst()
-                .orElse(null);
-
         // if there is a message type, create the artifact
-        if (messageType != null) {
-            List<BlackboardAttribute> attributes = new ArrayList<>();
-            if (item.getEmailFrom() != null) {
-                attributes.add(TskMockUtils.getAttribute(ATTRIBUTE_TYPE.TSK_EMAIL_FROM, item.getEmailFrom()));
-            }
-
-            if (item.getMessageTime() != null) {
-                attributes.add(TskMockUtils.getAttribute(ATTRIBUTE_TYPE.TSK_DATETIME_SENT, item.getMessageTime()));
-            }
-
-            artifacts.put(associatedId, TskMockUtils.getArtifact(
-                    new BlackboardArtifact.Type(messageType), artifactId, dataSource, attributes));
+        List<BlackboardAttribute> attributes = new ArrayList<>();
+        if (item.getEmailFrom() != null) {
+            attributes.add(TskMockUtils.getAttribute(ATTRIBUTE_TYPE.TSK_EMAIL_FROM, item.getEmailFrom()));
         }
+
+        if (item.getMessageTime() != null) {
+            attributes.add(TskMockUtils.getAttribute(ATTRIBUTE_TYPE.TSK_DATETIME_SENT, item.getMessageTime()));
+        }
+
+        artifacts.put(associatedId, TskMockUtils.getArtifact(
+                item.getMessageArtifactType(), artifactId, dataSource, attributes));
+
         return associatedAttr;
     }
 
@@ -644,7 +637,7 @@ public class RecentFilesSummaryTest {
         for (int countToGenerate : new int[]{1, 9, 10, 11}) {
             // set up the items in the sleuthkit case
             List<AttachmentArtifactItem> items = IntStream.range(0, countToGenerate)
-                    .mapToObj((idx) -> new AttachmentArtifactItem(Type.TSK_MESSAGE.getTypeID(),
+                    .mapToObj((idx) -> new AttachmentArtifactItem(Type.TSK_MESSAGE,
                     emailFromRetriever.apply(idx), dateTimeRetriever.apply(idx),
                     pathRetriever.apply(idx), fileNameRetriever.apply(idx)))
                     .collect(Collectors.toList());
@@ -676,19 +669,19 @@ public class RecentFilesSummaryTest {
         // setup data
         DataSource dataSource = TskMockUtils.getDataSource(1);
 
-        AttachmentArtifactItem successItem = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG.getTypeID(),
+        AttachmentArtifactItem successItem = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG,
                 "person@sleuthkit.com", DAY_SECONDS, "/parent/path", "msg.pdf");
-        AttachmentArtifactItem successItem2 = new AttachmentArtifactItem(Type.TSK_MESSAGE.getTypeID(),
+        AttachmentArtifactItem successItem2 = new AttachmentArtifactItem(Type.TSK_MESSAGE,
                 "person_on_skype", DAY_SECONDS + 1, "/parent/path/to/skype", "skype.png");
-        AttachmentArtifactItem wrongArtType = new AttachmentArtifactItem(Type.TSK_CALLLOG.getTypeID(),
+        AttachmentArtifactItem wrongArtType = new AttachmentArtifactItem(Type.TSK_CALLLOG,
                 "5555675309", DAY_SECONDS + 2, "/path/to/callog/info", "callog.dat");
-        AttachmentArtifactItem missingTimeStamp = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG.getTypeID(),
+        AttachmentArtifactItem missingTimeStamp = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG,
                 "person2@sleuthkit.com", null, "/parent/path", "msg2.pdf");
-        AttachmentArtifactItem zeroTimeStamp = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG.getTypeID(),
+        AttachmentArtifactItem zeroTimeStamp = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG,
                 "person2a@sleuthkit.com", 0L, "/parent/path", "msg2a.png");
-        AttachmentArtifactItem noParentFile = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG.getTypeID(),
+        AttachmentArtifactItem noParentFile = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG,
                 "person4@sleuthkit.com", DAY_SECONDS + 4, "/parent/path", "msg4.jpg", true, false);
-        AttachmentArtifactItem noAssocAttr = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG.getTypeID(),
+        AttachmentArtifactItem noAssocAttr = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG,
                 "person3@sleuthkit.com", DAY_SECONDS + 5, "/parent/path", "msg5.gif", false, true);
         AttachmentArtifactItem missingAssocArt = new AttachmentArtifactItem(null,
                 "person3@sleuthkit.com", DAY_SECONDS + 6, "/parent/path", "msg6.pdf");
@@ -725,11 +718,11 @@ public class RecentFilesSummaryTest {
         // setup data
         DataSource dataSource = TskMockUtils.getDataSource(1);
 
-        AttachmentArtifactItem item1 = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG.getTypeID(),
+        AttachmentArtifactItem item1 = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG,
                 "person@sleuthkit.com", DAY_SECONDS, "/parent/path", "msg.pdf");
-        AttachmentArtifactItem item2 = new AttachmentArtifactItem(Type.TSK_MESSAGE.getTypeID(),
+        AttachmentArtifactItem item2 = new AttachmentArtifactItem(Type.TSK_MESSAGE,
                 "person_on_skype", DAY_SECONDS + 1, "/parent/path", "msg.pdf");
-        AttachmentArtifactItem item3 = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG.getTypeID(),
+        AttachmentArtifactItem item3 = new AttachmentArtifactItem(Type.TSK_EMAIL_MSG,
                 "person2@sleuthkit.com", DAY_SECONDS + 2, "/parent/path", "msg.pdf");
 
         List<AttachmentArtifactItem> items = Arrays.asList(item1, item2, item3);
