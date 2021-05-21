@@ -72,66 +72,57 @@ class AccountSummary {
      */
     private void initCounts() {
         for (BlackboardArtifact artifact : artifacts) {
-            BlackboardArtifact.ARTIFACT_TYPE fromID = BlackboardArtifact.ARTIFACT_TYPE.fromID(artifact.getArtifactTypeID());
-            if (null != fromID) {
-                switch (fromID) {
-                    case TSK_EMAIL_MSG:
-                        emailCnt++;
+            int artTypeId = artifact.getArtifactTypeID();
+            if (artTypeId == BlackboardArtifact.Type.TSK_EMAIL_MSG.getTypeID()) {
+                emailCnt++;
+            } else if (artTypeId == BlackboardArtifact.Type.TSK_CALLLOG.getTypeID()) {
+                callLogCnt++;
+            } else if (artTypeId == BlackboardArtifact.Type.TSK_MESSAGE.getTypeID()) {
+                messagesCnt++;
+            } else if (artTypeId == BlackboardArtifact.Type.TSK_CONTACT.getTypeID()) {
+                if (selectedAccount.getAccountType() != Account.Type.DEVICE) {
+                    String typeSpecificID = selectedAccount.getTypeSpecificID();
+
+                    List<BlackboardAttribute> attributes = null;
+
+                    try{
+                        attributes = artifact.getAttributes();
+                    } catch(TskCoreException ex) {
+                        logger.log(Level.WARNING, String.format("Unable to getAttributes for artifact: %d", artifact.getArtifactID()), ex);
                         break;
-                    case TSK_CALLLOG:
-                        callLogCnt++;
-                        break;
-                    case TSK_MESSAGE:
-                        messagesCnt++;
-                        break;
-                    case TSK_CONTACT:
-                        if (selectedAccount.getAccountType() != Account.Type.DEVICE) {
-                            String typeSpecificID = selectedAccount.getTypeSpecificID();
-                            
-                            List<BlackboardAttribute> attributes = null;
-                            
-                            try{
-                                attributes = artifact.getAttributes();
-                            } catch(TskCoreException ex) {
-                                logger.log(Level.WARNING, String.format("Unable to getAttributes for artifact: %d", artifact.getArtifactID()), ex);
+                    }
+
+                    boolean isReference = false;
+
+                    for (BlackboardAttribute attribute : attributes) {
+
+                        String attributeTypeName = attribute.getAttributeType().getTypeName();
+                        String attributeValue = attribute.getValueString();
+                        try {
+                            if (attributeTypeName.contains("PHONE")) {
+                                attributeValue = CommunicationsUtils.normalizePhoneNum(attributeValue);
+                            } else if (attributeTypeName.contains("EMAIL")) {
+                                attributeValue = CommunicationsUtils.normalizeEmailAddress(attributeValue);
+                            }
+
+                            if (typeSpecificID.equals(attributeValue)) {
+                                isReference = true;
                                 break;
                             }
-                            
-                            boolean isReference = false;
-                            
-                            for (BlackboardAttribute attribute : attributes) {
-
-                                String attributeTypeName = attribute.getAttributeType().getTypeName();
-                                String attributeValue = attribute.getValueString();
-                                try {
-                                    if (attributeTypeName.contains("PHONE")) {
-                                        attributeValue = CommunicationsUtils.normalizePhoneNum(attributeValue);
-                                    } else if (attributeTypeName.contains("EMAIL")) {
-                                        attributeValue = CommunicationsUtils.normalizeEmailAddress(attributeValue);
-                                    }
-                                    
-                                    if (typeSpecificID.equals(attributeValue)) {
-                                        isReference = true;
-                                        break;
-                                    }
-                                } catch (InvalidAccountIDException ex) {
-                                    logger.log(Level.WARNING, String.format("Exception thrown "
-                                            + "in trying to normalize attribute value: %s",
-                                            attributeValue), ex); //NON-NLS
-                                }
-
-                            }
-                            if (isReference) {
-                                referenceCnt++;
-                            } else {
-                                contactsCnt++;
-                            }
-                        } else {
-                            contactsCnt++;
+                        } catch (InvalidAccountIDException ex) {
+                            logger.log(Level.WARNING, String.format("Exception thrown "
+                                    + "in trying to normalize attribute value: %s",
+                                    attributeValue), ex); //NON-NLS
                         }
-                        break;
-                    default:
-                        break;
+
+                    }
+                    if (isReference) {
+                        referenceCnt++;
+                    } else {
+                        contactsCnt++;
+                    }
+                } else {
+                    contactsCnt++;
                 }
             }
             try {

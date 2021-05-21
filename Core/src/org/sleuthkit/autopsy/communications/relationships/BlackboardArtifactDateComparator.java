@@ -71,28 +71,19 @@ class BlackboardArtifactDateComparator implements Comparator<BlackboardArtifact>
         
         BlackboardAttribute attribute = null;
         
-        BlackboardArtifact.ARTIFACT_TYPE fromID = BlackboardArtifact.ARTIFACT_TYPE.fromID(artifact.getArtifactTypeID());
-        if (fromID != null) {
-            try {
-                switch (fromID) {
-                    case TSK_EMAIL_MSG:
-                        attribute = artifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_SENT));
-                        break;
-                    case TSK_MESSAGE:
-                        attribute = artifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME));
-                        break;
-                    case TSK_CALLLOG:
-                        attribute = artifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_START));
-                        break;
-                    default:
-                        attribute = null;
-                        break;
-                }
-            } catch (TskCoreException ex) {
-                logger.log(Level.WARNING, String.format("Unable to compare attributes for artifact %d", artifact.getArtifactID()), ex);
+        int artTypeId = artifact.getArtifactTypeID();
+        try {
+            if (artTypeId == BlackboardArtifact.Type.TSK_EMAIL_MSG.getTypeID()) {
+                attribute = artifact.getAttribute(BlackboardAttribute.Type.TSK_DATETIME_SENT);
+            } else if (artTypeId == BlackboardArtifact.Type.TSK_MESSAGE.getTypeID()) {
+                attribute = artifact.getAttribute(BlackboardAttribute.Type.TSK_DATETIME);
+            } else if (artTypeId == BlackboardArtifact.Type.TSK_CALLLOG.getTypeID()) {
+                attribute = artifact.getAttribute(BlackboardAttribute.Type.TSK_DATETIME_START);
             }
+        } catch (TskCoreException ex) {
+            logger.log(Level.WARNING, String.format("Unable to compare attributes for artifact %d", artifact.getArtifactID()), ex);
         }
-        
+
         return attribute;
     }
 }
