@@ -94,8 +94,6 @@ class OruxMapsAnalyzer(general.AndroidComponentAnalyzer):
                         attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, self._MODULE_NAME, self._PROGRAM_NAME))
 						
                         artifact = abstractFile.newDataArtifact(BlackboardArtifact.Type.TSK_GPS_BOOKMARK, attributes)
-
-                        artifact.addAttributes(attributes)
                         try:
                             # index the artifact for keyword search
                             blackboard = Case.getCurrentCase().getSleuthkitCase().getBlackboard()

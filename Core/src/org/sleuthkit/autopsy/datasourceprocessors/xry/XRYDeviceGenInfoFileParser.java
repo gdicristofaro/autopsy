@@ -106,11 +106,7 @@ final class XRYDeviceGenInfoFileParser extends AbstractSingleEntityParser {
             }
         }
         if(!attributes.isEmpty()) {
-            if (parent instanceof AbstractFile) {
-                ((AbstractFile) parent).newDataArtifact(BlackboardArtifact.Type.TSK_DEVICE_INFO, attributes);
-            } else {
-                parent.newDataArtifact(BlackboardArtifact.Type.TSK_DEVICE_INFO, attributes, null);
-            }
+            parent.newDataArtifact(BlackboardArtifact.Type.TSK_DEVICE_INFO, attributes);
         }
     }
 

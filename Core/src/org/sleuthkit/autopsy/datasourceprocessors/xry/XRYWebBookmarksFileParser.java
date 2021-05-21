@@ -79,11 +79,7 @@ final class XRYWebBookmarksFileParser extends AbstractSingleEntityParser {
             }
         }
         if(!attributes.isEmpty()) {
-            if (parent instanceof AbstractFile) {
-                ((AbstractFile) parent).newDataArtifact(BlackboardArtifact.Type.TSK_WEB_BOOKMARK, attributes);
-            } else {
-                parent.newDataArtifact(BlackboardArtifact.Type.TSK_WEB_BOOKMARK, attributes, null);
-            }
+            parent.newDataArtifact(BlackboardArtifact.Type.TSK_WEB_BOOKMARK, attributes);
         }
     }
 }

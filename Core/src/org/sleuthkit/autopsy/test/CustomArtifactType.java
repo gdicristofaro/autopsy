@@ -114,18 +114,10 @@ final class CustomArtifactType {
             attr.addSource(ADDITIONAL_MODULE_NAME);
         }
 
-        BlackboardArtifact artifact;
-        
-        if (artifactType.getCategory() == null) {
-            throw new TskCoreException(String.format("Artifact type: %s has no category.", 
-                        artifactType.getDisplayName(), artifactType.getCategory().getDisplayName()));
-        }
-        
+        BlackboardArtifact artifact;        
         switch (artifactType.getCategory()) {
             case DATA_ARTIFACT:
-                artifact = (source instanceof AbstractFile) 
-                        ? ((AbstractFile) source).newDataArtifact(artifactType, attributes)
-                        : source.newDataArtifact(artifactType, attributes, null);
+                artifact = source.newDataArtifact(artifactType, attributes);
                 break;
                 
             case ANALYSIS_RESULT:
