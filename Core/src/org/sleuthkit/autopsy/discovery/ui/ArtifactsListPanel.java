@@ -56,7 +56,7 @@ final class ArtifactsListPanel extends AbstractArtifactListPanel {
      * @param artifactType The type of artifact displayed in this table.
      */
     @ThreadConfined(type = ThreadConfined.ThreadType.AWT)
-    ArtifactsListPanel(BlackboardArtifact.ARTIFACT_TYPE artifactType) {
+    ArtifactsListPanel(BlackboardArtifact.Type artifactType) {
         tableModel = new DomainArtifactTableModel(artifactType);
         initComponents();
         // add the cell renderer to all columns
@@ -209,7 +209,7 @@ final class ArtifactsListPanel extends AbstractArtifactListPanel {
 
         private static final long serialVersionUID = 1L;
         private final List<BlackboardArtifact> artifactList = new ArrayList<>();
-        private final BlackboardArtifact.ARTIFACT_TYPE artifactType;
+        private final BlackboardArtifact.Type artifactType;
 
         /**
          * Construct a new DomainArtifactTableModel.
@@ -217,7 +217,7 @@ final class ArtifactsListPanel extends AbstractArtifactListPanel {
          * @param artifactType The type of artifact displayed in this table.
          */
         @ThreadConfined(type = ThreadConfined.ThreadType.AWT)
-        DomainArtifactTableModel(BlackboardArtifact.ARTIFACT_TYPE artifactType) {
+        DomainArtifactTableModel(BlackboardArtifact.Type artifactType) {
             this.artifactType = artifactType;
         }
 
@@ -243,7 +243,7 @@ final class ArtifactsListPanel extends AbstractArtifactListPanel {
         @ThreadConfined(type = ThreadConfined.ThreadType.AWT)
         @Override
         public int getColumnCount() {
-            if (artifactType == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CACHE) {
+            if (artifactType == BlackboardArtifact.Type.TSK_WEB_CACHE) {
                 return 3;
             } else {
                 return 2;
@@ -266,7 +266,7 @@ final class ArtifactsListPanel extends AbstractArtifactListPanel {
         @NbBundle.Messages({"ArtifactsListPanel.value.noValue=No value available."})
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
-            if (columnIndex < 2 || artifactType == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CACHE) {
+            if (columnIndex < 2 || artifactType == BlackboardArtifact.Type.TSK_WEB_CACHE) {
                 final BlackboardArtifact artifact = getArtifactByRow(rowIndex);
                 try {
                     for (BlackboardAttribute bba : artifact.getAttributes()) {
@@ -305,7 +305,7 @@ final class ArtifactsListPanel extends AbstractArtifactListPanel {
             if (columnIndex == 0 && bba.getAttributeType().getTypeID() == BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED.getTypeID()) {
                 return TimeUtilities.epochToTime(bba.getValueLong(), ContentUtils.getTimeZone(artifact));
             } else if (columnIndex == 1) {
-                if (artifactType == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD || artifactType == BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CACHE) {
+                if (artifactType == BlackboardArtifact.Type.TSK_WEB_DOWNLOAD || artifactType == BlackboardArtifact.Type.TSK_WEB_CACHE) {
                     if (bba.getAttributeType().getTypeID() == BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH_ID.getTypeID()) {
                         return Case.getCurrentCase().getSleuthkitCase().getAbstractFileById(bba.getValueLong()).getName();
                     } else if (bba.getAttributeType().getTypeID() == BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH.getTypeID()) {
@@ -364,16 +364,16 @@ final class ArtifactsListPanel extends AbstractArtifactListPanel {
                 case 0:
                     return Bundle.ArtifactsListPanel_dateColumn_name();
                 case 1:
+                    
                     if (artifactType != null) {
-                        switch (artifactType) {
-                            case TSK_WEB_CACHE:
-                            case TSK_WEB_DOWNLOAD:
-                                return Bundle.ArtifactsListPanel_fileNameColumn_name();
-                            case TSK_WEB_COOKIE:
-                                return Bundle.ArtifactsListPanel_urlColumn_name();
-                            case TSK_WEB_SEARCH_QUERY:
-                                return Bundle.ArtifactsListPanel_termColumn_name();
-                            default:
+                        int artifactTypeId = artifactType.getTypeID();
+                        if (artifactTypeId == BlackboardArtifact.Type.TSK_WEB_CACHE.getTypeID() ||
+                            artifactTypeId == BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID()) {
+                            return Bundle.ArtifactsListPanel_fileNameColumn_name();
+                        } else if (artifactTypeId == BlackboardArtifact.Type.TSK_WEB_COOKIE.getTypeID()) {
+                            return Bundle.ArtifactsListPanel_urlColumn_name();
+                        } else if (artifactTypeId == BlackboardArtifact.Type.TSK_WEB_SEARCH_QUERY.getTypeID()) {
+                            return Bundle.ArtifactsListPanel_termColumn_name();
                         }
                     }
                     return Bundle.ArtifactsListPanel_titleColumn_name();

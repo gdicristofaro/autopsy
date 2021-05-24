@@ -43,7 +43,7 @@ import org.sleuthkit.autopsy.discovery.search.DiscoveryEventUtils;
 import org.sleuthkit.autopsy.discovery.search.SearchData.Type;
 import static org.sleuthkit.autopsy.discovery.search.SearchData.Type.DOMAIN;
 import org.sleuthkit.autopsy.discovery.search.SearchFiltering.ArtifactTypeFilter;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact;
 
 /**
  * Create a dialog for displaying the Discovery results.
@@ -372,7 +372,7 @@ public final class DiscoveryTopComponent extends TopComponent {
 
         for (AbstractFilter filter : searchCompleteEvent.getFilters()) {
             if (filter instanceof ArtifactTypeFilter) {
-                for (ARTIFACT_TYPE type : ((ArtifactTypeFilter) filter).getTypes()) {
+                for (BlackboardArtifact.Type type : ((ArtifactTypeFilter) filter).getTypes()) {
                     typeFilteredOn = type.getDisplayName();
                     if (selectedDomainTabName == null || typeFilteredOn.equalsIgnoreCase(selectedDomainTabName)) {
                         break;

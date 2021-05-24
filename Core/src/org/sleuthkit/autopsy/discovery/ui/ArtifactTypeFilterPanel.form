@@ -35,7 +35,7 @@
   <SubComponents>
     <Component class="org.sleuthkit.autopsy.guiutils.CheckBoxListPanel" name="artifactList">
       <AuxValues>
-        <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;BlackboardArtifact.ARTIFACT_TYPE&gt;"/>
+        <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;BlackboardArtifact.Type&gt;"/>
       </AuxValues>
       <Constraints>
         <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout" value="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout$BorderConstraintsDescription">

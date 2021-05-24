@@ -26,7 +26,6 @@ import java.util.Map;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 
 /**
@@ -40,7 +39,7 @@ public class DomainSearchArtifactsLoader extends CacheLoader<DomainSearchArtifac
     @Override
     public Map<String, List<BlackboardArtifact>> load(DomainSearchArtifactsCache.ArtifactCacheKey artifactKey) throws TskCoreException, InterruptedException {
         final SleuthkitCase caseDb = artifactKey.getSleuthkitCase();
-        final ARTIFACT_TYPE type = artifactKey.getType();
+        final BlackboardArtifact.Type type = artifactKey.getType();
         List<BlackboardArtifact> artifacts = caseDb.getBlackboardArtifacts(type.getTypeID());
         
         Map<String, List<BlackboardArtifact>> artifactsByDomain = new HashMap<>();

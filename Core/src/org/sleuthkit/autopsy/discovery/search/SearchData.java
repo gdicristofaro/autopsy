@@ -23,9 +23,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.openide.util.NbBundle;
 import org.sleuthkit.autopsy.coreutils.FileTypeUtils;
 import org.sleuthkit.datamodel.BlackboardArtifact;
@@ -36,13 +37,14 @@ import org.sleuthkit.datamodel.BlackboardArtifact;
 public final class SearchData {
 
     private final static long BYTES_PER_MB = 1000000;
-    private static final Set<BlackboardArtifact.ARTIFACT_TYPE> DOMAIN_ARTIFACT_TYPES = 
-            EnumSet.of(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_BOOKMARK, 
-                    BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CACHE, 
-                    BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_COOKIE, 
-                    BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD, 
-                    BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY, 
-                    BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_SEARCH_QUERY);
+    private static final Set<BlackboardArtifact.Type> DOMAIN_ARTIFACT_TYPES = 
+            Stream.of(BlackboardArtifact.Type.TSK_WEB_BOOKMARK, 
+                    BlackboardArtifact.Type.TSK_WEB_CACHE, 
+                    BlackboardArtifact.Type.TSK_WEB_COOKIE, 
+                    BlackboardArtifact.Type.TSK_WEB_DOWNLOAD, 
+                    BlackboardArtifact.Type.TSK_WEB_HISTORY, 
+                    BlackboardArtifact.Type.TSK_WEB_SEARCH_QUERY)
+            .collect(Collectors.toSet());
 
     
     /**
@@ -463,7 +465,7 @@ public final class SearchData {
         private final int ranking;  // For ordering in the UI
         private final String displayName;
         private final Collection<String> mediaTypes;
-        private final Collection<BlackboardArtifact.ARTIFACT_TYPE> artifactTypes;
+        private final Collection<BlackboardArtifact.Type> artifactTypes;
 
         /**
          * Construct a new Type enum value.
@@ -475,7 +477,7 @@ public final class SearchData {
          * @param artifactTypes The list of artifact types this type is defined
          *                      by if it is an attribute type.
          */
-        Type(int value, String displayName, Collection<String> mediaTypes, Collection<BlackboardArtifact.ARTIFACT_TYPE> artifactTypes) {
+        Type(int value, String displayName, Collection<String> mediaTypes, Collection<BlackboardArtifact.Type> artifactTypes) {
             this.ranking = value;
             this.displayName = displayName;
             this.mediaTypes = mediaTypes;
@@ -496,7 +498,7 @@ public final class SearchData {
          *
          * @return Collection of BlackboardArtifact.ARTIFACT_TYPE objects.
          */
-        public Collection<BlackboardArtifact.ARTIFACT_TYPE> getArtifactTypes() {
+        public Collection<BlackboardArtifact.Type> getArtifactTypes() {
             return Collections.unmodifiableCollection(artifactTypes);
         }
 

@@ -38,7 +38,7 @@ import org.sleuthkit.datamodel.BlackboardArtifact;
  */
 class ArtifactsWorker extends SwingWorker<List<BlackboardArtifact>, Void> {
 
-    private final BlackboardArtifact.ARTIFACT_TYPE artifactType;
+    private final BlackboardArtifact.Type artifactType;
     private final static Logger logger = Logger.getLogger(ArtifactsWorker.class.getName());
     private final String domain;
     private final boolean grabFocus;
@@ -52,7 +52,7 @@ class ArtifactsWorker extends SwingWorker<List<BlackboardArtifact>, Void> {
      * @param shouldGrabFocus True if the list of artifacts should have focus,
      *                        false otherwise.
      */
-    ArtifactsWorker(BlackboardArtifact.ARTIFACT_TYPE artifactType, String domain, boolean shouldGrabFocus) {
+    ArtifactsWorker(BlackboardArtifact.Type artifactType, String domain, boolean shouldGrabFocus) {
         this.artifactType = artifactType;
         this.domain = domain;
         this.grabFocus = shouldGrabFocus;

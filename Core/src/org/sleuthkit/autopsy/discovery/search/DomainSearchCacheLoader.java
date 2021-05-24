@@ -42,7 +42,7 @@ import org.sleuthkit.autopsy.discovery.search.SearchFiltering.ArtifactTypeFilter
 import org.sleuthkit.autopsy.discovery.search.SearchFiltering.DataSourceFilter;
 import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_DOWNLOAD;
 import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_HISTORY;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_ACCOUNT_TYPE;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_ACCOUNT_TYPE;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TEXT;
 import org.sleuthkit.datamodel.CaseDbAccessManager;

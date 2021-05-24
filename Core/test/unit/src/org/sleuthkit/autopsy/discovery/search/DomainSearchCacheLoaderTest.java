@@ -28,7 +28,7 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 import org.sleuthkit.autopsy.discovery.search.DiscoveryKeyUtils.GroupKey;
 import org.sleuthkit.autopsy.discovery.search.DiscoveryKeyUtils.SearchKey;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_CATEGORIZATION;
+import static org.sleuthkit.datamodel.BlackboardArtifact.Type.TSK_WEB_CATEGORIZATION;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
 
@@ -46,7 +46,7 @@ public class DomainSearchCacheLoaderTest {
         );
 
         SleuthkitCase caseDb = mock(SleuthkitCase.class);
-        when(caseDb.getBlackboardArtifacts(TSK_WEB_CATEGORIZATION)).thenReturn(new ArrayList<>());
+        when(caseDb.getBlackboardArtifacts(TSK_WEB_CATEGORIZATION.getTypeID())).thenReturn(new ArrayList<>());
 
         SearchKey key = new SearchKey(null, new ArrayList<>(),
                 new DiscoveryAttributes.DataSourceAttribute(),
@@ -82,7 +82,7 @@ public class DomainSearchCacheLoaderTest {
         );
 
         SleuthkitCase caseDb = mock(SleuthkitCase.class);
-        when(caseDb.getBlackboardArtifacts(TSK_WEB_CATEGORIZATION)).thenReturn(new ArrayList<>());
+        when(caseDb.getBlackboardArtifacts(TSK_WEB_CATEGORIZATION.getTypeID())).thenReturn(new ArrayList<>());
 
         SearchKey key = new SearchKey(null, new ArrayList<>(),
                 new DiscoveryAttributes.NoGroupingAttribute(),
@@ -115,7 +115,7 @@ public class DomainSearchCacheLoaderTest {
         );
 
         SleuthkitCase caseDb = mock(SleuthkitCase.class);
-        when(caseDb.getBlackboardArtifacts(TSK_WEB_CATEGORIZATION)).thenReturn(new ArrayList<>());
+        when(caseDb.getBlackboardArtifacts(TSK_WEB_CATEGORIZATION.getTypeID())).thenReturn(new ArrayList<>());
 
         SearchKey key = new SearchKey(null, new ArrayList<>(),
                 new DiscoveryAttributes.NoGroupingAttribute(),
@@ -149,7 +149,7 @@ public class DomainSearchCacheLoaderTest {
         );
 
         SleuthkitCase caseDb = mock(SleuthkitCase.class);
-        when(caseDb.getBlackboardArtifacts(TSK_WEB_CATEGORIZATION)).thenReturn(new ArrayList<>());
+        when(caseDb.getBlackboardArtifacts(TSK_WEB_CATEGORIZATION.getTypeID())).thenReturn(new ArrayList<>());
 
         SearchKey key = new SearchKey(null, new ArrayList<>(),
                 new DiscoveryAttributes.DataSourceAttribute(),

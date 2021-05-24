@@ -203,7 +203,7 @@ public class DomainSearch {
         List<BlackboardArtifact> artifacts = new ArrayList<>();
         Map<String, List<BlackboardArtifact>> dateMap = new HashMap<>();
         if (!StringUtils.isBlank(domain)) {
-            for (BlackboardArtifact.ARTIFACT_TYPE type : SearchData.Type.DOMAIN.getArtifactTypes()) {
+            for (BlackboardArtifact.Type type : SearchData.Type.DOMAIN.getArtifactTypes()) {
 
                 artifacts.addAll(getArtifacts(new DomainSearchArtifactsRequest(sleuthkitCase, domain, type)));
             }

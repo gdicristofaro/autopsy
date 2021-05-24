@@ -43,7 +43,7 @@ final class DomainArtifactsTabPanel extends JPanel {
     private static final long serialVersionUID = 1L;
     private final static Logger logger = Logger.getLogger(DomainArtifactsTabPanel.class.getName());
     private final ArtifactsListPanel listPanel;
-    private final BlackboardArtifact.ARTIFACT_TYPE artifactType;
+    private final BlackboardArtifact.Type artifactType;
     private AbstractArtifactDetailsPanel rightPanel = null;
     private int dividerLocation = 300;
     private final PropertyChangeListener dividerListener;
@@ -67,7 +67,7 @@ final class DomainArtifactsTabPanel extends JPanel {
      * @param type The type of Artifact this tab is displaying information for.
      */
     @ThreadConfined(type = ThreadConfined.ThreadType.AWT)
-    DomainArtifactsTabPanel(BlackboardArtifact.ARTIFACT_TYPE type) {
+    DomainArtifactsTabPanel(BlackboardArtifact.Type type) {
         initComponents();
         dividerListener = new PropertyChangeListener() {
             @Override
@@ -99,21 +99,22 @@ final class DomainArtifactsTabPanel extends JPanel {
      */
     @ThreadConfined(type = ThreadConfined.ThreadType.AWT)
     private void setRightComponent() {
-        switch (artifactType) {
-            case TSK_WEB_HISTORY:
-            case TSK_WEB_COOKIE:
-            case TSK_WEB_SEARCH_QUERY:
-            case TSK_WEB_BOOKMARK:
-                rightPanel = new GeneralPurposeArtifactViewer();
-                break;
-            case TSK_WEB_DOWNLOAD:
-            case TSK_WEB_CACHE:
-                rightPanel = new ContentViewerDetailsPanel();
-                break;
-            default:
-                rightPanel = new DefaultTableArtifactContentViewer();
-                break;
+        int artifactTypeId = artifactType.getTypeID();
+        if (artifactTypeId == BlackboardArtifact.Type.TSK_WEB_HISTORY.getTypeID() || 
+            artifactTypeId == BlackboardArtifact.Type.TSK_WEB_COOKIE.getTypeID() ||
+            artifactTypeId == BlackboardArtifact.Type.TSK_WEB_SEARCH_QUERY.getTypeID() ||
+            artifactTypeId == BlackboardArtifact.Type.TSK_WEB_BOOKMARK.getTypeID()) {
+
+            rightPanel = new GeneralPurposeArtifactViewer();
+
+        } else if (artifactTypeId == BlackboardArtifact.Type.TSK_WEB_DOWNLOAD.getTypeID() ||
+                artifactTypeId == BlackboardArtifact.Type.TSK_WEB_CACHE.getTypeID()) {
+            rightPanel = new ContentViewerDetailsPanel();
+
+        } else {
+            rightPanel = new DefaultTableArtifactContentViewer();
         }
+        
         if (rightPanel != null) {
             mainSplitPane.setRightComponent(rightPanel.getComponent());
         }
@@ -200,10 +201,10 @@ final class DomainArtifactsTabPanel extends JPanel {
     /**
      * Get the type of Artifact the panel exists for.
      *
-     * @return The ARTIFACT_TYPE of the BlackboardArtifact being displayed.
+     * @return The type of the BlackboardArtifact being displayed.
      */
     @ThreadConfined(type = ThreadConfined.ThreadType.AWT)
-    BlackboardArtifact.ARTIFACT_TYPE getArtifactType() {
+    BlackboardArtifact.Type getArtifactType() {
         return artifactType;
     }
 

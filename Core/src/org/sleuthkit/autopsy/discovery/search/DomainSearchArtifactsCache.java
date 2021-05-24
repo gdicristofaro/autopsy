@@ -29,7 +29,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.sleuthkit.autopsy.discovery.search.DiscoveryEventUtils.SearchStartedEvent;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.SleuthkitCase;
 
 /**
@@ -64,7 +64,7 @@ public class DomainSearchArtifactsCache {
      *                            process.
      */
     public List<BlackboardArtifact> get(DomainSearchArtifactsRequest request) throws DiscoveryException {
-        String typeName = request.getArtifactType().getLabel();
+        String typeName = request.getArtifactType().getTypeName();
         if (!typeName.startsWith("TSK_WEB")) {
             throw new IllegalArgumentException("Only web artifacts are valid arguments. Type provided was " + typeName);
         }
@@ -96,7 +96,7 @@ public class DomainSearchArtifactsCache {
      */
     class ArtifactCacheKey {
 
-        private final ARTIFACT_TYPE type;
+        private final BlackboardArtifact.Type type;
         private final SleuthkitCase caseDatabase;
         
         private ArtifactCacheKey(DomainSearchArtifactsRequest request) {
@@ -104,7 +104,7 @@ public class DomainSearchArtifactsCache {
             this.caseDatabase = request.getSleuthkitCase();
         }
         
-        ARTIFACT_TYPE getType() {
+        BlackboardArtifact.Type getType() {
             return this.type;
         }
         

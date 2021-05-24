@@ -52,7 +52,7 @@ final class ArtifactTypeFilterPanel extends AbstractDiscoveryFilterPanel {
     @ThreadConfined(type = ThreadConfined.ThreadType.AWT)
     private void setUpArtifactTypeFilter() {
         artifactList.clearList();
-        for (BlackboardArtifact.ARTIFACT_TYPE artifactType : SearchData.Type.DOMAIN.getArtifactTypes()) {
+        for (BlackboardArtifact.Type artifactType : SearchData.Type.DOMAIN.getArtifactTypes()) {
             artifactList.addElement(artifactType.getDisplayName(), null, artifactType);
         }
     }
@@ -91,10 +91,10 @@ final class ArtifactTypeFilterPanel extends AbstractDiscoveryFilterPanel {
         if (artifactTypeCheckbox.isEnabled() && artifactTypeCheckbox.isSelected()) {
             artifactList.setEnabled(true);
             if (selectedItems != null) {
-                List<BlackboardArtifact.ARTIFACT_TYPE> artTypeList = new ArrayList<>();
+                List<BlackboardArtifact.Type> artTypeList = new ArrayList<>();
                 for (Object item : selectedItems) {
-                    if (item instanceof BlackboardArtifact.ARTIFACT_TYPE) {
-                        artTypeList.add((BlackboardArtifact.ARTIFACT_TYPE) item);
+                    if (item instanceof BlackboardArtifact.Type) {
+                        artTypeList.add((BlackboardArtifact.Type) item);
                     }
                 }
                 if (!artTypeList.isEmpty()) {
@@ -131,7 +131,7 @@ final class ArtifactTypeFilterPanel extends AbstractDiscoveryFilterPanel {
     @Override
     AbstractFilter getFilter() {
         if (artifactTypeCheckbox.isSelected() && isFilterSupported()) {
-            List<BlackboardArtifact.ARTIFACT_TYPE> artifactTypeList = artifactList.getSelectedElements();
+            List<BlackboardArtifact.Type> artifactTypeList = artifactList.getSelectedElements();
             return new ArtifactTypeFilter(artifactTypeList);
         }
         return null;
@@ -149,7 +149,7 @@ final class ArtifactTypeFilterPanel extends AbstractDiscoveryFilterPanel {
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private org.sleuthkit.autopsy.guiutils.CheckBoxListPanel<BlackboardArtifact.ARTIFACT_TYPE> artifactList;
+    private org.sleuthkit.autopsy.guiutils.CheckBoxListPanel<BlackboardArtifact.Type> artifactList;
     private javax.swing.JCheckBox artifactTypeCheckbox;
     // End of variables declaration//GEN-END:variables
 }

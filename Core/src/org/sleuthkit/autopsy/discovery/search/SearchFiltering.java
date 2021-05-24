@@ -46,7 +46,7 @@ import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.TskData;
 import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepository;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact;
 
 /**
  * Run various filters to return a subset of Results from the current case.
@@ -207,7 +207,7 @@ public class SearchFiltering {
      */
     public static class ArtifactTypeFilter extends AbstractFilter {
 
-        private final Collection<ARTIFACT_TYPE> types;
+        private final Collection<BlackboardArtifact.Type> types;
 
         /**
          * Construct a new ArtifactTypeFilter.
@@ -215,7 +215,7 @@ public class SearchFiltering {
          * @param types The list of BlackboardArtifact types to include in
          *              results from.
          */
-        public ArtifactTypeFilter(Collection<ARTIFACT_TYPE> types) {
+        public ArtifactTypeFilter(Collection<BlackboardArtifact.Type> types) {
             this.types = types;
         }
 
@@ -224,13 +224,13 @@ public class SearchFiltering {
          *
          * @return The list of artifact types specified by the filter.
          */
-        public Collection<ARTIFACT_TYPE> getTypes() {
+        public Collection<BlackboardArtifact.Type> getTypes() {
             return Collections.unmodifiableCollection(types);
         }
         
         private StringJoiner joinStandardArtifactTypes() {
             StringJoiner joiner = new StringJoiner(",");
-            for (ARTIFACT_TYPE type : types) {
+            for (BlackboardArtifact.Type type : types) {
                 joiner.add("\'" + type.getTypeID() + "\'");
             }
             return joiner;
@@ -245,9 +245,9 @@ public class SearchFiltering {
         /**
          * Used by backend domain search code to query for additional artifact types.
          */
-        String getWhereClause(List<ARTIFACT_TYPE> nonVisibleArtifactTypesToInclude) {
+        String getWhereClause(List<BlackboardArtifact.Type> nonVisibleArtifactTypesToInclude) {
             StringJoiner joiner = joinStandardArtifactTypes();
-            for (ARTIFACT_TYPE type : nonVisibleArtifactTypesToInclude) {
+            for (BlackboardArtifact.Type type : nonVisibleArtifactTypesToInclude) {
                 joiner.add("\'" + type.getTypeID() + "\'");
             }
             return "artifact_type_id IN (" + joiner + ")";
@@ -259,7 +259,7 @@ public class SearchFiltering {
         @Override
         public String getDesc() {
             String desc = ""; // NON-NLS
-            for (ARTIFACT_TYPE type : types) {
+            for (BlackboardArtifact.Type type : types) {
                 if (!desc.isEmpty()) {
                     desc += Bundle.SearchFiltering_artifactTypeFilter_or();
                 }

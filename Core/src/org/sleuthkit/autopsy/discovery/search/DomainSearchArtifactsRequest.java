@@ -20,8 +20,8 @@ package org.sleuthkit.autopsy.discovery.search;
 
 import java.util.Objects;
 import org.openide.util.NbBundle;
+import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.SleuthkitCase;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 
 /**
  * Requests artifacts of a specific type and domain from a given Case.
@@ -30,7 +30,7 @@ public class DomainSearchArtifactsRequest {
 
     private final SleuthkitCase sleuthkitCase;
     private final String domain;
-    private final ARTIFACT_TYPE artifactType;
+    private final BlackboardArtifact.Type artifactType;
 
     /**
      * Construct a new DomainSearchArtifactsRequest object.
@@ -40,7 +40,7 @@ public class DomainSearchArtifactsRequest {
      * @param artifactType  The type of artifact being requested.
      */
     public DomainSearchArtifactsRequest(SleuthkitCase sleuthkitCase,
-            String domain, ARTIFACT_TYPE artifactType) {
+            String domain, BlackboardArtifact.Type artifactType) {
         this.sleuthkitCase = sleuthkitCase;
         this.domain = domain;
         this.artifactType = artifactType;
@@ -69,7 +69,7 @@ public class DomainSearchArtifactsRequest {
      *
      * @return The type of artifact being requested.
      */
-    public ARTIFACT_TYPE getArtifactType() {
+    public BlackboardArtifact.Type getArtifactType() {
         return artifactType;
     }
 

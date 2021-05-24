@@ -238,7 +238,7 @@ public final class DiscoveryEventUtils {
     public static final class ArtifactSearchResultEvent {
 
         private final List<BlackboardArtifact> listOfArtifacts = new ArrayList<>();
-        private final BlackboardArtifact.ARTIFACT_TYPE artifactType;
+        private final BlackboardArtifact.Type artifactType;
         private final boolean grabFocus;
 
         /**
@@ -250,7 +250,7 @@ public final class DiscoveryEventUtils {
          * @param shouldGrabFocus True if the list of artifacts should have
          *                        focus, false otherwise.
          */
-        public ArtifactSearchResultEvent(BlackboardArtifact.ARTIFACT_TYPE artifactType, List<BlackboardArtifact> listOfArtifacts, boolean shouldGrabFocus) {
+        public ArtifactSearchResultEvent(BlackboardArtifact.Type artifactType, List<BlackboardArtifact> listOfArtifacts, boolean shouldGrabFocus) {
             if (listOfArtifacts != null) {
                 this.listOfArtifacts.addAll(listOfArtifacts);
             }
@@ -272,7 +272,7 @@ public final class DiscoveryEventUtils {
          *
          * @return The BlackboardArtifact type of which exist in the list.
          */
-        public BlackboardArtifact.ARTIFACT_TYPE getArtifactType() {
+        public BlackboardArtifact.Type getArtifactType() {
             return artifactType;
         }
 

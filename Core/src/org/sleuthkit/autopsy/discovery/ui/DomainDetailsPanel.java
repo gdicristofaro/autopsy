@@ -62,7 +62,7 @@ final class DomainDetailsPanel extends JPanel {
         MiniTimelinePanel timelinePanel = new MiniTimelinePanel();
         DiscoveryEventUtils.getDiscoveryEventBus().register(timelinePanel);
         jTabbedPane1.add(Bundle.DomainDetailsPanel_miniTimelineTitle_text(), timelinePanel);
-        for (BlackboardArtifact.ARTIFACT_TYPE type : SearchData.Type.DOMAIN.getArtifactTypes()) {
+        for (BlackboardArtifact.Type type : SearchData.Type.DOMAIN.getArtifactTypes()) {
             jTabbedPane1.add(type.getDisplayName(), new DomainArtifactsTabPanel(type));
         }
         if (CentralRepository.isEnabled()) {
