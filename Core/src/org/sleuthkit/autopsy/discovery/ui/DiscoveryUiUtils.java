@@ -149,7 +149,7 @@ final class DiscoveryUiUtils {
      *
      * @throws TskCoreException
      */
-    static List<String> getSetNames(BlackboardArtifact.ARTIFACT_TYPE artifactType, BlackboardAttribute.ATTRIBUTE_TYPE setNameAttribute) throws TskCoreException {
+    static List<String> getSetNames(BlackboardArtifact.Type artifactType, BlackboardAttribute.ATTRIBUTE_TYPE setNameAttribute) throws TskCoreException {
         List<BlackboardArtifact> arts = Case.getCurrentCase().getSleuthkitCase().getBlackboardArtifacts(artifactType.getTypeID());
         List<String> setNames = new ArrayList<>();
         for (BlackboardArtifact art : arts) {

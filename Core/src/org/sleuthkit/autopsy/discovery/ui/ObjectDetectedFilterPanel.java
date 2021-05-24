@@ -58,7 +58,7 @@ final class ObjectDetectedFilterPanel extends AbstractDiscoveryFilterPanel {
     private void setUpObjectFilter() {
         try {
             objectsList.clearList();
-            List<String> setNames = DiscoveryUiUtils.getSetNames(BlackboardArtifact.ARTIFACT_TYPE.TSK_OBJECT_DETECTED, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DESCRIPTION);
+            List<String> setNames = DiscoveryUiUtils.getSetNames(BlackboardArtifact.Type.TSK_OBJECT_DETECTED, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DESCRIPTION);
             for (String name : setNames) {
                 objectsList.addElement(name, null, name);
             }
