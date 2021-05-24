@@ -22,12 +22,12 @@ import java.awt.Component;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -52,6 +52,16 @@ class ArtifactSelectionDialog extends javax.swing.JDialog {
     private Map<BlackboardArtifact.Type, Boolean> artifactTypeSelections = new HashMap<>();
     private List<BlackboardArtifact.Type> artifactTypes = new ArrayList<>();
 
+    @SuppressWarnings("deprecation")
+    private final List<Integer> doNotReport = Arrays.asList(
+            BlackboardArtifact.Type.TSK_GEN_INFO.getTypeID(),
+            BlackboardArtifact.ARTIFACT_TYPE.TSK_TOOL_OUTPUT.getTypeID(), // output is too unstructured for table review 
+            BlackboardArtifact.Type.TSK_ASSOCIATED_OBJECT.getTypeID(),
+            BlackboardArtifact.Type.TSK_TL_EVENT.getTypeID()
+    );
+    
+    
+    
     /**
      * Creates new form ArtifactSelectionDialog
      *
@@ -68,23 +78,13 @@ class ArtifactSelectionDialog extends javax.swing.JDialog {
     /**
      * Populate the list of artifact types with all important artifact types.
      */
-    @SuppressWarnings("deprecation")
+    
     private void populateList() {
-        try {
-            ArrayList<BlackboardArtifact.ARTIFACT_TYPE> doNotReport = new ArrayList<>();
-            doNotReport.add(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO);
-            doNotReport.add(BlackboardArtifact.ARTIFACT_TYPE.TSK_TOOL_OUTPUT); // output is too unstructured for table review 
-            doNotReport.add(BlackboardArtifact.ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT);
-            doNotReport.add(BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT);
-            
-            artifactTypes = Case.getCurrentCaseThrows().getSleuthkitCase().getArtifactTypesInUse();
-            artifactTypes.removeAll(doNotReport);
-            Collections.sort(artifactTypes, new Comparator<BlackboardArtifact.Type>() {
-                @Override
-                public int compare(BlackboardArtifact.Type o1, BlackboardArtifact.Type o2) {
-                    return o1.getDisplayName().compareTo(o2.getDisplayName());
-                }
-            });
+        try {           
+            artifactTypes = Case.getCurrentCaseThrows().getSleuthkitCase().getArtifactTypesInUse().stream()
+                    .filter((type) -> !doNotReport.contains(type.getTypeID()))
+                    .sorted((a,b) -> a.getDisplayName().compareTo(b.getDisplayName()))
+                    .collect(Collectors.toList());
 
             artifactTypeSelections = new HashMap<>();
             for (BlackboardArtifact.Type type : artifactTypes) {
