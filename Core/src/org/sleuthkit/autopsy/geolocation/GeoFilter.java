@@ -32,7 +32,7 @@ public final class GeoFilter {
     private final boolean showWithoutTimeStamp;
     private final int mostRecentNumDays;
     private final List<DataSource> dataSources;
-    private final List<BlackboardArtifact.ARTIFACT_TYPE> artifactTypes;
+    private final List<Integer> artifactTypeIds;
 
     /**
      * Construct a Geolocation filter. showAll and mostRecentNumDays are
@@ -49,14 +49,14 @@ public final class GeoFilter {
      * @param mostRecentNumDays Show Waypoint for the most recent given number
      * of days. This parameter is ignored if showAll is true.
      * @param dataSources A list of dataSources to filter waypoint for.
-     * @param artifactTypes A list of artifactTypes to filter waypoint for.
+     * @param artifactTypeId A list of artifact type ids to filter waypoint for.
      */
-    public GeoFilter(boolean showAll, boolean withoutTimeStamp, int mostRecentNumDays, List<DataSource> dataSources, List<BlackboardArtifact.ARTIFACT_TYPE> artifactTypes) {
+    public GeoFilter(boolean showAll, boolean withoutTimeStamp, int mostRecentNumDays, List<DataSource> dataSources, List<Integer> artifactTypeId) {
         this.showAll = showAll;
         this.showWithoutTimeStamp = withoutTimeStamp;
         this.mostRecentNumDays = mostRecentNumDays;
         this.dataSources = dataSources;
-        this.artifactTypes = artifactTypes;
+        this.artifactTypeIds = artifactTypeId;
     }
 
     /**
@@ -101,14 +101,14 @@ public final class GeoFilter {
     }
 
     /**
-     * Returns a list of artifact types to filter the waypoints by, or null if
+     * Returns a list of artifact type ids to filter the waypoints by, or null if
      * all types should be include.
      *
-     * @return A list of artifactTypes or null if all artifactTypes should be
+     * @return A list of artifactType ids or null if all artifactTypes should be
      * included.
      */
-    List<BlackboardArtifact.ARTIFACT_TYPE> getArtifactTypes() {
-        return Collections.unmodifiableList(artifactTypes);
+    List<Integer> getArtifactTypeIds() {
+        return Collections.unmodifiableList(artifactTypeIds);
     }
 
 }

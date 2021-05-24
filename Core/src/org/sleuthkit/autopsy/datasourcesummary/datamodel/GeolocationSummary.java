@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,7 +40,6 @@ import org.sleuthkit.autopsy.geolocation.MapWaypoint;
 import org.sleuthkit.autopsy.geolocation.datamodel.GeoLocationDataException;
 import org.sleuthkit.autopsy.geolocation.datamodel.WaypointBuilder;
 import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.DataSource;
 
 /**
@@ -218,22 +218,20 @@ public class GeolocationSummary implements DefaultArtifactUpdateGovernor {
 
     // taken from GeoFilterPanel: all of the GPS artifact types.
     @SuppressWarnings("deprecation")
-    private static final List<ARTIFACT_TYPE> GPS_ARTIFACT_TYPES = Arrays.asList(
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_BOOKMARK,
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_LAST_KNOWN_LOCATION,
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_ROUTE,
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_SEARCH,
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACK,
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACKPOINT,
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_METADATA_EXIF,
-            BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_AREA
-    );
+    private static final List<Integer> GPS_ARTIFACT_TYPE_IDS = Collections.unmodifiableList(Stream.of(
+            BlackboardArtifact.Type.TSK_GPS_BOOKMARK.getTypeID(),
+            BlackboardArtifact.Type.TSK_GPS_LAST_KNOWN_LOCATION.getTypeID(),
+            BlackboardArtifact.Type.TSK_GPS_ROUTE.getTypeID(),
+            BlackboardArtifact.Type.TSK_GPS_SEARCH.getTypeID(),
+            BlackboardArtifact.Type.TSK_GPS_TRACK.getTypeID(),
+            BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACKPOINT.getTypeID(),
+            BlackboardArtifact.Type.TSK_METADATA_EXIF.getTypeID(),
+            BlackboardArtifact.Type.TSK_GPS_AREA.getTypeID()
+    ).collect(Collectors.toList()));
 
-    // all GPS types
-    private static final Set<Integer> GPS_ARTIFACT_TYPE_IDS = GPS_ARTIFACT_TYPES.stream()
-            .map(artifactType -> artifactType.getTypeID())
-            .collect(Collectors.toSet());
-
+    private static final Set<Integer> GPS_ARTIFACT_TYPE_IDS_SET = 
+            Collections.unmodifiableSet(new HashSet<>(GPS_ARTIFACT_TYPE_IDS));
+    
     private static final Pair<Integer, Integer> EMPTY_COUNT = Pair.of(0, 0);
 
     private static final long DAY_SECS = 24 * 60 * 60;
@@ -277,13 +275,13 @@ public class GeolocationSummary implements DefaultArtifactUpdateGovernor {
     /**
      * @return Returns all the geolocation artifact types.
      */
-    public List<ARTIFACT_TYPE> getGeoTypes() {
-        return GPS_ARTIFACT_TYPES;
+    public List<Integer> getGeoTypeIds() {
+        return GPS_ARTIFACT_TYPE_IDS;
     }
 
     @Override
     public Set<Integer> getArtifactTypeIdsForRefresh() {
-        return GPS_ARTIFACT_TYPE_IDS;
+        return GPS_ARTIFACT_TYPE_IDS_SET;
     }
 
     /**
@@ -543,11 +541,11 @@ public class GeolocationSummary implements DefaultArtifactUpdateGovernor {
         // see the following: https://stackoverflow.com/questions/20659961/java-synchronous-callback
         final BlockingQueue<GeoResult> asyncResult = new ArrayBlockingQueue<>(1);
 
-        GeoFilter geoFilter = new GeoFilter(true, false, 0, Arrays.asList(dataSource), GPS_ARTIFACT_TYPES);
+        GeoFilter geoFilter = new GeoFilter(true, false, 0, Arrays.asList(dataSource), GPS_ARTIFACT_TYPE_IDS);
 
         WaypointBuilder.getAllWaypoints(provider.get(),
                 Arrays.asList(dataSource),
-                GPS_ARTIFACT_TYPES,
+                GPS_ARTIFACT_TYPE_IDS,
                 true,
                 -1,
                 false,

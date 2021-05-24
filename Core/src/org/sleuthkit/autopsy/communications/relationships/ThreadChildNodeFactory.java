@@ -115,10 +115,10 @@ final class ThreadChildNodeFactory extends ChildFactory<BlackboardArtifact> {
             }
             
             BlackboardArtifact bba = (BlackboardArtifact) content;
-            BlackboardArtifact.ARTIFACT_TYPE fromID = BlackboardArtifact.ARTIFACT_TYPE.fromID(bba.getArtifactTypeID());
+            int artTypeId = bba.getArtifactTypeID();
 
-            if (fromID == BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG
-                    || fromID == BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE) {
+            if (artTypeId == BlackboardArtifact.Type.TSK_EMAIL_MSG.getTypeID()
+                    || artTypeId == BlackboardArtifact.Type.TSK_MESSAGE.getTypeID()) {
 
                 // We want email and message artifacts that do not have "threadIDs" to appear as one thread in the UI
                 // To achive this assign any artifact that does not have a threadID
@@ -137,37 +137,33 @@ final class ThreadChildNodeFactory extends ChildFactory<BlackboardArtifact> {
                 } else {
                     // Get the date of the message
                     BlackboardAttribute tableAttribute = null;
-                    switch(fromID) {
-                        case TSK_EMAIL_MSG:
-                            tableAttribute = tableArtifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_SENT));
-                            attribute = bba.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_SENT));
-                            // put the earliest message into the table
-                            if(tableAttribute != null 
-                                    && attribute != null 
-                                    && tableAttribute.getValueLong() > attribute.getValueLong()) {
-                                rootMessageMap.put(threadID, bba);
-                            }
-                        break;
-                        case TSK_MESSAGE:
-                            tableAttribute = tableArtifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME));
-                            attribute = bba.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME));
-                            // put the earliest message into the table
-                            if(tableAttribute != null 
-                                    && attribute != null 
-                                    && tableAttribute.getValueLong() < attribute.getValueLong()) {
-                                rootMessageMap.put(threadID, bba);
-                            }
-                            break;
-                        case TSK_CALLLOG:
-                            tableAttribute = tableArtifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_START));
-                            attribute = bba.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_START));
-                            // put the earliest message into the table
-                            if(tableAttribute != null 
-                                    && attribute != null 
-                                    && tableAttribute.getValueLong() > attribute.getValueLong()) {
-                                rootMessageMap.put(threadID, bba);
-                            }
-                            break;
+                    if (artTypeId == BlackboardArtifact.Type.TSK_EMAIL_MSG.getTypeID()) {
+                        tableAttribute = tableArtifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_SENT));
+                        attribute = bba.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_SENT));
+                        // put the earliest message into the table
+                        if(tableAttribute != null 
+                                && attribute != null 
+                                && tableAttribute.getValueLong() > attribute.getValueLong()) {
+                            rootMessageMap.put(threadID, bba);
+                        }
+                    } else if (artTypeId == BlackboardArtifact.Type.TSK_MESSAGE.getTypeID()) {
+                        tableAttribute = tableArtifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME));
+                        attribute = bba.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME));
+                        // put the earliest message into the table
+                        if(tableAttribute != null 
+                                && attribute != null 
+                                && tableAttribute.getValueLong() < attribute.getValueLong()) {
+                            rootMessageMap.put(threadID, bba);
+                        }
+                    } else if (artTypeId == BlackboardArtifact.Type.TSK_CALLLOG.getTypeID()) {
+                        tableAttribute = tableArtifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_START));
+                        attribute = bba.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_START));
+                        // put the earliest message into the table
+                        if(tableAttribute != null 
+                                && attribute != null 
+                                && tableAttribute.getValueLong() > attribute.getValueLong()) {
+                            rootMessageMap.put(threadID, bba);
+                        }
                     }
 
                     
@@ -250,47 +246,35 @@ final class ThreadChildNodeFactory extends ChildFactory<BlackboardArtifact> {
             long dateTime2 = Long.MAX_VALUE;
 
             if (bba1 != null) {
-                BlackboardArtifact.ARTIFACT_TYPE fromID = BlackboardArtifact.ARTIFACT_TYPE.fromID(bba1.getArtifactTypeID());
-                if (fromID != null) {
-                    try {
-                        switch (fromID) {
-                            case TSK_EMAIL_MSG:
-                                attribute1 = bba1.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_SENT));
+                int artTypeId1 = bba1.getArtifactTypeID();
 
-                                break;
-                            case TSK_MESSAGE:
-                                attribute1 = bba1.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME));
-
-                                break;
-                            case TSK_CALLLOG:
-                                attribute1 = bba1.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_START));
-
-                                break;
-                        }
-                    } catch (TskCoreException ex) {
-                        logger.log(Level.WARNING, String.format("Unable to compare attributes for artifact %d", bba1.getArtifactID()), ex);
+                try {
+                    if (artTypeId1 == BlackboardArtifact.Type.TSK_EMAIL_MSG.getTypeID()) {
+                        attribute1 = bba1.getAttribute(BlackboardAttribute.Type.TSK_DATETIME_SENT);
+                    } else if (artTypeId1 == BlackboardArtifact.Type.TSK_MESSAGE.getTypeID()) {
+                        attribute1 = bba1.getAttribute(BlackboardAttribute.Type.TSK_DATETIME);
+                    } else if (artTypeId1 == BlackboardArtifact.Type.TSK_CALLLOG.getTypeID()) {
+                        attribute1 = bba1.getAttribute(BlackboardAttribute.Type.TSK_DATETIME_START);
                     }
+                } catch (TskCoreException ex) {
+                    logger.log(Level.WARNING, String.format("Unable to compare attributes for artifact %d", bba1.getArtifactID()), ex);
                 }
             }
 
             if (bba1 != null) {
-                BlackboardArtifact.ARTIFACT_TYPE fromID = BlackboardArtifact.ARTIFACT_TYPE.fromID(bba2.getArtifactTypeID());
-                if (fromID != null) {
-                    try {
-                        switch (fromID) {
-                            case TSK_EMAIL_MSG:
-                                attribute2 = bba2.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_SENT));
-                                break;
-                            case TSK_MESSAGE:
-                                attribute2 = bba2.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME));
-                                break;
-                            case TSK_CALLLOG:
-                                attribute2 = bba2.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_START));
-                                break;
-                        }
-                    } catch (TskCoreException ex) {
-                        logger.log(Level.WARNING, String.format("Unable to compare attributes for artifact %d", bba2.getArtifactID()), ex);
+                int artTypeId2 = bba1.getArtifactTypeID();
+
+                try {
+                    if (artTypeId2 == BlackboardArtifact.Type.TSK_EMAIL_MSG.getTypeID()) {
+                        attribute2 = bba2.getAttribute(BlackboardAttribute.Type.TSK_DATETIME_SENT);
+                    } else if (artTypeId2 == BlackboardArtifact.Type.TSK_MESSAGE.getTypeID()) {
+                        attribute2 = bba2.getAttribute(BlackboardAttribute.Type.TSK_DATETIME);
+                    } else if (artTypeId2 == BlackboardArtifact.Type.TSK_CALLLOG.getTypeID()) {
+                        attribute2 = bba2.getAttribute(BlackboardAttribute.Type.TSK_DATETIME_START);
                     }
+
+                } catch (TskCoreException ex) {
+                    logger.log(Level.WARNING, String.format("Unable to compare attributes for artifact %d", bba2.getArtifactID()), ex);
                 }
             }
 

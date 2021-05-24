@@ -127,6 +127,7 @@ public class ModuleDataEvent extends ChangeEvent {
      * @return the artifact type
      */
     @Deprecated
+    @SuppressWarnings("deprecation")
     public ARTIFACT_TYPE getArtifactType() {
         return BlackboardArtifact.ARTIFACT_TYPE.fromID(this.blackboardArtifactType.getTypeID());
     }

@@ -470,7 +470,7 @@ public final class WaypointBuilder {
      *                          Pass a null or empty list to show way points for
      *                          all dataSources.
      *
-     * @param artifactTypes     List of types from which we want to get
+     * @param artifactTypeIds   List of type ids from which we want to get
      *                          waypoints.
      *
      * @param showAll           True to get all waypoints.
@@ -488,7 +488,7 @@ public final class WaypointBuilder {
      *
      * @throws GeoLocationDataException
      */
-    static public void getAllWaypoints(SleuthkitCase skCase, List<DataSource> dataSources, List<ARTIFACT_TYPE> artifactTypes, boolean showAll, int cntDaysFromRecent, boolean noTimeStamp, WaypointFilterQueryCallBack queryCallBack) throws GeoLocationDataException {
+    static public void getAllWaypoints(SleuthkitCase skCase, List<DataSource> dataSources, List<Integer> artifactTypeIds, boolean showAll, int cntDaysFromRecent, boolean noTimeStamp, WaypointFilterQueryCallBack queryCallBack) throws GeoLocationDataException {
         String query = buildQuery(dataSources, showAll, cntDaysFromRecent, noTimeStamp);
 
         logger.log(Level.INFO, query);
@@ -509,9 +509,8 @@ public final class WaypointBuilder {
                             int artifact_type_id = rs.getInt("artifact_type_id"); //NON-NLS
                             long artifact_id = rs.getLong("artifact_id"); //NON-NLS
 
-                            ARTIFACT_TYPE type = ARTIFACT_TYPE.fromID(artifact_type_id);
-                            if (artifactTypes.contains(type)) {
-                                waypointResults.add(getWaypointForArtifact(skCase.getBlackboardArtifact(artifact_id), type));
+                            if (artifactTypeIds.contains(artifact_type_id)) {
+                                waypointResults.add(getWaypointForArtifact(skCase.getBlackboardArtifact(artifact_id), artifact_type_id));
                             }
 
                         }
@@ -693,37 +692,30 @@ public final class WaypointBuilder {
     /**
      * Create a Waypoint object for the given Blackboard artifact.
      *
-     * @param artifact The artifact to create the waypoint from
-     * @param type     The type of artifact
+     * @param artifact          The artifact to create the waypoint from
+     * @param artifactTypeId    The type id of artifact
      *
      * @return A new waypoint object
      */
-    private static GeoLocationParseResult<Waypoint> getWaypointForArtifact(BlackboardArtifact artifact, ARTIFACT_TYPE type) {
+    @SuppressWarnings("deprecation")
+    private static GeoLocationParseResult<Waypoint> getWaypointForArtifact(BlackboardArtifact artifact, int artifactTypeId) {
         GeoLocationParseResult<Waypoint> waypoints = new GeoLocationParseResult<>();
-        switch (type) {
-            case TSK_METADATA_EXIF:
-                waypoints.add(parseWaypoint(EXIFWaypoint::new, artifact));
-                break;
-            case TSK_GPS_BOOKMARK:
-                waypoints.add(parseWaypoint(BookmarkWaypoint::new, artifact));
-                break;
-            case TSK_GPS_TRACKPOINT:
-                waypoints.add(parseWaypoint(TrackpointWaypoint::new, artifact));
-                break;
-            case TSK_GPS_SEARCH:
-                waypoints.add(parseWaypoint(SearchWaypoint::new, artifact));
-                break;
-            case TSK_GPS_ROUTE:
-                waypoints.add(parseWaypoints((a) -> new Route(a).getRoute(), artifact));
-                break;
-            case TSK_GPS_LAST_KNOWN_LOCATION:
-                waypoints.add(parseWaypoint(LastKnownWaypoint::new, artifact));
-                break;
-            case TSK_GPS_TRACK:
-                waypoints.add(parseWaypoints((a) -> new Track(a).getPath(), artifact));
-                break;
-            default:
-                waypoints.add(parseWaypoint(CustomArtifactWaypoint::new, artifact));
+        if (artifactTypeId == BlackboardArtifact.Type.TSK_METADATA_EXIF.getTypeID()) {
+            waypoints.add(parseWaypoint(EXIFWaypoint::new, artifact));
+        } else if (artifactTypeId == BlackboardArtifact.Type.TSK_GPS_BOOKMARK.getTypeID()) {
+            waypoints.add(parseWaypoint(BookmarkWaypoint::new, artifact));
+        } else if (artifactTypeId == BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_TRACKPOINT.getTypeID()) {
+            waypoints.add(parseWaypoint(TrackpointWaypoint::new, artifact));
+        } else if (artifactTypeId == BlackboardArtifact.Type.TSK_GPS_SEARCH.getTypeID()) {
+            waypoints.add(parseWaypoint(SearchWaypoint::new, artifact));
+        } else if (artifactTypeId == BlackboardArtifact.Type.TSK_GPS_ROUTE.getTypeID()) {
+            waypoints.add(parseWaypoints((a) -> new Route(a).getRoute(), artifact));
+        } else if (artifactTypeId == BlackboardArtifact.Type.TSK_GPS_LAST_KNOWN_LOCATION.getTypeID()) {
+            waypoints.add(parseWaypoint(LastKnownWaypoint::new, artifact));
+        } else if (artifactTypeId == BlackboardArtifact.Type.TSK_GPS_TRACK.getTypeID()) {
+            waypoints.add(parseWaypoints((a) -> new Track(a).getPath(), artifact));
+        } else {
+            waypoints.add(parseWaypoint(CustomArtifactWaypoint::new, artifact));
         }
 
         return waypoints;

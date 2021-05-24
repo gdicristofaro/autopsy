@@ -142,50 +142,32 @@ public class MessagesChildNodeFactory extends ChildFactory<BlackboardArtifact>{
             long dateTime2 = Long.MAX_VALUE;
 
             if (bba1 != null) {
-                BlackboardArtifact.ARTIFACT_TYPE fromID = BlackboardArtifact.ARTIFACT_TYPE.fromID(bba1.getArtifactTypeID());
-                if (fromID != null) {
-                    try {
-                        switch (fromID) {
-                            case TSK_EMAIL_MSG:
-                                attribute1 = bba1.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_SENT));
-                                break;
-                            case TSK_MESSAGE:
-                                attribute1 = bba1.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME));
-                                break;
-                            case TSK_CALLLOG:
-                                attribute1 = bba1.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_START));
-                                break;
-                            default:
-                                attribute1 = null;
-                                break;
-                        }
-                    } catch (TskCoreException ex) {
-                        logger.log(Level.WARNING, String.format("Unable to compare attributes for artifact %d", bba1.getArtifactID()), ex);
+                int artifactTypeId1 = bba1.getArtifactTypeID();
+                try {
+                    if (artifactTypeId1 == BlackboardArtifact.Type.TSK_EMAIL_MSG.getTypeID()) {
+                        attribute1 = bba1.getAttribute(BlackboardAttribute.Type.TSK_DATETIME_SENT);
+                    } else if (artifactTypeId1 == BlackboardArtifact.Type.TSK_MESSAGE.getTypeID()) { 
+                        attribute1 = bba1.getAttribute(BlackboardAttribute.Type.TSK_DATETIME);
+                    } else if (artifactTypeId1 == BlackboardArtifact.Type.TSK_CALLLOG.getTypeID()) { 
+                        attribute1 = bba1.getAttribute(BlackboardAttribute.Type.TSK_DATETIME_START);
                     }
+                } catch (TskCoreException ex) {
+                    logger.log(Level.WARNING, String.format("Unable to compare attributes for artifact %d", bba1.getArtifactID()), ex);
                 }
             }
 
             if (bba2 != null) {
-                BlackboardArtifact.ARTIFACT_TYPE fromID = BlackboardArtifact.ARTIFACT_TYPE.fromID(bba2.getArtifactTypeID());
-                if (fromID != null) {
-                    try {
-                        switch (fromID) {
-                            case TSK_EMAIL_MSG:
-                                attribute2 = bba2.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_SENT));
-                                break;
-                            case TSK_MESSAGE:
-                                attribute2 = bba2.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME));
-                                break;
-                            case TSK_CALLLOG:
-                                attribute2 = bba2.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_START));
-                                break;
-                            default:
-                                attribute2 = null;
-                                break;
-                        }
-                    } catch (TskCoreException ex) {
-                        logger.log(Level.WARNING, String.format("Unable to compare attributes for artifact %d", bba2.getArtifactID()), ex);
+                int artifactTypeId2 = bba2.getArtifactTypeID();
+                try {
+                    if (artifactTypeId2 == BlackboardArtifact.Type.TSK_EMAIL_MSG.getTypeID()) {
+                        attribute2 = bba2.getAttribute(BlackboardAttribute.Type.TSK_DATETIME_SENT);
+                    } else if (artifactTypeId2 == BlackboardArtifact.Type.TSK_MESSAGE.getTypeID()) { 
+                        attribute2 = bba2.getAttribute(BlackboardAttribute.Type.TSK_DATETIME);
+                    } else if (artifactTypeId2 == BlackboardArtifact.Type.TSK_CALLLOG.getTypeID()) { 
+                        attribute2 = bba2.getAttribute(BlackboardAttribute.Type.TSK_DATETIME_START);
                     }
+                } catch (TskCoreException ex) {
+                    logger.log(Level.WARNING, String.format("Unable to compare attributes for artifact %d", bba2.getArtifactID()), ex);
                 }
             }
 

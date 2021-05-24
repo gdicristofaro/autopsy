@@ -26,22 +26,25 @@ import java.awt.image.BufferedImage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
-import javafx.util.Pair;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingWorker;
+import org.apache.commons.lang3.tuple.Pair;
 import org.openide.util.NbBundle.Messages;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.Type;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.DataSource;
 import org.sleuthkit.datamodel.SleuthkitCase;
@@ -60,23 +63,24 @@ class GeoFilterPanel extends javax.swing.JPanel {
 
     private final SpinnerNumberModel numberModel;
     private final CheckBoxListPanel<DataSource> dsCheckboxPanel;
-    private final CheckBoxListPanel<ARTIFACT_TYPE> atCheckboxPanel;
+    private final CheckBoxListPanel<Integer> atCheckboxPanel;
 
     private final Object initialFilterLock = new Object();
     private GeoFilter initialFilter = null;
 
     // Make sure to update if other GPS artifacts are added
     @SuppressWarnings("deprecation")
-    private static final ARTIFACT_TYPE[] GPS_ARTIFACT_TYPES = {
-        ARTIFACT_TYPE.TSK_GPS_BOOKMARK,
-        ARTIFACT_TYPE.TSK_GPS_LAST_KNOWN_LOCATION,
-        ARTIFACT_TYPE.TSK_GPS_ROUTE,
-        ARTIFACT_TYPE.TSK_GPS_SEARCH,
-        ARTIFACT_TYPE.TSK_GPS_TRACK,
-        ARTIFACT_TYPE.TSK_GPS_TRACKPOINT,
-        ARTIFACT_TYPE.TSK_METADATA_EXIF,
-        ARTIFACT_TYPE.TSK_GPS_AREA
-    };
+    private static final List<Pair<Integer, String>> GPS_ARTIFACT_TYPES = Arrays.asList(
+            Pair.of(Type.TSK_GPS_BOOKMARK.getTypeID(), Type.TSK_GPS_BOOKMARK.getDisplayName()),
+            Pair.of(Type.TSK_GPS_LAST_KNOWN_LOCATION.getTypeID(), Type.TSK_GPS_LAST_KNOWN_LOCATION.getDisplayName()),
+            Pair.of(Type.TSK_GPS_ROUTE.getTypeID(), Type.TSK_GPS_ROUTE.getDisplayName()),
+            Pair.of(Type.TSK_GPS_SEARCH.getTypeID(), Type.TSK_GPS_SEARCH.getDisplayName()),
+            Pair.of(Type.TSK_GPS_TRACK.getTypeID(), Type.TSK_GPS_TRACK.getDisplayName()),
+            Pair.of(ARTIFACT_TYPE.TSK_GPS_TRACKPOINT.getTypeID(), ARTIFACT_TYPE.TSK_GPS_TRACKPOINT.getDisplayName()),
+            Pair.of(Type.TSK_METADATA_EXIF.getTypeID(), Type.TSK_METADATA_EXIF.getDisplayName()),
+            Pair.of(Type.TSK_GPS_AREA.getTypeID(), Type.TSK_GPS_AREA.getDisplayName())
+    );
+
 
     /**
      * Creates new GeoFilterPanel
@@ -97,7 +101,7 @@ class GeoFilterPanel extends javax.swing.JPanel {
         dsCheckboxPanel.setPanelTitleIcon(new ImageIcon(getClass().getResource("/org/sleuthkit/autopsy/images/image.png")));
         dsCheckboxPanel.setSetAllSelected(true);
 
-        atCheckboxPanel = (CheckBoxListPanel<ARTIFACT_TYPE>) atCBPanel;
+        atCheckboxPanel = (CheckBoxListPanel<Integer>) atCBPanel;
         atCheckboxPanel.setPanelTitle(Bundle.GeoFilterPanel_ArtifactType_List_Title());
         atCheckboxPanel.setPanelTitleIcon(new ImageIcon(getClass().getResource("/org/sleuthkit/autopsy/images/extracted_content.png")));
         atCheckboxPanel.setSetAllSelected(true);
@@ -161,7 +165,7 @@ class GeoFilterPanel extends javax.swing.JPanel {
             throw new GeoLocationUIException(Bundle.GeoFilterPanel_empty_dataSource());
         }
 
-        List<ARTIFACT_TYPE> artifactTypes = atCheckboxPanel.getSelectedElements();
+        List<Integer> artifactTypes = atCheckboxPanel.getSelectedElements();
         if (artifactTypes.isEmpty()) {
             throw new GeoLocationUIException(Bundle.GeoFilterPanel_empty_artifactType());
         }
@@ -185,7 +189,7 @@ class GeoFilterPanel extends javax.swing.JPanel {
         }
 
         dsCheckboxPanel.setSelectedElements(filter.getDataSources() == null ? Collections.emptyList() : filter.getDataSources());
-        atCheckboxPanel.setSelectedElements(filter.getArtifactTypes() == null ? Collections.emptyList() : filter.getArtifactTypes());
+        atCheckboxPanel.setSelectedElements(filter.getArtifactTypeIds() == null ? Collections.emptyList() : filter.getArtifactTypeIds());
 
         if (filter.showAllWaypoints()) {
             allButton.setSelected(true);
@@ -410,14 +414,21 @@ class GeoFilterPanel extends javax.swing.JPanel {
     final private class Sources {
 
         final List<Pair<String, DataSource>> dataSources;
-        final Map<ARTIFACT_TYPE, Long> artifactTypes;
+        final Map<Integer, Pair<String, Long>> artifactTypes;
 
+        /**
+         * Main constructor.
+         * @param dataSources The datasources (pair of the display name and object).
+         * @param artifactTypes Maps the ARTIFACT_TYPE/BlackboardArtifact.Type id to 
+         * a pair of the display name and count found.
+         */
         private Sources(List<Pair<String, DataSource>> dataSources,
-                Map<ARTIFACT_TYPE, Long> artifactTypes) {
+                Map<Integer, Pair<String, Long>> artifactTypes) {
             this.dataSources = dataSources;
             this.artifactTypes = artifactTypes;
         }
     }
+    
 
     /**
      * SwingWorker for updating the list of valid data sources.
@@ -431,17 +442,24 @@ class GeoFilterPanel extends javax.swing.JPanel {
         protected Sources doInBackground() throws Exception {
             SleuthkitCase sleuthkitCase = Case.getCurrentCase().getSleuthkitCase();
             List<Pair<String, DataSource>> validSources = new ArrayList<>();
-            HashMap<ARTIFACT_TYPE, Long> atCountsTotal = new HashMap<>();
+            Map<Integer, Pair<String, Long>> atCountsTotal = new HashMap<>();
 
             for (DataSource dataSource : sleuthkitCase.getDataSources()) {
-                Map<ARTIFACT_TYPE, Long> atCounts = getGPSDataSources(sleuthkitCase, dataSource);
+                Map<Integer, Pair<String, Long>> atCounts = getGPSDataSources(sleuthkitCase, dataSource);
                 if (!atCounts.isEmpty()) {
-                    for (Map.Entry<ARTIFACT_TYPE, Long> entry : atCounts.entrySet()) {
-                        atCountsTotal.putIfAbsent(entry.getKey(), 0L);
-                        atCountsTotal.put(entry.getKey(), atCountsTotal.get(entry.getKey()) + entry.getValue());
+                    for (Entry<Integer, Pair<String, Long>> entry : atCounts.entrySet()) {
+                        int typeId = entry.getKey();
+                        String typeName = entry.getValue().getLeft();
+                        long count = entry.getValue().getRight();
+                    
+                        atCountsTotal.compute(typeId, (k,v) -> {
+                            long prevValue = (v == null) ? 0L : v.getRight();
+                            long newValue = prevValue + count;
+                            return Pair.of(typeName, newValue);
+                        });
                     }
                     String dsName = sleuthkitCase.getContentById(dataSource.getId()).getName();
-                    Pair<String, DataSource> pair = new Pair<>(dsName, dataSource);
+                    Pair<String, DataSource> pair = Pair.of(dsName, dataSource);
                     validSources.add(pair);
                 }
             }
@@ -452,16 +470,16 @@ class GeoFilterPanel extends javax.swing.JPanel {
          * Get a count of artifacts of the given type containing GPS data for
          * the given data case and source. Does not include rejected artifacts.
          *
-         * @param sleuthkitCase
-         * @param dataSource
-         * @param artifactType
+         * @param sleuthkitCase The relevant sleuthkit case.
+         * @param dataSource The data source.
+         * @param artifactTypeId The artifact type id.
          *
          * @return The artifacts count that match the criteria
          *
          * @throws TskCoreException
          */
         private long getGPSDataCount(SleuthkitCase sleuthkitCase,
-                DataSource dataSource, BlackboardArtifact.ARTIFACT_TYPE artifactType) throws TskCoreException {
+                DataSource dataSource, int artifactTypeId) throws TskCoreException {
             long count = 0;
             String queryStr
                     = "SELECT count(DISTINCT artIds) AS count FROM"
@@ -469,7 +487,7 @@ class GeoFilterPanel extends javax.swing.JPanel {
                     + " SELECT arts.artifact_id as artIds, * FROM blackboard_artifacts as arts"
                     + " INNER JOIN blackboard_attributes as attrs"
                     + " ON attrs.artifact_id = arts.artifact_id"
-                    + " WHERE arts.artifact_type_id = " + artifactType.getTypeID()
+                    + " WHERE arts.artifact_type_id = " + artifactTypeId
                     + " AND arts.data_source_obj_id = " + dataSource.getId()
                     + " AND arts.review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID()
                     + " AND"
@@ -502,18 +520,20 @@ class GeoFilterPanel extends javax.swing.JPanel {
          * artifact type. If no data was found, an empty map is returned.
          *
          * @param sleuthkitCase The current sleuthkitCase
-         * @param dataSource
+         * @param dataSource The relevant data source.
          *
-         * @return True if the data source as at least one TSK_GPS_XXXX
+         * @return 
          *
          * @throws TskCoreException
          */
-        private Map<ARTIFACT_TYPE, Long> getGPSDataSources(SleuthkitCase sleuthkitCase, DataSource dataSource) throws TskCoreException {
-            HashMap<ARTIFACT_TYPE, Long> ret = new HashMap<>();
-            for (BlackboardArtifact.ARTIFACT_TYPE type : GPS_ARTIFACT_TYPES) {
-                long count = getGPSDataCount(sleuthkitCase, dataSource, type);
+        private Map<Integer, Pair<String, Long>> getGPSDataSources(SleuthkitCase sleuthkitCase, DataSource dataSource) throws TskCoreException {
+            Map<Integer, Pair<String, Long>> ret = new HashMap<>();
+            for (Pair<Integer, String> typeInfo : GPS_ARTIFACT_TYPES) {
+                int typeId = typeInfo.getKey();
+                String typeName = typeInfo.getValue();
+                long count = getGPSDataCount(sleuthkitCase, dataSource, typeId);
                 if (count > 0) {
-                    ret.put(type, count);
+                    ret.put(typeId, Pair.of(typeName, count));
                 }
             }
             return ret;
@@ -557,10 +577,14 @@ class GeoFilterPanel extends javax.swing.JPanel {
                 for (Pair<String, DataSource> source : sources.dataSources) {
                     dsCheckboxPanel.addElement(source.getKey(), null, source.getValue());
                 }
-                for (Map.Entry<ARTIFACT_TYPE, Long> entry : sources.artifactTypes.entrySet()) {
-                    String dispName = entry.getKey().getDisplayName() + " (" + entry.getValue() + ")";
-                    Icon icon = getImageIcon(entry.getKey().getTypeID());
-                    atCheckboxPanel.addElement(dispName, icon, entry.getKey());
+                for (Entry<Integer, Pair<String, Long>> record : sources.artifactTypes.entrySet()) {
+                    int typeId = record.getKey();
+                    String typeName = record.getValue().getLeft();
+                    long count = record.getValue().getRight();
+                    
+                    String dispName = typeName + " (" + count + ")";
+                    Icon icon = getImageIcon(typeId);
+                    atCheckboxPanel.addElement(dispName, icon, typeId);
                 }
             }
 

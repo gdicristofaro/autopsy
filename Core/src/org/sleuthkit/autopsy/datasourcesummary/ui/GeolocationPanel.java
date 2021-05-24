@@ -310,8 +310,8 @@ public class GeolocationPanel extends BaseDataSourceSummaryPanel {
             GeolocationTopComponent geoComponent = (GeolocationTopComponent) topComponent;
 
             GeoFilter filter = (daysLimit == null)
-                    ? new GeoFilter(true, false, 0, Arrays.asList(dataSource), whereUsedData.getGeoTypes())
-                    : new GeoFilter(false, false, DAYS_COUNT, Arrays.asList(dataSource), whereUsedData.getGeoTypes());
+                    ? new GeoFilter(true, false, 0, Arrays.asList(dataSource), whereUsedData.getGeoTypeIds())
+                    : new GeoFilter(false, false, DAYS_COUNT, Arrays.asList(dataSource), whereUsedData.getGeoTypeIds());
 
             try {
                 geoComponent.setFilterState(filter);

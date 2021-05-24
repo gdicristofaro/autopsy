@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.geolocation.datamodel.GeoLocationDataException;
@@ -63,7 +64,7 @@ public abstract class AbstractWaypointFetcher implements WaypointBuilder.Waypoin
         Case currentCase = Case.getCurrentCase();
         WaypointBuilder.getAllWaypoints(currentCase.getSleuthkitCase(),
                 filters.getDataSources(),
-                filters.getArtifactTypes(),
+                filters.getArtifactTypeIds(),
                 filters.showAllWaypoints(),
                 filters.getMostRecentNumDays(),
                 filters.showWaypointsWithoutTimeStamp(),
@@ -86,7 +87,7 @@ public abstract class AbstractWaypointFetcher implements WaypointBuilder.Waypoin
     @Override
     public void process(GeoLocationParseResult<Waypoint> waypointResults) {
         GeoLocationParseResult<Track> trackResults = null;
-        if (filters.getArtifactTypes().contains(Type.TSK_GPS_TRACK)) {
+        if (filters.getArtifactTypeIds().contains(Type.TSK_GPS_TRACK)) {
             try {
                 trackResults = Track.getTracks(Case.getCurrentCase().getSleuthkitCase(), filters.getDataSources());
             } catch (GeoLocationDataException ex) {
@@ -95,7 +96,7 @@ public abstract class AbstractWaypointFetcher implements WaypointBuilder.Waypoin
         }
         
         GeoLocationParseResult<Area> areaResults = null;
-        if (filters.getArtifactTypes().contains(Type.TSK_GPS_AREA)) {
+        if (filters.getArtifactTypeIds().contains(Type.TSK_GPS_AREA)) {
             try {
                 areaResults = Area.getAreas(Case.getCurrentCase().getSleuthkitCase(), filters.getDataSources());
             } catch (GeoLocationDataException ex) {
