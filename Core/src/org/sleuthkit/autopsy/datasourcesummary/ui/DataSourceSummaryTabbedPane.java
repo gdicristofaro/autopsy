@@ -186,6 +186,10 @@ public class DataSourceSummaryTabbedPane extends javax.swing.JPanel {
 
     private DataSource dataSource = null;
     private CardLayout cardLayout;
+    
+    public final ExcelExportAction getExportAction() {
+        return exportAction;
+    }
 
     /**
      * On case close, clear the currently held data source summary node.

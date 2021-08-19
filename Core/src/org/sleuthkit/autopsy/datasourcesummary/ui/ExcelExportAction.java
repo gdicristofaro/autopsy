@@ -48,6 +48,7 @@ import org.sleuthkit.autopsy.datasourcesummary.uiutils.ExcelExport.ExcelExportEx
 import org.sleuthkit.autopsy.datasourcesummary.uiutils.ExcelExport.ExcelSheetExport;
 import org.sleuthkit.autopsy.progress.ModalDialogProgressIndicator;
 import org.sleuthkit.autopsy.progress.ProgressIndicator;
+import org.sleuthkit.autopsy.report.ReportProgressPanel;
 import org.sleuthkit.datamodel.DataSource;
 import org.sleuthkit.datamodel.TskCoreException;
 
@@ -56,7 +57,7 @@ import org.sleuthkit.datamodel.TskCoreException;
  */
 @Messages({
     "ExcelExportAction_moduleName=Data Source Summary",})
-class ExcelExportAction implements Consumer<DataSource> {
+public class ExcelExportAction implements Consumer<DataSource> {
 
     private static final Logger logger = Logger.getLogger(ExcelExportAction.class.getName());
 
@@ -101,45 +102,39 @@ class ExcelExportAction implements Consumer<DataSource> {
      */
     @Override
     public void accept(DataSource ds) {
-        if (ds == null) {
-            return;
-        }
-
-        File outputLoc = getXLSXPath(ds.getName());
-        if (outputLoc == null) {
-            return;
-        }
-
-        runXLSXExport(ds, outputLoc);
+//        if (ds == null) {
+//            return;
+//        }
+//
+//        File outputLoc = getXLSXPath(ds.getName());
+//        if (outputLoc == null) {
+//            return;
+//        }
+//
+//        runXLSXExport(ds, outputLoc);
     }
 
     /**
      * Generates an xlsx path for the data source summary export.
      *
      * @param dataSourceName The name of the data source.
+     *
      * @return The file to which the excel document should be written or null if
-     * file already exists or cancellation.
+     *         file already exists or cancellation.
      */
     @NbBundle.Messages({
         "ExcelExportAction_getXLSXPath_directory=DataSourceSummary",})
-    private File getXLSXPath(String dataSourceName) {
+    File getXLSXPath(String dataSourceName, String baseReportDir) {
         // set initial path to reports directory with filename that is 
         // a combination of the data source name and time stamp
         DateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy-HH-mm-ss");
         String fileName = String.format("%s-%s.xlsx", dataSourceName == null ? "" : FileUtil.escapeFileName(dataSourceName), dateFormat.format(new Date()));
-        try {
-            String reportsDir = Case.getCurrentCaseThrows().getReportDirectory();
-            File reportsDirFile = Paths.get(reportsDir, Bundle.ExcelExportAction_getXLSXPath_directory()).toFile();
-            if (!reportsDirFile.exists()) {
-                reportsDirFile.mkdirs();
-            }
-
-            return Paths.get(reportsDirFile.getAbsolutePath(), fileName).toFile();
-        } catch (NoCurrentCaseException ex) {
-            logger.log(Level.WARNING, "Unable to find reports directory.", ex);
+        File reportsDirFile = Paths.get(baseReportDir, Bundle.ExcelExportAction_getXLSXPath_directory()).toFile();
+        if (!reportsDirFile.exists()) {
+            reportsDirFile.mkdirs();
         }
 
-        return null;
+        return Paths.get(reportsDirFile.getAbsolutePath(), fileName).toFile();
     }
 
     /**
@@ -205,7 +200,7 @@ class ExcelExportAction implements Consumer<DataSource> {
         SwingWorker<Boolean, Void> worker = new SwingWorker<Boolean, Void>() {
             @Override
             protected Boolean doInBackground() throws Exception {
-                exportToXLSX(progressIndicator, dataSource, path);
+                //exportToXLSX(progressIndicator, dataSource, path);
                 return true;
             }
 
@@ -247,12 +242,17 @@ class ExcelExportAction implements Consumer<DataSource> {
         "ExcelExportAction_exportToXLSX_gatheringTabData=Fetching Data for {0} Tab...",
         "ExcelExportAction_exportToXLSX_writingToFile=Writing to File...",})
 
-    private void exportToXLSX(ProgressIndicator progressIndicator, DataSource dataSource, File path)
+    public void exportToXLSX(ReportProgressPanel progressPanel, DataSource dataSource, String baseReportDir)
             throws InterruptedException, IOException, ExcelExport.ExcelExportException {
 
+        File reportFile = getXLSXPath(dataSource.getName(), baseReportDir);
         int exportWeight = 3;
         int totalWeight = tabExports.size() + exportWeight;
-        progressIndicator.start(Bundle.ExcelExportAction_exportToXLSX_beginExport(), totalWeight);
+        progressPanel.setIndeterminate(false);
+        progressPanel.setLabels(dataSource.getName(), reportFile.getPath());
+        progressPanel.setMaximumProgress(totalWeight);
+        progressPanel.updateStatusLabel(Bundle.ExcelExportAction_exportToXLSX_beginExport());
+       
         List<ExcelExport.ExcelSheetExport> sheetExports = new ArrayList<>();
         for (int i = 0; i < tabExports.size(); i++) {
             if (Thread.interrupted()) {
@@ -260,7 +260,8 @@ class ExcelExportAction implements Consumer<DataSource> {
             }
 
             ExportableTab tab = tabExports.get(i);
-            progressIndicator.progress(Bundle.ExcelExportAction_exportToXLSX_gatheringTabData(tab == null ? "" : tab.getTabTitle()), i);
+            progressPanel.setProgress(i);
+            //progressIndicator.progress(Bundle.ExcelExportAction_exportToXLSX_gatheringTabData(tab == null ? "" : tab.getTabTitle()), i);
 
             List<ExcelExport.ExcelSheetExport> exports = tab.getExcelExports(dataSource);
             if (exports != null) {
@@ -272,27 +273,27 @@ class ExcelExportAction implements Consumer<DataSource> {
             throw new InterruptedException("Export has been cancelled.");
         }
 
-        progressIndicator.progress(Bundle.ExcelExportAction_exportToXLSX_writingToFile(), tabExports.size());
-        excelExport.writeExcel(sheetExports, path);
+        //progressIndicator.progress(Bundle.ExcelExportAction_exportToXLSX_writingToFile(), tabExports.size());
+        excelExport.writeExcel(sheetExports, reportFile);
 
-        progressIndicator.finish();
+        //progressIndicator.finish();
 
         try {
             // add to reports
             Case curCase = Case.getCurrentCaseThrows();
-            curCase.addReport(path.getParent(),
+            curCase.addReport(reportFile.getParent(),
                     Bundle.ExcelExportAction_moduleName(),
-                    path.getName(),
+                    reportFile.getName(),
                     dataSource);
 
             // and show finished dialog
-            SwingUtilities.invokeLater(() -> {
-                ExcelExportDialog dialog = new ExcelExportDialog(WindowManager.getDefault().getMainWindow(), path);
-                dialog.setResizable(false);
-                dialog.setLocationRelativeTo(WindowManager.getDefault().getMainWindow());
-                dialog.setVisible(true);
-                dialog.toFront();
-            });
+//            SwingUtilities.invokeLater(() -> {
+//                ExcelExportDialog dialog = new ExcelExportDialog(WindowManager.getDefault().getMainWindow(), reportFile);
+//                dialog.setResizable(false);
+//                dialog.setLocationRelativeTo(WindowManager.getDefault().getMainWindow());
+//                dialog.setVisible(true);
+//                dialog.toFront();
+//            });
 
         } catch (NoCurrentCaseException | TskCoreException ex) {
             logger.log(Level.WARNING, "There was an error attaching report to case.", ex);
