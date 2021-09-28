@@ -472,7 +472,7 @@ public class CallLogArtifactViewer extends javax.swing.JPanel implements Artifac
 
     @Override
     public Component getComponent() {
-        return new JScrollPane(this, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        return new JScrollPane(this, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
     }
 
     @Override

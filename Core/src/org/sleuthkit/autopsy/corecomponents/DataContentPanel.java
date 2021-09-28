@@ -74,7 +74,7 @@ public class DataContentPanel extends javax.swing.JPanel implements DataContent,
                 dcv = factory.createInstance();
             }
             viewers.add(new UpdateWrapper(dcv));
-            javax.swing.JScrollPane scrollTab = new javax.swing.JScrollPane(dcv.getComponent());
+            javax.swing.JScrollPane scrollTab = new javax.swing.JScrollPane(new ScrollableWrapper(dcv.getComponent()));
             scrollTab.setVerticalScrollBarPolicy(javax.swing.JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
             scrollTab.setHorizontalScrollBarPolicy(javax.swing.JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
             scrollTab.setWheelScrollingEnabled(true);
@@ -132,14 +132,14 @@ public class DataContentPanel extends javax.swing.JPanel implements DataContent,
 
     @Override
     public void setNode(Node selectedNode) {
-        
+
         if (workerThread != null) {
             workerThread.cancel(true);
             workerThread = null;
         }
-        
+
         currentNode = null;
-        
+
         // Reset everything
         for (int index = 0; index < jTabbedPane1.getTabCount(); index++) {
             jTabbedPane1.setEnabledAt(index, false);
@@ -148,7 +148,7 @@ public class DataContentPanel extends javax.swing.JPanel implements DataContent,
             if (!tabTitle.equals(jTabbedPane1.getTitleAt(index))) {
                 jTabbedPane1.setTitleAt(index, tabTitle);
             }
-                
+
             viewers.get(index).resetComponent();
         }
 
@@ -249,11 +249,11 @@ public class DataContentPanel extends javax.swing.JPanel implements DataContent,
         int isPreferred(Node node) {
             return this.wrapped.isPreferred(node);
         }
-        
+
         String getTitle(Node node) {
             return this.wrapped.getTitle(node);
         }
-        
+
         DataContentViewer getViewer() {
             return wrapped;
         }
@@ -300,7 +300,7 @@ public class DataContentPanel extends javax.swing.JPanel implements DataContent,
                 }
 
             }
-            
+
             return new WorkerResults(node, supportedViewers, preferredViewerIndex);
         }
 
