@@ -20,12 +20,14 @@ package org.sleuthkit.autopsy.contentviewers.annotations;
 
 import com.google.common.collect.ImmutableSet;
 import java.awt.Component;
+import java.awt.event.MouseWheelListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -283,7 +285,6 @@ public class AnnotationsContentViewer extends javax.swing.JPanel implements Data
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        javax.swing.JScrollPane scrollPane = new javax.swing.JScrollPane();
         textPanel = new javax.swing.JTextPane();
 
         setPreferredSize(new java.awt.Dimension(100, 58));
@@ -291,17 +292,16 @@ public class AnnotationsContentViewer extends javax.swing.JPanel implements Data
         textPanel.setEditable(false);
         textPanel.setName(""); // NOI18N
         textPanel.setPreferredSize(new java.awt.Dimension(600, 52));
-        scrollPane.setViewportView(textPanel);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(scrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 907, Short.MAX_VALUE)
+            .addComponent(textPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 100, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(scrollPane, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 435, Short.MAX_VALUE)
+            .addComponent(textPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 58, Short.MAX_VALUE)
         );
     }// </editor-fold>//GEN-END:initComponents
 
@@ -342,7 +342,6 @@ public class AnnotationsContentViewer extends javax.swing.JPanel implements Data
     @Override
     public void resetComponent() {
         textPanel.setText("");
-
     }
 
     /**

@@ -18,9 +18,15 @@
  */
 package org.sleuthkit.autopsy.contentviewers.analysisresults;
 
+import java.awt.Dimension;
+import java.awt.Rectangle;
+import java.awt.event.MouseWheelEvent;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.Optional;
+import javax.swing.JTextPane;
+import javax.swing.Scrollable;
+import javax.swing.SwingUtilities;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -38,7 +44,7 @@ import org.sleuthkit.datamodel.Score;
 /**
  * Displays a list of analysis results in a panel.
  */
-public class AnalysisResultsContentPanel extends javax.swing.JPanel {
+public class AnalysisResultsContentPanel extends javax.swing.JPanel implements Scrollable {
 
     private static final long serialVersionUID = 1L;
 
@@ -48,12 +54,55 @@ public class AnalysisResultsContentPanel extends javax.swing.JPanel {
     // This is the prefix of those anchors.
     private static final String RESULT_ANCHOR_PREFIX = "AnalysisResult_";
 
+    private JTextPane textPanel = new JTextPane() {
+        @Override
+        protected void processMouseWheelEvent(MouseWheelEvent e) {
+            if (getParent() != null) {
+                getParent().dispatchEvent(
+                        SwingUtilities.convertMouseEvent(this, e, getParent()));
+            }
+        }
+    };
+
     /**
      * Creates new form AnalysisResultsContentViewer
      */
     public AnalysisResultsContentPanel() {
         initComponents();
+        postInitComponents();
         ContentViewerHtmlStyles.setupHtmlJTextPane(textPanel);
+    }
+
+    @Override
+    protected void processMouseWheelEvent(MouseWheelEvent e) {
+        if (getParent() != null) {
+            getParent().dispatchEvent(
+                    SwingUtilities.convertMouseEvent(this, e, getParent()));
+        }
+    }
+
+    /**
+     * Does post initialization of components.
+     */
+    private void postInitComponents() {
+//        for (Component c : Arrays.asList(this, this.textPanel)) {
+//            for (MouseWheelListener l : c.getMouseWheelListeners()) {
+//                c.removeMouseWheelListener(l);
+//            }
+//        }
+
+        // pass this event to parent: https://stackoverflow.com/a/12914189/2375948
+//        this.addMouseWheelListener(evt -> {
+//            if (this.getParent() != null) {
+//                this.getParent().dispatchEvent(SwingUtilities.convertMouseEvent(this, evt, getParent()));
+//            }
+//        });
+//        
+//        this.textPanel.addMouseWheelListener(evt -> {
+//            if (this.getParent() != null) {
+//                this.getParent().dispatchEvent(SwingUtilities.convertMouseEvent(this.textPanel, evt, getParent()));
+//            }
+//        });
     }
 
     /**
@@ -187,7 +236,7 @@ public class AnalysisResultsContentPanel extends javax.swing.JPanel {
         Element table = sectionDiv.appendElement("table")
                 .attr("valign", "top")
                 .attr("align", "left");
-        
+
         table.attr("class", ContentViewerHtmlStyles.getIndentedClassName());
 
         Element tableBody = table.appendElement("tbody");
@@ -255,31 +304,53 @@ public class AnalysisResultsContentPanel extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        javax.swing.JScrollPane scrollPane = new javax.swing.JScrollPane();
-        textPanel = new javax.swing.JTextPane();
+        javax.swing.JTextPane textPanel = this.textPanel;
 
-        setPreferredSize(new java.awt.Dimension(100, 58));
+        setAutoscrolls(true);
+        setPreferredSize(null);
 
         textPanel.setEditable(false);
         textPanel.setName(""); // NOI18N
-        textPanel.setPreferredSize(new java.awt.Dimension(600, 52));
-        scrollPane.setViewportView(textPanel);
+        textPanel.setPreferredSize(null);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(scrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 907, Short.MAX_VALUE)
+            .addComponent(textPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 100, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(scrollPane, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 435, Short.MAX_VALUE)
+            .addComponent(textPanel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 58, Short.MAX_VALUE)
         );
     }// </editor-fold>//GEN-END:initComponents
 
+    @Override
+    public Dimension getPreferredScrollableViewportSize() {
+        return this.textPanel.getPreferredScrollableViewportSize();
+    }
+
+    @Override
+    public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {
+        return this.textPanel.getScrollableUnitIncrement(visibleRect, orientation, direction);
+    }
+
+    @Override
+    public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {
+        return this.textPanel.getScrollableBlockIncrement(visibleRect, orientation, direction);
+    }
+
+    @Override
+    public boolean getScrollableTracksViewportWidth() {
+        return this.textPanel.getScrollableTracksViewportWidth();
+    }
+
+    @Override
+    public boolean getScrollableTracksViewportHeight() {
+        return this.textPanel.getScrollableTracksViewportHeight();
+    }
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JTextPane textPanel;
     // End of variables declaration//GEN-END:variables
-
 }

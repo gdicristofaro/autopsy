@@ -31,13 +31,10 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import org.openide.nodes.Node;
 import org.openide.util.Lookup;
-import org.openide.util.NbBundle;
 import org.sleuthkit.autopsy.core.UserPreferences;
 import org.sleuthkit.autopsy.corecomponentinterfaces.DataContent;
 import org.sleuthkit.autopsy.corecomponentinterfaces.DataContentViewer;
 import org.sleuthkit.autopsy.coreutils.Logger;
-import org.sleuthkit.datamodel.Content;
-import org.sleuthkit.datamodel.TskCoreException;
 
 /**
  * Data content panel.
@@ -78,9 +75,10 @@ public class DataContentPanel extends javax.swing.JPanel implements DataContent,
             }
             viewers.add(new UpdateWrapper(dcv));
             javax.swing.JScrollPane scrollTab = new javax.swing.JScrollPane(dcv.getComponent());
-            scrollTab.setVerticalScrollBarPolicy(javax.swing.JScrollPane.VERTICAL_SCROLLBAR_NEVER);
-            jTabbedPane1.addTab(dcv.getTitle(), null,
-                    scrollTab, dcv.getToolTip());
+            scrollTab.setVerticalScrollBarPolicy(javax.swing.JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+            scrollTab.setHorizontalScrollBarPolicy(javax.swing.JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+            scrollTab.setWheelScrollingEnabled(true);
+            jTabbedPane1.addTab(dcv.getTitle(), null, scrollTab, dcv.getToolTip());
         }
 
         // disable the tabs

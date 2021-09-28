@@ -18,10 +18,7 @@
  */
 package org.sleuthkit.autopsy.contentviewers.osaccount;
 
-import java.awt.BorderLayout;
 import java.awt.Component;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.util.Optional;
 import java.util.logging.Level;
 import org.openide.nodes.Node;
@@ -51,8 +48,6 @@ public class OsAccountViewer extends javax.swing.JPanel implements DataContentVi
      */
     public OsAccountViewer() {
         initComponents();
-
-        mainScrollPane.setViewportView(dataPanel);
     }
 
     @Override
@@ -153,23 +148,24 @@ public class OsAccountViewer extends javax.swing.JPanel implements DataContentVi
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
-        java.awt.GridBagConstraints gridBagConstraints;
 
-        mainScrollPane = new javax.swing.JScrollPane();
+        javax.swing.JPanel osAccountDataPanel = this.dataPanel
+        ;
 
-        setLayout(new java.awt.GridBagLayout());
-
-        mainScrollPane.setPreferredSize(new java.awt.Dimension(200, 0));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.weighty = 1.0;
-        add(mainScrollPane, gridBagConstraints);
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
+        this.setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(osAccountDataPanel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(osAccountDataPanel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 300, Short.MAX_VALUE)
+        );
     }// </editor-fold>//GEN-END:initComponents
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JScrollPane mainScrollPane;
     // End of variables declaration//GEN-END:variables
 
 }

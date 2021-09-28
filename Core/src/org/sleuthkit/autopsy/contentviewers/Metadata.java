@@ -70,7 +70,7 @@ public class Metadata extends javax.swing.JPanel implements DataContentViewer {
     public Metadata() {
         initComponents();
         customizeComponents();
-        ContentViewerHtmlStyles.setupHtmlJTextPane(jTextPane1);
+        ContentViewerHtmlStyles.setupHtmlJTextPane(textPane);
     }
 
     /**
@@ -82,33 +82,26 @@ public class Metadata extends javax.swing.JPanel implements DataContentViewer {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jPopupMenu1 = new javax.swing.JPopupMenu();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        jTextPane1 = new javax.swing.JTextPane();
+        textPane = new javax.swing.JTextPane();
 
         setPreferredSize(new java.awt.Dimension(100, 52));
 
-        jScrollPane2.setPreferredSize(new java.awt.Dimension(610, 52));
-
-        jTextPane1.setEditable(false);
-        jTextPane1.setPreferredSize(new java.awt.Dimension(600, 52));
-        jScrollPane2.setViewportView(jTextPane1);
+        textPane.setEditable(false);
+        textPane.setPreferredSize(new java.awt.Dimension(600, 52));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(textPane, javax.swing.GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(textPane, javax.swing.GroupLayout.DEFAULT_SIZE, 300, Short.MAX_VALUE)
         );
     }// </editor-fold>//GEN-END:initComponents
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JPopupMenu jPopupMenu1;
-    private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JTextPane jTextPane1;
+    private javax.swing.JTextPane textPane;
     // End of variables declaration//GEN-END:variables
 
     private void customizeComponents() {
@@ -125,8 +118,8 @@ public class Metadata extends javax.swing.JPanel implements DataContentViewer {
     }
 
     private void setText(String str) {
-        ContentViewerHtmlStyles.setupHtmlJTextPane(jTextPane1);
-        jTextPane1.setText("<html><head></head><body>" + str + "</body></html>"); //NON-NLS
+        ContentViewerHtmlStyles.setupHtmlJTextPane(textPane);
+        textPane.setText("<html><head></head><body>" + str + "</body></html>"); //NON-NLS
     }
 
     private void addHeader(StringBuilder sb, String header, boolean spaced) {
@@ -205,7 +198,7 @@ public class Metadata extends javax.swing.JPanel implements DataContentViewer {
                     try {
                         if (!isCancelled()) {
                             setText(get());
-                            jTextPane1.setCaretPosition(0);
+                            textPane.setCaretPosition(0);
                         }
                     } catch (InterruptedException | ExecutionException ex) {
                         LOGGER.log(Level.SEVERE, "Failed to get metaData for node " + node.getName(), ex);
