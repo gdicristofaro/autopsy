@@ -26,6 +26,8 @@ import java.util.Set;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
+import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.ingest.IngestManager;
 
 /**
@@ -57,6 +59,7 @@ public class RefreshThrottler {
         boolean isRefreshRequired(PropertyChangeEvent evt);
     }
 
+    private static Logger logger = Logger.getLogger(RefreshThrottler.class.getName());
     static ScheduledThreadPoolExecutor refreshExecutor = new ScheduledThreadPoolExecutor(1, new ThreadFactoryBuilder().setNameFormat("Node Refresh Thread").build());
     // Keep a thread safe reference to the current refresh task (if any)
     private final AtomicReference<RefreshTask> refreshTaskRef;
@@ -79,10 +82,17 @@ public class RefreshThrottler {
 
         @Override
         public void run() {
-            // Call refresh on the factory
-            refresher.refresh();
-            // Clear the refresh task reference
-            refreshTaskRef.set(null);
+            try {
+                logger.log(Level.INFO, "Running refresher: " + refresher);
+                // Call refresh on the factory
+                refresher.refresh();
+                // Clear the refresh task reference
+                refreshTaskRef.set(null);
+                logger.log(Level.INFO, "Refresher: " + refresher + " complete.");
+            } catch (Throwable ex) {
+                logger.log(Level.SEVERE, "An exception occurred while running refresher: " + refresher, ex);
+            }
+
         }
     }
 

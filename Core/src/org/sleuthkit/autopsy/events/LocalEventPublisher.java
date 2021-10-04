@@ -107,8 +107,10 @@ final class LocalEventPublisher {
         if (null != subscribers) {
             subscribers.forEach((subscriber) -> {
                 try {
+                    logger.log(Level.INFO, "Running subscriber: " + subscriber);
                     subscriber.propertyChange(event);
-                } catch (Exception ex) {
+                    logger.log(Level.INFO, "Subscriber: " + subscriber + " complete");
+                } catch (Throwable ex) {
                     logger.log(Level.SEVERE, "Exception thrown by subscriber", ex); //NON-NLS
                 }
             });
