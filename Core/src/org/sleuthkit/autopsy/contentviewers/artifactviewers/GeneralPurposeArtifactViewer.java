@@ -48,6 +48,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.openide.util.NbBundle;
 import org.openide.util.lookup.ServiceProvider;
 import org.sleuthkit.autopsy.contentviewers.layout.ContentViewerDefaults;
+import org.sleuthkit.autopsy.corecomponents.ScrollableWrapper;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.coreutils.ThreadConfined;
 import org.sleuthkit.autopsy.coreutils.TimeZoneUtils;
@@ -173,7 +174,7 @@ public class GeneralPurposeArtifactViewer extends AbstractArtifactDetailsPanel i
             }
             updateView(artifact, attributeMap, dataSourceName, sourceFileName);
         }
-        detailsScrollPane.setViewportView(detailsPanel);
+        detailsScrollPane.setViewportView(new ScrollableWrapper(detailsPanel));
         detailsScrollPane.revalidate();
         revalidate();
     }

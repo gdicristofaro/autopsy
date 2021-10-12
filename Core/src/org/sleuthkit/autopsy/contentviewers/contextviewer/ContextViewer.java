@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.autopsy.contentviewers.contextviewer;
 
+import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Insets;
 import java.util.ArrayList;
@@ -95,6 +96,7 @@ public final class ContextViewer extends javax.swing.JPanel implements DataConte
         javax.swing.JLabel jUsageLabel = new javax.swing.JLabel();
         jUnknownPanel = new javax.swing.JPanel();
         javax.swing.JLabel jUnknownLabel = new javax.swing.JLabel();
+        contextContainer = new javax.swing.JPanel();
 
         jSourcePanel.setBorder(new EmptyBorder(FIRST_HEADER_INSETS));
         jSourcePanel.setLayout(new javax.swing.BoxLayout(jSourcePanel, javax.swing.BoxLayout.PAGE_AXIS));
@@ -117,17 +119,20 @@ public final class ContextViewer extends javax.swing.JPanel implements DataConte
         jUnknownLabel.setBorder(new EmptyBorder(DATA_ROW_INSETS));
         jUnknownPanel.add(jUnknownLabel);
 
-        setPreferredSize(new java.awt.Dimension(0, 0));
+        setMinimumSize(new java.awt.Dimension(10, 10));
+
+        contextContainer.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(255, 0, 0), 5));
+        contextContainer.setLayout(new javax.swing.BoxLayout(contextContainer, javax.swing.BoxLayout.Y_AXIS));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 144, Short.MAX_VALUE)
+            .addComponent(contextContainer, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 88, Short.MAX_VALUE)
+            .addComponent(contextContainer, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
     }// </editor-fold>//GEN-END:initComponents
 
@@ -231,9 +236,6 @@ public final class ContextViewer extends javax.swing.JPanel implements DataConte
                 addAssociatedArtifactToPanel(contextArtifact);
             }
         }
-        javax.swing.JPanel contextContainer = new javax.swing.JPanel();
-        contextContainer.setLayout(new BoxLayout(contextContainer, BoxLayout.Y_AXIS));
-        contextContainer.setBorder(new EmptyBorder(ContentViewerDefaults.getPanelInsets()));
 
         contextContainer.add(jSourcePanel);
 
@@ -242,7 +244,6 @@ public final class ContextViewer extends javax.swing.JPanel implements DataConte
         } else {
             for (javax.swing.JPanel sourcePanel : contextSourcePanels) {
                 contextContainer.add(sourcePanel);
-                contextContainer.setAlignmentX(0);
             }
         }
         contextContainer.add(jUsagePanel);
@@ -251,15 +252,13 @@ public final class ContextViewer extends javax.swing.JPanel implements DataConte
         } else {
             for (javax.swing.JPanel usagePanel : contextUsagePanels) {
                 contextContainer.add(usagePanel);
-                contextContainer.setAlignmentX(0);
             }
         }
 
-        contextContainer.setBackground(ContentViewerDefaults.getPanelBackground());
         contextContainer.setEnabled(foundASource);
         contextContainer.setVisible(foundASource);
         this.removeAll();
-        this.add(contextContainer);
+        this.add(contextContainer, BorderLayout.CENTER);
         this.repaint();
         this.revalidate();
 
@@ -562,6 +561,7 @@ public final class ContextViewer extends javax.swing.JPanel implements DataConte
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JPanel contextContainer;
     private javax.swing.JPanel jSourcePanel;
     private javax.swing.JPanel jUnknownPanel;
     private javax.swing.JPanel jUsagePanel;

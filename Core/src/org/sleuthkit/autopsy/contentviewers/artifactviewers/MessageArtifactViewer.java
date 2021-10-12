@@ -44,6 +44,7 @@ import org.sleuthkit.autopsy.contentviewers.Utilities;
 import org.sleuthkit.autopsy.contentviewers.artifactviewers.MessageArtifactWorker.MesssageArtifactData;
 import org.sleuthkit.autopsy.corecomponents.AutoWrappingJTextPane;
 import org.sleuthkit.autopsy.corecomponents.DataResultPanel;
+import org.sleuthkit.autopsy.corecomponents.ScrollableWrapper;
 import org.sleuthkit.autopsy.corecomponents.TableFilterNode;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.directorytree.DataResultFilterNode;
@@ -162,7 +163,7 @@ public class MessageArtifactViewer extends javax.swing.JPanel implements Artifac
 
         msgbodyTabbedPane.setEnabledAt(ATTM_TAB_INDEX, true);
         
-        accountScrollPane.setViewportView(accountsPanel);
+        accountScrollPane.setViewportView(new ScrollableWrapper(accountsPanel));
         msgbodyTabbedPane.setEnabledAt(ACCT_TAB_INDEX, CentralRepository.isEnabled());
 
         /*

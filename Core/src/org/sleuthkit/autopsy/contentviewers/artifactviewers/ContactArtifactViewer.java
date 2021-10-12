@@ -58,6 +58,7 @@ import org.sleuthkit.autopsy.centralrepository.persona.PersonaDetailsDialogCallb
 import org.sleuthkit.autopsy.centralrepository.persona.PersonaDetailsMode;
 import org.sleuthkit.autopsy.centralrepository.persona.PersonaDetailsPanel;
 import org.sleuthkit.autopsy.contentviewers.layout.ContentViewerDefaults;
+import org.sleuthkit.autopsy.corecomponents.ScrollableWrapper;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.Account;
@@ -148,7 +149,7 @@ public class ContactArtifactViewer extends javax.swing.JPanel implements Artifac
     @Override
     public Component getComponent() {
         // Slap a vertical scrollbar on the panel.
-        return new JScrollPane(this, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        return new JScrollPane(new ScrollableWrapper(this), JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
     }
 
     @Override

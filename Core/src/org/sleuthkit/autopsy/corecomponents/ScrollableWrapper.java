@@ -33,7 +33,7 @@ import javax.swing.SwingUtilities;
  *
  * wrapper
  */
-class ScrollableWrapper extends JPanel implements Scrollable {
+public class ScrollableWrapper extends JPanel implements Scrollable {
 
     private static final int DEFAULT_PREF_HEIGHT = 100;
     private static final int DEFAULT_PREF_WIDTH = 100;

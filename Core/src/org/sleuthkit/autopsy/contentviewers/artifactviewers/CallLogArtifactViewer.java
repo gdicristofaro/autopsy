@@ -38,6 +38,7 @@ import org.openide.util.NbBundle;
 import org.openide.util.lookup.ServiceProvider;
 import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepository;
 import org.sleuthkit.autopsy.contentviewers.layout.ContentViewerDefaults;
+import org.sleuthkit.autopsy.corecomponents.ScrollableWrapper;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.guiutils.ContactCache;
 import org.sleuthkit.datamodel.BlackboardArtifact;
@@ -472,7 +473,7 @@ public class CallLogArtifactViewer extends javax.swing.JPanel implements Artifac
 
     @Override
     public Component getComponent() {
-        return new JScrollPane(this, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        return new JScrollPane(new ScrollableWrapper(this), JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
     }
 
     @Override
