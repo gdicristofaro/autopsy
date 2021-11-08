@@ -207,17 +207,29 @@ public class DataArtifactDAO extends BlackboardArtifactDAO {
     }
 
     
+    public TreeResultsDTO<CreditCardBinParams> getCreditCardBinCounts(Long dataSourceId) throws ExecutionException {
+        
+    }
     
-                    switch (skCase.getDatabaseType()) {
-                    case POSTGRESQL:
-                        mimeType = "SPLIT_PART(mime_type, '/', 1)";
-                        break;
-                    case SQLITE:
-                        mimeType = "SUBSTR(mime_type, 0, instr(mime_type, '/'))";
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Unknown database type: " + skCase.getDatabaseType());
-                }
+    public TreeResultsDTO<CreditCardNumberParams> getCreditCardNumberCounts(Long dataSourceId, String bin) throws ExecutionException {
+        
+        
+    }
+    
+    public TreeResultsDTO<CreditCardByFileParams> getCreditCardByFileCounts(Long dataSourceId) {
+        
+    }
+    
+//        switch (skCase.getDatabaseType()) {
+//        case POSTGRESQL:
+//            mimeType = "SPLIT_PART(mime_type, '/', 1)";
+//            break;
+//        case SQLITE:
+//            mimeType = "SUBSTR(mime_type, 0, instr(mime_type, '/'))";
+//            break;
+//        default:
+//            throw new IllegalArgumentException("Unknown database type: " + skCase.getDatabaseType());
+//    }
                             
     
         /**
@@ -229,21 +241,21 @@ public class DataArtifactDAO extends BlackboardArtifactDAO {
      * @return a map containg the account and folder which the email is stored
      *         in
      */
-    public static final Map<String, String> parsePath(String path) {
-        Map<String, String> parsed = new HashMap<>();
-        String[] split = path == null ? new String[0] : path.split(MAIL_PATH_SEPARATOR);
-        if (split.length < 4) {
-            parsed.put(MAIL_ACCOUNT, NbBundle.getMessage(EmailExtracted.class, "EmailExtracted.defaultAcct.text"));
-            parsed.put(MAIL_FOLDER, NbBundle.getMessage(EmailExtracted.class, "EmailExtracted.defaultFolder.text"));
-            return parsed;
-        }
-        parsed.put(MAIL_ACCOUNT, split[2]);
-        parsed.put(MAIL_FOLDER, split[3]);
-        return parsed;
-    }
-    private static final String MAIL_PATH_SEPARATOR = "/";
+//    public static final Map<String, String> parsePath(String path) {
+//        Map<String, String> parsed = new HashMap<>();
+//        String[] split = path == null ? new String[0] : path.split(MAIL_PATH_SEPARATOR);
+//        if (split.length < 4) {
+//            parsed.put(MAIL_ACCOUNT, NbBundle.getMessage(EmailExtracted.class, "EmailExtracted.defaultAcct.text"));
+//            parsed.put(MAIL_FOLDER, NbBundle.getMessage(EmailExtracted.class, "EmailExtracted.defaultFolder.text"));
+//            return parsed;
+//        }
+//        parsed.put(MAIL_ACCOUNT, split[2]);
+//        parsed.put(MAIL_FOLDER, split[3]);
+//        return parsed;
+//    }
+//    private static final String MAIL_PATH_SEPARATOR = "/";
     
-    public TreeResultsDTO<EmailSearchParams> getEmailCounts(EmailSearchParams searchParams) throws ExecutionException {
+//    public TreeResultsDTO<EmailSearchParams> getEmailCounts(EmailSearchParams searchParams) throws ExecutionException {
 //        private final Map<String, Map<String, List<Long>>> accounts = new LinkedHashMap<>();
 //
 //        EmailResults() {
@@ -269,16 +281,16 @@ public class DataArtifactDAO extends BlackboardArtifactDAO {
 //        }
         
         
-        String query = "SELECT \n"
-                + "	art.artifact_obj_id AS artifact_obj_id,\n"
-                + "	(SELECT value_text FROM blackboard_attributes attr\n"
-                + "	WHERE attr.artifact_id = art.artifact_id AND attr.attribute_type_id = " + pathAttrId + "\n"
-                + "	LIMIT 1) AS value_text\n"
-                + "FROM \n"
-                + "	blackboard_artifacts art\n"
-                + "	WHERE art.artifact_type_id = " + emailArtifactId + "\n"
-                + ((filteringDSObjId > 0) ? "	AND art.data_source_obj_id = " + filteringDSObjId : "");
-    }
+//        String query = "SELECT \n"
+//                + "	art.artifact_obj_id AS artifact_obj_id,\n"
+//                + "	(SELECT value_text FROM blackboard_attributes attr\n"
+//                + "	WHERE attr.artifact_id = art.artifact_id AND attr.attribute_type_id = " + pathAttrId + "\n"
+//                + "	LIMIT 1) AS value_text\n"
+//                + "FROM \n"
+//                + "	blackboard_artifacts art\n"
+//                + "	WHERE art.artifact_type_id = " + emailArtifactId + "\n"
+//                + ((filteringDSObjId > 0) ? "	AND art.data_source_obj_id = " + filteringDSObjId : "");
+//    }
 
     /*
      * Handles fetching and paging of data artifacts.
