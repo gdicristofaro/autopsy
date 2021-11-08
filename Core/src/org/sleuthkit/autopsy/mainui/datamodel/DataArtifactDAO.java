@@ -25,6 +25,8 @@ import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,7 +34,9 @@ import java.util.stream.Collectors;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
+import org.openide.util.NbBundle;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
+import org.sleuthkit.autopsy.datamodel.EmailExtracted;
 import org.sleuthkit.autopsy.ingest.ModuleDataEvent;
 import org.sleuthkit.autopsy.mainui.datamodel.TreeResultsDTO.TreeItemDTO;
 import org.sleuthkit.autopsy.mainui.nodes.DAOFetcher;
@@ -183,10 +187,10 @@ public class DataArtifactDAO extends BlackboardArtifactDAO {
                         String accountDisplayName = resultSet.getString("account_display_name");
                         long count = resultSet.getLong("count");
                         accountParams.add(new TreeItemDTO<>(
-                                accountType, 
-                                new AccountSearchParams(accountType, dataSourceId), 
-                                accountType, 
-                                accountDisplayName, 
+                                accountType,
+                                new AccountSearchParams(accountType, dataSourceId),
+                                accountType,
+                                accountDisplayName,
                                 count));
                     }
                 } catch (SQLException ex) {
@@ -200,6 +204,80 @@ public class DataArtifactDAO extends BlackboardArtifactDAO {
         } catch (NoCurrentCaseException | TskCoreException ex) {
             throw new ExecutionException("An error occurred while fetching data artifact counts.", ex);
         }
+    }
+
+    
+    
+                    switch (skCase.getDatabaseType()) {
+                    case POSTGRESQL:
+                        mimeType = "SPLIT_PART(mime_type, '/', 1)";
+                        break;
+                    case SQLITE:
+                        mimeType = "SUBSTR(mime_type, 0, instr(mime_type, '/'))";
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown database type: " + skCase.getDatabaseType());
+                }
+                            
+    
+        /**
+     * Parse the path of the email msg to get the account name and folder in
+     * which the email is contained.
+     *
+     * @param path - the TSK_PATH to the email msg
+     *
+     * @return a map containg the account and folder which the email is stored
+     *         in
+     */
+    public static final Map<String, String> parsePath(String path) {
+        Map<String, String> parsed = new HashMap<>();
+        String[] split = path == null ? new String[0] : path.split(MAIL_PATH_SEPARATOR);
+        if (split.length < 4) {
+            parsed.put(MAIL_ACCOUNT, NbBundle.getMessage(EmailExtracted.class, "EmailExtracted.defaultAcct.text"));
+            parsed.put(MAIL_FOLDER, NbBundle.getMessage(EmailExtracted.class, "EmailExtracted.defaultFolder.text"));
+            return parsed;
+        }
+        parsed.put(MAIL_ACCOUNT, split[2]);
+        parsed.put(MAIL_FOLDER, split[3]);
+        return parsed;
+    }
+    private static final String MAIL_PATH_SEPARATOR = "/";
+    
+    public TreeResultsDTO<EmailSearchParams> getEmailCounts(EmailSearchParams searchParams) throws ExecutionException {
+//        private final Map<String, Map<String, List<Long>>> accounts = new LinkedHashMap<>();
+//
+//        EmailResults() {
+//            update();
+//        }
+//
+//        public Set<String> getAccounts() {
+//            synchronized (accounts) {
+//                return accounts.keySet();
+//            }
+//        }
+//
+//        public Set<String> getFolders(String account) {
+//            synchronized (accounts) {
+//                return accounts.get(account).keySet();
+//            }
+//        }
+//
+//        public List<Long> getArtifactIds(String account, String folder) {
+//            synchronized (accounts) {
+//                return accounts.get(account).get(folder);
+//            }
+//        }
+        
+        
+        String query = "SELECT \n"
+                + "	art.artifact_obj_id AS artifact_obj_id,\n"
+                + "	(SELECT value_text FROM blackboard_attributes attr\n"
+                + "	WHERE attr.artifact_id = art.artifact_id AND attr.attribute_type_id = " + pathAttrId + "\n"
+                + "	LIMIT 1) AS value_text\n"
+                + "FROM \n"
+                + "	blackboard_artifacts art\n"
+                + "	WHERE art.artifact_type_id = " + emailArtifactId + "\n"
+                + ((filteringDSObjId > 0) ? "	AND art.data_source_obj_id = " + filteringDSObjId : "");
     }
 
     /*
