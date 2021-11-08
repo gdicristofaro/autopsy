@@ -21,6 +21,7 @@ package org.sleuthkit.autopsy.mainui.datamodel;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import java.beans.PropertyChangeEvent;
+import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -30,11 +31,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
 import org.sleuthkit.autopsy.ingest.ModuleDataEvent;
+import org.sleuthkit.autopsy.mainui.datamodel.TreeResultsDTO.TreeItemDTO;
 import org.sleuthkit.autopsy.mainui.nodes.DAOFetcher;
 import org.sleuthkit.datamodel.Blackboard;
 import org.sleuthkit.datamodel.BlackboardArtifact;
+import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.DataArtifact;
 import org.sleuthkit.datamodel.SleuthkitCase;
@@ -67,19 +71,19 @@ public class DataArtifactDAO extends BlackboardArtifactDAO {
     private final Cache<SearchParams<BlackboardArtifactSearchParam>, DataArtifactTableSearchResultsDTO> dataArtifactCache = CacheBuilder.newBuilder().maximumSize(1000).build();
 
     private DataArtifactTableSearchResultsDTO fetchDataArtifactsForTable(SearchParams<BlackboardArtifactSearchParam> cacheKey) throws NoCurrentCaseException, TskCoreException {
-        
+
         SleuthkitCase skCase = getCase();
         Blackboard blackboard = skCase.getBlackboard();
         BlackboardArtifact.Type artType = cacheKey.getParamData().getArtifactType();
 
         String pagedWhereClause = getWhereClause(cacheKey);
-        
+
         List<BlackboardArtifact> arts = new ArrayList<>();
         arts.addAll(blackboard.getDataArtifactsWhere(pagedWhereClause));
         blackboard.loadBlackboardAttributes(arts);
-           
-        long totalResultsCount = getTotalResultsCount(cacheKey, arts.size());    
-        
+
+        long totalResultsCount = getTotalResultsCount(cacheKey, arts.size());
+
         TableData tableData = createTableData(artType, arts);
         return new DataArtifactTableSearchResultsDTO(artType, tableData.columnKeys, tableData.rows, cacheKey.getStartItem(), totalResultsCount);
     }
@@ -148,6 +152,50 @@ public class DataArtifactDAO extends BlackboardArtifactDAO {
 
             // return results
             return new TreeResultsDTO<>(treeItemRows);
+
+        } catch (NoCurrentCaseException | TskCoreException ex) {
+            throw new ExecutionException("An error occurred while fetching data artifact counts.", ex);
+        }
+    }
+
+    public TreeResultsDTO<AccountSearchParams> getAccountsCounts(Long dataSourceId) throws ExecutionException {
+        String query = "SELECT res.account_type AS account_type, MIN(res.account_display_name) AS account_display_name, COUNT(*) AS count\n"
+                + "FROM (\n"
+                + "  SELECT MIN(account_types.type_name) AS account_type, MIN(account_types.display_name) AS account_display_name\n"
+                + "  FROM blackboard_artifacts\n"
+                + "  LEFT JOIN blackboard_attributes ON blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id\n"
+                + "  LEFT JOIN account_types ON blackboard_artifacts.value_text = account_types.type_name\n"
+                + "  WHERE blackboard_artifacts.artifact_type_id = " + BlackboardArtifact.Type.TSK_ACCOUNT.getTypeID() + "\n"
+                + "  AND blackboard_attributes.attribute_type_id = " + BlackboardAttribute.Type.TSK_ACCOUNT_TYPE.getTypeID() + "\n"
+                + (dataSourceId != null && dataSourceId > 0 ? "  AND blackboard_artifacts.data_source_obj_id = " + dataSourceId + " " : " ") + "\n"
+                + "  -- group by artifact_id to ensure only one account type per artifact\n"
+                + "  GROUP BY blackboard_artifacts.artifact_id\n"
+                + ") res\n"
+                + "GROUP BY res.account_type\n"
+                + "ORDER BY MIN(res.account_display_name)";
+
+        List<TreeItemDTO<AccountSearchParams>> accountParams = new ArrayList<>();
+        try {
+            getCase().getCaseDbAccessManager().select(query, (resultSet) -> {
+                try {
+                    while (resultSet.next()) {
+                        String accountType = resultSet.getString("account_type");
+                        String accountDisplayName = resultSet.getString("account_display_name");
+                        long count = resultSet.getLong("count");
+                        accountParams.add(new TreeItemDTO<>(
+                                accountType, 
+                                new AccountSearchParams(accountType, dataSourceId), 
+                                accountType, 
+                                accountDisplayName, 
+                                count));
+                    }
+                } catch (SQLException ex) {
+                    logger.log(Level.WARNING, "An error occurred while fetching artifact type counts.", ex);
+                }
+            });
+
+            // return results
+            return new TreeResultsDTO<>(accountParams);
 
         } catch (NoCurrentCaseException | TskCoreException ex) {
             throw new ExecutionException("An error occurred while fetching data artifact counts.", ex);
