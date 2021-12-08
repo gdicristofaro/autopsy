@@ -16,18 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.autopsy.mainui.nodes;
+package org.sleuthkit.autopsy.mainui.datamodel.events;
 
-import org.sleuthkit.autopsy.corecomponents.DataResultTopComponent;
+import org.sleuthkit.datamodel.BlackboardArtifact;
 
 /**
- * Interface for Nodes that can respond to a tree selection event.
+ * An event for an artifact added or changed of a particular type possibly for a
+ * particular data source.
  */
-public interface SelectionResponder {
-    /**
-     * Method to be called on tree nodes that can handle selection.
-     * 
-     * @param dataResultPanel 
-     */
-    void respondSelection(DataResultTopComponent dataResultPanel);
+public class DataArtifactEvent extends BlackboardArtifactEvent {
+
+    public DataArtifactEvent(BlackboardArtifact.Type artifactType, long dataSourceId) {
+        super(artifactType, dataSourceId);
+    }
 }

@@ -27,11 +27,11 @@ import org.sleuthkit.autopsy.commonpropertiessearch.CaseDBCommonAttributeInstanc
 import org.sleuthkit.autopsy.commonpropertiessearch.InstanceDataSourceNode;
 import org.sleuthkit.autopsy.datamodel.DeletedContent.DeletedContentsChildren.DeletedContentNode;
 import org.sleuthkit.autopsy.datamodel.DeletedContent.DeletedContentsNode;
-import org.sleuthkit.autopsy.datamodel.FileSize.FileSizeRootChildren.FileSizeNode;
 import org.sleuthkit.autopsy.datamodel.FileSize.FileSizeRootNode;
 import org.sleuthkit.autopsy.datamodel.FileTypes.FileTypesNode;
 import org.sleuthkit.autopsy.datamodel.accounts.Accounts;
 import org.sleuthkit.autopsy.allcasessearch.CorrelationAttributeInstanceNode;
+import org.sleuthkit.autopsy.datamodel.FileTypesByExtension.FileTypesByExtNode;
 
 /**
  * Visitor pattern that goes over all nodes in the directory tree. This includes
@@ -72,17 +72,13 @@ public interface DisplayableItemNodeVisitor<T> {
 
     T visit(DataSourceGroupingNode dataSourceGroupingNode);
 
-    T visit(org.sleuthkit.autopsy.datamodel.FileTypesByExtension.FileExtensionNode fsfn);
-
     T visit(DeletedContentNode dcn);
 
     T visit(DeletedContentsNode dcn);
 
     T visit(FileSizeRootNode fsrn);
 
-    T visit(FileSizeNode fsn);
-
-    T visit(org.sleuthkit.autopsy.datamodel.FileTypesByExtension.FileTypesByExtNode sfn);
+    T visit(FileTypesByExtNode sfn);
 
     T visit(RecentFilesNode rfn);
 
@@ -172,18 +168,12 @@ public interface DisplayableItemNodeVisitor<T> {
 
     T visit(FileTypesByMimeType.ByMimeTypeNode ftByMimeTypeNode);
 
-    T visit(FileTypesByMimeType.MediaTypeNode ftByMimeTypeMediaType);
-
-    T visit(FileTypesByMimeType.MediaSubTypeNode ftByMimeTypeMediaSubType);
-
     T visit(EmptyNode.MessageNode emptyNode);
 
     /*
      * Attachments
      */
     T visit(AttachmentNode node);
-
-    T visit(OsAccounts.OsAccountNode node);
 
     T visit(OsAccounts.OsAccountListNode node);
 
@@ -303,23 +293,8 @@ public interface DisplayableItemNodeVisitor<T> {
         }
 
         @Override
-        public T visit(org.sleuthkit.autopsy.datamodel.FileTypesByExtension.FileExtensionNode fsfn) {
-            return defaultVisit(fsfn);
-        }
-
-        @Override
         public T visit(FileTypesByMimeType.ByMimeTypeNode ftByMimeTypeNode) {
             return defaultVisit(ftByMimeTypeNode);
-        }
-
-        @Override
-        public T visit(FileTypesByMimeType.MediaTypeNode ftByMimeTypeMediaTypeNode) {
-            return defaultVisit(ftByMimeTypeMediaTypeNode);
-        }
-
-        @Override
-        public T visit(FileTypesByMimeType.MediaSubTypeNode ftByMimeTypeMediaTypeNode) {
-            return defaultVisit(ftByMimeTypeMediaTypeNode);
         }
 
         @Override
@@ -340,11 +315,6 @@ public interface DisplayableItemNodeVisitor<T> {
         @Override
         public T visit(FileSizeRootNode fsrn) {
             return defaultVisit(fsrn);
-        }
-
-        @Override
-        public T visit(FileSizeNode fsn) {
-            return defaultVisit(fsn);
         }
 
         @Override
@@ -524,11 +494,6 @@ public interface DisplayableItemNodeVisitor<T> {
 
         @Override
         public T visit(AttachmentNode node) {
-            return defaultVisit(node);
-        }
-
-        @Override
-        public T visit(OsAccounts.OsAccountNode node) {
             return defaultVisit(node);
         }
 

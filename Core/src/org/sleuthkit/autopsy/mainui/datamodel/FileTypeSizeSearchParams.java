@@ -25,36 +25,10 @@ import java.util.Objects;
  */
 public class FileTypeSizeSearchParams {
 
-    public enum FileSizeFilter {
-        SIZE_50_200(0, "SIZE_50_200", "50 - 200MB"), //NON-NLS
-        SIZE_200_1000(1, "SIZE_200_1GB", "200MB - 1GB"), //NON-NLS
-        SIZE_1000_(2, "SIZE_1000+", "1GB+"); //NON-NLS
-        private final int id;
-        private final String name;
-        private final String displayName;
-
-        private FileSizeFilter(int id, String name, String displayName) {
-            this.id = id;
-            this.name = name;
-            this.displayName = displayName;
-        }
-
-        public String getName() {
-            return this.name;
-        }
-
-        public int getId() {
-            return this.id;
-        }
-
-        public String getDisplayName() {
-            return this.displayName;
-        }
-    }
 
     private final FileSizeFilter sizeFilter;
     private final Long dataSourceId;
- 
+
     public FileTypeSizeSearchParams(FileSizeFilter sizeFilter, Long dataSourceId) {
         this.sizeFilter = sizeFilter;
         this.dataSourceId = dataSourceId;
@@ -96,6 +70,5 @@ public class FileTypeSizeSearchParams {
         }
         return true;
     }
-    
-    
+
 }

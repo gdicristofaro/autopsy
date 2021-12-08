@@ -26,59 +26,27 @@ import org.openide.nodes.Children;
 import org.openide.nodes.Node;
 import org.openide.nodes.Sheet;
 import org.sleuthkit.autopsy.datamodel.FileTypeExtensions;
+import org.sleuthkit.autopsy.directorytree.DirectoryTreeTopComponent;
 import org.sleuthkit.autopsy.mainui.datamodel.SearchResultsDTO;
 import org.sleuthkit.autopsy.mainui.datamodel.FileRowDTO;
 import org.sleuthkit.autopsy.mainui.datamodel.ColumnKey;
-import org.sleuthkit.autopsy.mainui.datamodel.FileRowDTO.ExtensionMediaType;
+import org.sleuthkit.autopsy.mainui.datamodel.MediaTypeUtils;
+import org.sleuthkit.autopsy.mainui.datamodel.FileRowDTO.LayoutFileRowDTO;
+import org.sleuthkit.autopsy.mainui.datamodel.FileRowDTO.SlackFileRowDTO;
 import org.sleuthkit.autopsy.mainui.nodes.actions.ActionContext;
 import org.sleuthkit.autopsy.mainui.nodes.actions.ActionsFactory;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
+import org.sleuthkit.datamodel.LayoutFile;
 import org.sleuthkit.datamodel.TskCoreException;
+import org.sleuthkit.datamodel.TskData;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 
 /**
  * A node for representing an AbstractFile.
  */
 public class FileNode extends AbstractNode implements ActionContext {
-
-    /**
-     * Gets the path to the icon file that should be used to visually represent
-     * an AbstractFile, using the file name extension to select the icon.
-     *
-     * @param file An AbstractFile.
-     *
-     * @return An icon file path.
-     */
-    static String getIconForFileType(ExtensionMediaType fileType) {
-        if (fileType == null) {
-            return "org/sleuthkit/autopsy/images/file-icon.png";
-        }
-
-        switch (fileType) {
-            case IMAGE:
-                return "org/sleuthkit/autopsy/images/image-file.png";
-            case VIDEO:
-                return "org/sleuthkit/autopsy/images/video-file.png";
-            case AUDIO:
-                return "org/sleuthkit/autopsy/images/audio-file.png";
-            case DOC:
-                return "org/sleuthkit/autopsy/images/doc-file.png";
-            case EXECUTABLE:
-                return "org/sleuthkit/autopsy/images/exe-file.png";
-            case TEXT:
-                return "org/sleuthkit/autopsy/images/text-file.png";
-            case WEB:
-                return "org/sleuthkit/autopsy/images/web-file.png";
-            case PDF:
-                return "org/sleuthkit/autopsy/images/pdf-file.png";
-            case ARCHIVE:
-                return "org/sleuthkit/autopsy/images/archive-file.png";
-            default:
-            case UNCATEGORIZED:
-                return "org/sleuthkit/autopsy/images/file-icon.png";
-        }
-    }
 
     private final boolean directoryBrowseMode;
     private final FileRowDTO fileData;
@@ -92,8 +60,9 @@ public class FileNode extends AbstractNode implements ActionContext {
         // GVDTODO: at some point, this leaf will need to allow for children
         super(Children.LEAF, ContentNodeUtil.getLookup(file.getAbstractFile()));
         setIcon(file);
-        setDisplayName(ContentNodeUtil.getContentDisplayName(file.getFileName()));
         setName(ContentNodeUtil.getContentName(file.getId()));
+        setDisplayName(ContentNodeUtil.getContentDisplayName(file.getFileName()));
+        setShortDescription(ContentNodeUtil.getContentDisplayName(file.getFileName()));
         this.directoryBrowseMode = directoryBrowseMode;
         this.fileData = file;
         this.columns = results.getColumns();
@@ -102,15 +71,24 @@ public class FileNode extends AbstractNode implements ActionContext {
     /*
      * Sets the icon for the node, based on properties of the AbstractFile.
      */
-    private void setIcon(FileRowDTO file) {
-        if (!file.getAllocated()) {
-            if (TSK_DB_FILES_TYPE_ENUM.CARVED.equals(file.getFileType())) {
-                this.setIconBaseWithExtension("org/sleuthkit/autopsy/images/carved-file-x-icon-16.png"); //NON-NLS
+    void setIcon(FileRowDTO fileData) {
+        if (fileData.getAbstractFile().isDir()) {
+            // This is most likely a derived file directory
+            if (fileData.getAllocated()) {
+                this.setIconBaseWithExtension(NodeIconUtil.FOLDER.getPath());
             } else {
-                this.setIconBaseWithExtension("org/sleuthkit/autopsy/images/file-icon-deleted.png"); //NON-NLS
+                this.setIconBaseWithExtension(NodeIconUtil.DELETED_FOLDER.getPath());
             }
         } else {
-            this.setIconBaseWithExtension(getIconForFileType(file.getExtensionMediaType()));
+            if (!fileData.getAllocated()) {
+                if (TSK_DB_FILES_TYPE_ENUM.CARVED.equals(fileData.getFileType())) {
+                    this.setIconBaseWithExtension("org/sleuthkit/autopsy/images/carved-file-x-icon-16.png"); //NON-NLS
+                } else {
+                    this.setIconBaseWithExtension("org/sleuthkit/autopsy/images/file-icon-deleted.png"); //NON-NLS
+                }
+            } else {
+                this.setIconBaseWithExtension(MediaTypeUtils.getIconForFileType(fileData.getExtensionMediaType()));
+            }
         }
     }
 
@@ -140,7 +118,7 @@ public class FileNode extends AbstractNode implements ActionContext {
     }
 
     @Override
-    public boolean supportsExtractActions() {
+    public boolean supportsTableExtractActions() {
         return true;
     }
 
@@ -150,9 +128,17 @@ public class FileNode extends AbstractNode implements ActionContext {
     }
 
     @Override
+    public Optional<AbstractFile> getFileForDirectoryBrowseMode() {
+        if (directoryBrowseMode) {
+            return Optional.of(fileData.getAbstractFile());
+        }
+
+        return Optional.empty();
+    }
+
+    @Override
     public Optional<AbstractFile> getExtractArchiveWithPasswordActionFile() {
-        // GVDTODO: HANDLE THIS ACTION IN A BETTER WAY!-----
-        // See JIRA-8099
+        // TODO: See JIRA-8099
         AbstractFile file = this.fileData.getAbstractFile();
         boolean isArchive = FileTypeExtensions.getArchiveExtensions().contains("." + file.getNameExtension().toLowerCase());
         boolean encryptionDetected = false;
@@ -173,5 +159,66 @@ public class FileNode extends AbstractNode implements ActionContext {
     @Override
     protected Sheet createSheet() {
         return ContentNodeUtil.setSheet(super.createSheet(), this.columns, this.fileData.getCellValues());
+    }
+    
+    @Override
+    public Action getPreferredAction() {
+        return DirectoryTreeTopComponent.getOpenChildAction(getName());
+    }
+
+    /**
+     * A node for representing a LayoutFile.
+     */
+    public static class LayoutFileNode extends FileNode {
+
+        private final LayoutFileRowDTO layoutFileRow;
+
+        public LayoutFileNode(SearchResultsDTO results, LayoutFileRowDTO file) {
+            super(results, file, true);
+            layoutFileRow = file;
+        }
+
+        @Override
+        void setIcon(FileRowDTO fileData) {
+            LayoutFile lf = ((LayoutFileRowDTO) fileData).getLayoutFile();
+            switch (lf.getType()) {
+                case CARVED:
+                    setIconBaseWithExtension(NodeIconUtil.CARVED_FILE.getPath());
+                    break;
+                case LAYOUT_FILE:
+                    if (lf.isDirNameFlagSet(TskData.TSK_FS_NAME_FLAG_ENUM.UNALLOC)) {
+                        setIconBaseWithExtension(NodeIconUtil.DELETED_FILE.getPath());
+                    } else {
+                        setIconBaseWithExtension(MediaTypeUtils.getIconForFileType(layoutFileRow.getExtensionMediaType()));
+                    }
+                    break;
+                default:
+                    setIconBaseWithExtension(NodeIconUtil.DELETED_FILE.getPath());
+            }
+        }
+    }
+
+    /**
+     * A node for representing a SlackFile.
+     */
+    public static class SlackFileNode extends FileNode {
+
+        public SlackFileNode(SearchResultsDTO results, SlackFileRowDTO file) {
+            super(results, file);
+        }
+
+        @Override
+        void setIcon(FileRowDTO fileData) {
+            AbstractFile file = fileData.getAbstractFile();
+            if (file.isDirNameFlagSet(TSK_FS_NAME_FLAG_ENUM.UNALLOC)) {
+                if (file.getType().equals(TSK_DB_FILES_TYPE_ENUM.CARVED)) {
+                    this.setIconBaseWithExtension(NodeIconUtil.CARVED_FILE.getPath()); //NON-NLS
+                } else {
+                    this.setIconBaseWithExtension(NodeIconUtil.DELETED_FILE.getPath()); //NON-NLS
+                }
+            } else {
+                this.setIconBaseWithExtension(MediaTypeUtils.getIconForFileType(fileData.getExtensionMediaType()));
+            }
+        }
     }
 }

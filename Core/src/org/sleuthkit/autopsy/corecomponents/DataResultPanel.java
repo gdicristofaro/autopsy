@@ -40,6 +40,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import org.openide.explorer.ExplorerManager;
+import org.openide.nodes.Children;
+import org.openide.nodes.FilterNode;
 import org.openide.nodes.Node;
 import org.openide.nodes.NodeAdapter;
 import org.openide.nodes.NodeMemberEvent;
@@ -60,27 +62,34 @@ import org.sleuthkit.autopsy.datamodel.BaseChildFactory.PageCountChangeEvent;
 import org.sleuthkit.autopsy.datamodel.BaseChildFactory.PageSizeChangeEvent;
 import org.sleuthkit.autopsy.datamodel.NodeSelectionInfo;
 import org.sleuthkit.autopsy.ingest.IngestManager;
-import org.sleuthkit.autopsy.mainui.datamodel.AnalysisResultDAO;
+import org.sleuthkit.autopsy.mainui.datamodel.CommAccountsSearchParams;
 import org.sleuthkit.autopsy.mainui.datamodel.AnalysisResultDAO.AnalysisResultFetcher;
-import org.sleuthkit.autopsy.mainui.datamodel.AnalysisResultDAO.HashsetResultFetcher;
+import org.sleuthkit.autopsy.mainui.datamodel.AnalysisResultDAO.AnalysisResultSetFetcher;
 import org.sleuthkit.autopsy.mainui.datamodel.AnalysisResultDAO.KeywordHitResultFetcher;
 import org.sleuthkit.autopsy.mainui.datamodel.AnalysisResultSearchParam;
+import org.sleuthkit.autopsy.mainui.datamodel.AnalysisResultSetSearchParam;
+import org.sleuthkit.autopsy.mainui.datamodel.CommAccountsDAO.CommAccountFetcher;
+import org.sleuthkit.autopsy.mainui.datamodel.events.DAOAggregateEvent;
 import org.sleuthkit.autopsy.mainui.datamodel.DataArtifactDAO.DataArtifactFetcher;
 import org.sleuthkit.autopsy.mainui.datamodel.DataArtifactSearchParam;
+import org.sleuthkit.autopsy.mainui.datamodel.FileSystemContentSearchParam;
+import org.sleuthkit.autopsy.mainui.datamodel.FileSystemDAO.FileSystemFetcher;
+import org.sleuthkit.autopsy.mainui.datamodel.FileSystemDAO.FileSystemHostFetcher;
+import org.sleuthkit.autopsy.mainui.datamodel.FileSystemHostSearchParam;
 import org.sleuthkit.autopsy.mainui.datamodel.FileTypeExtensionsSearchParams;
 import org.sleuthkit.autopsy.mainui.datamodel.FileTypeMimeSearchParams;
 import org.sleuthkit.autopsy.mainui.datamodel.FileTypeSizeSearchParams;
-import org.sleuthkit.autopsy.mainui.datamodel.HashHitSearchParam;
 import org.sleuthkit.autopsy.mainui.datamodel.KeywordHitSearchParam;
+import org.sleuthkit.autopsy.mainui.datamodel.MainDAO;
+import org.sleuthkit.autopsy.mainui.datamodel.OsAccountsDAO.AccountFetcher;
+import org.sleuthkit.autopsy.mainui.datamodel.OsAccountsSearchParams;
 import org.sleuthkit.autopsy.mainui.nodes.SearchResultRootNode;
 import org.sleuthkit.autopsy.mainui.datamodel.SearchResultsDTO;
 import org.sleuthkit.autopsy.mainui.datamodel.TagsDAO.TagFetcher;
 import org.sleuthkit.autopsy.mainui.datamodel.TagsSearchParams;
-import org.sleuthkit.autopsy.mainui.datamodel.ViewsDAO;
 import org.sleuthkit.autopsy.mainui.datamodel.ViewsDAO.FileTypeExtFetcher;
 import org.sleuthkit.autopsy.mainui.datamodel.ViewsDAO.FileTypeMimeFetcher;
 import org.sleuthkit.autopsy.mainui.datamodel.ViewsDAO.FileTypeSizeFetcher;
-import org.sleuthkit.autopsy.mainui.nodes.DAOFetcher;
 import org.sleuthkit.autopsy.mainui.nodes.SearchManager;
 
 /**
@@ -133,21 +142,9 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
 
     private final PreferenceChangeListener pageSizeListener = (PreferenceChangeEvent evt) -> {
         if (evt.getKey().equals(UserPreferences.RESULTS_TABLE_PAGE_SIZE)) {
-            int newPageSize = UserPreferences.getResultsTablePageSize();
-
             nodeNameToPageCountListenerMap.values().forEach((ps) -> {
                 ps.postPageSizeChangeEvent();
             });
-
-            try {
-                if (this.searchResultManager != null) {
-                    DAOFetcher<?> previousFetcher = this.searchResultManager.getDaoFetcher();
-                    this.searchResultManager = new SearchManager(previousFetcher, newPageSize);
-                    displaySearchResults(this.searchResultManager.getResults(), false);
-                }
-            } catch (IllegalArgumentException | ExecutionException ex) {
-                logger.log(Level.WARNING, "There was an error while updating page size", ex);
-            }
         }
     };
 
@@ -155,10 +152,11 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
 
     private final PropertyChangeListener caseEventListener = evt -> {
         String evtName = evt.getPropertyName();
-        if (Case.Events.DATA_SOURCE_ADDED.toString().equals(evtName)) {
-            refreshSearchResultChildren();
-        } else if (Case.Events.CURRENT_CASE.toString().equals(evtName) && evt.getNewValue() == null) {
-            nodeNameToPageCountListenerMap.clear();
+        if (Case.Events.CURRENT_CASE.toString().equals(evtName)) {
+            searchResultManager = null;
+            if (evt.getNewValue() == null) {
+                nodeNameToPageCountListenerMap.clear();
+            }
         }
     };
 
@@ -169,27 +167,19 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
             IngestManager.IngestModuleEvent.CONTENT_CHANGED,
             IngestManager.IngestModuleEvent.DATA_ADDED);
 
-    private final PropertyChangeListener ingestModuleListener = evt -> {
-        if (this.searchResultManager != null && this.searchResultManager.isRefreshRequired(evt)) {
-            refreshSearchResultChildren();
+    private final MainDAO mainDAO = MainDAO.getInstance();
+
+    private final PropertyChangeListener DAOListener = evt -> {
+        SearchManager manager = this.searchResultManager;
+        if (manager != null && evt != null && evt.getNewValue() instanceof DAOAggregateEvent) {
+            DAOAggregateEvent daoAggrEvt = (DAOAggregateEvent) evt.getNewValue();
+            if (daoAggrEvt.getEvents().stream().anyMatch((daoEvt) -> manager.isRefreshRequired(daoEvt))) {
+                refreshSearchResultChildren();
+            }
         }
     };
 
-    private final PropertyChangeListener weakIngestModuleListener = WeakListeners.propertyChange(ingestModuleListener, null);
-
-    private static final Set<IngestManager.IngestJobEvent> INGEST_JOB_EVENTS = EnumSet.of(
-            IngestManager.IngestJobEvent.COMPLETED,
-            IngestManager.IngestJobEvent.CANCELLED);
-
-    private final PropertyChangeListener ingestJobListener = (PropertyChangeEvent evt) -> {
-        String eventType = evt.getPropertyName();
-        if (eventType.equals(IngestManager.IngestJobEvent.COMPLETED.toString())
-                || eventType.equals(IngestManager.IngestJobEvent.CANCELLED.toString())) {
-            refreshSearchResultChildren();
-        }
-    };
-
-    private final PropertyChangeListener weakIngestJobListener = WeakListeners.propertyChange(ingestJobListener, null);
+    private final PropertyChangeListener weakDAOListener = WeakListeners.propertyChange(DAOListener, mainDAO);
 
     /**
      * Creates and opens a Swing JPanel with a JTabbedPane child component that
@@ -454,8 +444,8 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
     private void initListeners() {
         UserPreferences.addChangeListener(this.pageSizeListener);
         Case.addEventTypeSubscriber(CASE_EVENTS_OF_INTEREST, this.weakCaseEventListener);
-        IngestManager.getInstance().addIngestModuleEventListener(INGEST_MODULE_EVENTS, this.weakIngestModuleListener);
-        IngestManager.getInstance().addIngestJobEventListener(INGEST_JOB_EVENTS, weakIngestJobListener);
+        this.mainDAO.getResultEventsManager().addPropertyChangeListener(this.weakDAOListener);
+        IngestManager.getInstance().addIngestModuleEventListener(INGEST_MODULE_EVENTS, this.weakDAOListener);
     }
 
     /**
@@ -464,8 +454,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
     private void closeListeners() {
         UserPreferences.removeChangeListener(this.pageSizeListener);
         Case.removeEventTypeSubscriber(EnumSet.of(Case.Events.CURRENT_CASE), this.weakCaseEventListener);
-        IngestManager.getInstance().removeIngestModuleEventListener(INGEST_MODULE_EVENTS, this.weakIngestModuleListener);
-        IngestManager.getInstance().removeIngestJobEventListener(INGEST_JOB_EVENTS, weakIngestJobListener);
+        this.mainDAO.getResultEventsManager().removePropertyChangeListener(this.weakDAOListener);
     }
 
     /**
@@ -503,7 +492,11 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
             listeningToTabbedPane = true;
         }
 
-        this.currentRootNode = rootNode;
+        // if search result root node, it's fine; otherwise, wrap in result 
+        // viewer filter node to make sure there are no grandchildren
+        this.currentRootNode = (rootNode instanceof SearchResultRootNode)
+                ? rootNode
+                : new ResultViewerFilterParentNode(rootNode);
 
         // if search result node clear out base child factory paging
         if (this.currentRootNode instanceof SearchResultRootNode) {
@@ -883,7 +876,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.gridwidth = 7;
+        gridBagConstraints.gridwidth = 8;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(0, 5, 5, 5);
@@ -891,7 +884,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
 
         org.openide.awt.Mnemonics.setLocalizedText(numberOfChildNodesLabel, org.openide.util.NbBundle.getMessage(DataResultPanel.class, "DataResultPanel.numberOfChildNodesLabel.text")); // NOI18N
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 8;
+        gridBagConstraints.gridx = 9;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
         gridBagConstraints.insets = new java.awt.Insets(0, 0, 5, 5);
@@ -899,7 +892,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
 
         org.openide.awt.Mnemonics.setLocalizedText(matchLabel, org.openide.util.NbBundle.getMessage(DataResultPanel.class, "DataResultPanel.matchLabel.text")); // NOI18N
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 9;
+        gridBagConstraints.gridx = 10;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
         gridBagConstraints.insets = new java.awt.Insets(0, 0, 5, 0);
@@ -1012,7 +1005,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
-        gridBagConstraints.gridwidth = 10;
+        gridBagConstraints.gridwidth = 11;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.weightx = 1.0;
         gridBagConstraints.weighty = 1.0;
@@ -1176,6 +1169,27 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
         }
     }
 
+    /**
+     * Displays results for querying the DAO for accounts matching the search
+     * parameters query.
+     *
+     * @param accountParams The search parameter query.
+     */
+    void displayAccounts(CommAccountsSearchParams accountParams) {
+        try {
+            this.searchResultManager = new SearchManager(new CommAccountFetcher(accountParams), getPageSize());
+            SearchResultsDTO results = searchResultManager.getResults();
+            displaySearchResults(results, true);
+        } catch (ExecutionException ex) {
+            logger.log(Level.WARNING,
+                    MessageFormat.format("There was an error displaying search results for [artifact type: {0}, data source id: {1}, account type: {2}]",
+                            accountParams.getType(),
+                            accountParams.getDataSourceId() == null ? "<null>" : accountParams.getDataSourceId(),
+                            accountParams.getType()),
+                    ex);
+        }
+    }
+
     void displayAnalysisResult(AnalysisResultSearchParam analysisResultParams) {
         try {
             this.searchResultManager = new SearchManager(new AnalysisResultFetcher(analysisResultParams), getPageSize());
@@ -1259,7 +1273,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
      */
     void displayFileSizes(FileTypeSizeSearchParams fileSizeKey) {
         try {
-            this.searchResultManager = new SearchManager(new FileTypeSizeFetcher(fileSizeKey), getPageSize());
+            this.searchResultManager = new SearchManager(MainDAO.getInstance().getViewsDAO().new FileTypeSizeFetcher(fileSizeKey), getPageSize());
             SearchResultsDTO results = searchResultManager.getResults();
             displaySearchResults(results, true);
         } catch (ExecutionException | IllegalArgumentException ex) {
@@ -1272,24 +1286,25 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
     }
 
     /**
-     * Displays results of querying the DAO for given search parameters query.
+     * Displays results of querying the DAO for given search parameters (set and
+     * artifact type) query.
      *
-     * @param hashHitKey The search parameter query.
+     * @param setKey The search parameter query.
      */
-    void displayHashHits(HashHitSearchParam hashHitKey) {
+    void displayAnalysisResultSet(AnalysisResultSetSearchParam setKey) {
         try {
-            this.searchResultManager = new SearchManager(new HashsetResultFetcher(hashHitKey), getPageSize());
+            this.searchResultManager = new SearchManager(new AnalysisResultSetFetcher(setKey), getPageSize());
             SearchResultsDTO results = searchResultManager.getResults();
             displaySearchResults(results, true);
         } catch (ExecutionException | IllegalArgumentException ex) {
             logger.log(Level.WARNING, MessageFormat.format(
                     "There was an error fetching data for hash set filter: {0} and data source id: {1}.",
-                    hashHitKey.getSetName(),
-                    hashHitKey.getDataSourceId() == null ? "<null>" : hashHitKey.getDataSourceId()),
+                    setKey.getSetName(),
+                    setKey.getDataSourceId() == null ? "<null>" : setKey.getDataSourceId()),
                     ex);
         }
     }
-    
+
     /**
      * Displays results of querying the DAO for the given search parameters
      * query.
@@ -1311,6 +1326,65 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
     }
 
     /**
+     * Displays results of querying the DAO for the given search parameters
+     * query.
+     *
+     * @param fileSystemKey The search parameters.
+     *
+     */
+    void displayFileSystemContent(FileSystemContentSearchParam fileSystemKey) {
+        try {
+            this.searchResultManager = new SearchManager(new FileSystemFetcher(fileSystemKey), getPageSize());
+            SearchResultsDTO results = searchResultManager.getResults();
+            displaySearchResults(results, true, fileSystemKey.getChildIdToSelect());
+        } catch (ExecutionException | IllegalArgumentException ex) {
+            logger.log(Level.WARNING, MessageFormat.format(
+                    "There was an error fetching data for file system filter: {0}.",
+                    fileSystemKey.getContentObjectId()),
+                    ex);
+        }
+    }
+
+    /**
+     * Displays results of querying the DAO for the given search parameters
+     * query.
+     *
+     * @param hostSystemKey The search parameters.
+     *
+     */
+    void displayFileSystemForHost(FileSystemHostSearchParam hostSystemKey) {
+        try {
+            this.searchResultManager = new SearchManager(new FileSystemHostFetcher(hostSystemKey), getPageSize());
+            SearchResultsDTO results = searchResultManager.getResults();
+            displaySearchResults(results, true);
+        } catch (ExecutionException | IllegalArgumentException ex) {
+            logger.log(Level.WARNING, MessageFormat.format(
+                    "There was an error fetching data for host filter: {0}.",
+                    hostSystemKey.getHostObjectId()),
+                    ex);
+        }
+    }
+
+    /**
+     * Displays results of querying the DAO for the given search parameters
+     * query.
+     *
+     * @param osAccountKey The search parameters.
+     */
+    void displayOsAccount(OsAccountsSearchParams osAccountKey) {
+        try {
+            this.searchResultManager = new SearchManager(new AccountFetcher(osAccountKey), getPageSize());
+            SearchResultsDTO results = searchResultManager.getResults();
+            displaySearchResults(results, true);
+        } catch (ExecutionException | IllegalArgumentException ex) {
+            logger.log(Level.WARNING, MessageFormat.format(
+                    "There was an error fetching data for Os Account filter: {0}.",
+                    osAccountKey.getDataSourceId()),
+                    ex);
+        }
+    }
+
+    /**
      * Displays current search result in the result view. This assumes that
      * search result support has already been updated.
      *
@@ -1323,16 +1397,23 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
         "# {1} - pageCount",
         "DataResultPanel_pageIdxOfCount={0} of {1}"
     })
-    private void displaySearchResults(SearchResultsDTO searchResults, boolean resetPaging) {
+    
+     private void displaySearchResults(SearchResultsDTO searchResults, boolean resetPaging) {
+         displaySearchResults(searchResults, resetPaging, null);
+     }
+    
+    private void displaySearchResults(SearchResultsDTO searchResults, boolean resetPaging, Long contentIdToSelect) {
         if (!SwingUtilities.isEventDispatchThread()) {
-            SwingUtilities.invokeLater(() -> displaySearchResults(searchResults, resetPaging));
+            SwingUtilities.invokeLater(() -> displaySearchResults(searchResults, resetPaging, contentIdToSelect));
             return;
         }
 
         if (searchResults == null) {
             setNode(null, resetPaging);
         } else {
-            setNode(new SearchResultRootNode(searchResults), resetPaging);
+            SearchResultRootNode node = new SearchResultRootNode(searchResults);
+            node.setChildIdToSelect(contentIdToSelect);
+            setNode(node, resetPaging);
             setNumberOfChildNodes(
                     searchResults.getTotalResultsCount() > Integer.MAX_VALUE
                     ? Integer.MAX_VALUE
@@ -1349,7 +1430,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
      */
     private void refreshSearchResultChildren() {
         try {
-            refreshSearchResultChildren(this.searchResultManager.getRefreshedData());
+            refreshSearchResultChildren(this.searchResultManager.getResults());
         } catch (ExecutionException | IllegalArgumentException ex) {
             logger.log(Level.WARNING, "There was an error refreshing data: ", ex);
         }
@@ -1410,6 +1491,43 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
             this.pageNumLabel.setText("");
             this.gotoPageTextField.setText("");
 
+        }
+    }
+
+    /**
+     * Children for a parent node in the result viewer that creates filter nodes
+     * with no children.
+     */
+    private class ResultViewerFilterChildren extends FilterNode.Children {
+
+        /**
+         * Main constructor.
+         *
+         * @param baseNode The parent node to wrap.
+         */
+        ResultViewerFilterChildren(Node baseNode) {
+            super(baseNode == null ? Node.EMPTY : baseNode);
+        }
+
+        @Override
+        protected Node[] createNodes(Node key) {
+            return new Node[]{new FilterNode(key, Children.LEAF)};
+        }
+    }
+
+    /**
+     * A parent node of items to display in the result viewer that shows no
+     * grandchildren.
+     */
+    private class ResultViewerFilterParentNode extends FilterNode {
+
+        /**
+         * Main constructor.
+         *
+         * @param original The original node to wrap.
+         */
+        ResultViewerFilterParentNode(Node original) {
+            super(original == null ? Node.EMPTY : original, new ResultViewerFilterChildren(original));
         }
     }
 

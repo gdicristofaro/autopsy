@@ -158,11 +158,22 @@ public interface ActionContext {
     }
 
     /**
-     * Returns true if the context supported the extract action.
+     * Returns true if the context supported the extract actions
+     * for nodes in the table view.
      *
      * @return True if the action is supported.
      */
-    default boolean supportsExtractActions() {
+    default boolean supportsTableExtractActions() {
+        return false;
+    }
+    
+    /**
+     * Returns true if the context supported the extract actions
+     * for nodes in the tree view.
+     *
+     * @return True if the action is supported.
+     */
+    default boolean supportsTreeExtractActions() {
         return false;
     }
 
@@ -183,6 +194,10 @@ public interface ActionContext {
     default boolean supportsArtifactTagAction() {
         return false;
     }
+    
+    default boolean supportsReplaceTagAction() {
+        return false;
+    }
 
     /**
      * Returns the file to be extracted.
@@ -190,6 +205,24 @@ public interface ActionContext {
      * @return True if the action is supported.
      */
     default Optional<AbstractFile> getExtractArchiveWithPasswordActionFile() {
+        return Optional.empty();
+    }
+    
+    /**
+     * Returns the content object to be passed into the
+     * RunIngestModelAction constructor.
+     * 
+     * @return The content object for ingest.
+     */
+    default Optional<Content> getContentForRunIngestionModuleAction() {
+        return Optional.empty();
+    }
+    
+    default Optional<Content> getDataSourceForActions() {
+        return Optional.empty();
+    }
+    
+    default Optional<AbstractFile> getFileForDirectoryBrowseMode() {
         return Optional.empty();
     }
 }

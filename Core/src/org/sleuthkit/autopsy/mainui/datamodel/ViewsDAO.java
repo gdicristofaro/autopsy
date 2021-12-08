@@ -18,30 +18,45 @@
  */
 package org.sleuthkit.autopsy.mainui.datamodel;
 
+import org.sleuthkit.autopsy.mainui.datamodel.events.DAOEvent;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import java.beans.PropertyChangeEvent;
+import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.openide.util.NbBundle;
-import org.openide.util.NbBundle.Messages;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
 import static org.sleuthkit.autopsy.core.UserPreferences.hideKnownFilesInViewsTree;
 import static org.sleuthkit.autopsy.core.UserPreferences.hideSlackFilesInViewsTree;
-import org.sleuthkit.autopsy.coreutils.TimeZoneUtils;
-import org.sleuthkit.autopsy.datamodel.FileTypeExtensions;
-import org.sleuthkit.autopsy.mainui.datamodel.FileRowDTO.ExtensionMediaType;
+import org.sleuthkit.autopsy.mainui.datamodel.TreeResultsDTO.TreeDisplayCount;
+import org.sleuthkit.autopsy.mainui.datamodel.TreeResultsDTO.TreeItemDTO;
+import org.sleuthkit.autopsy.mainui.datamodel.events.DAOEventUtils;
+import org.sleuthkit.autopsy.mainui.datamodel.events.FileTypeExtensionsEvent;
+import org.sleuthkit.autopsy.mainui.datamodel.events.FileTypeMimeEvent;
+import org.sleuthkit.autopsy.mainui.datamodel.events.FileTypeSizeEvent;
+import org.sleuthkit.autopsy.mainui.datamodel.events.TreeEvent;
 import org.sleuthkit.autopsy.mainui.nodes.DAOFetcher;
 import org.sleuthkit.datamodel.AbstractFile;
-import org.sleuthkit.datamodel.Content;
+import org.sleuthkit.datamodel.CaseDbAccessManager.CaseDbPreparedStatement;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskData;
@@ -50,7 +65,9 @@ import org.sleuthkit.datamodel.TskData;
  * Provides information to populate the results viewer for data in the views
  * section.
  */
-public class ViewsDAO {
+public class ViewsDAO extends AbstractDAO {
+
+    private static final Logger logger = Logger.getLogger(ViewsDAO.class.getName());
 
     private static final int CACHE_SIZE = 15; // rule of thumb: 5 entries times number of cached SearchParams sub-types
     private static final long CACHE_DURATION = 2;
@@ -69,40 +86,11 @@ public class ViewsDAO {
         return instance;
     }
 
-    static ExtensionMediaType getExtensionMediaType(String ext) {
-        if (StringUtils.isBlank(ext)) {
-            return ExtensionMediaType.UNCATEGORIZED;
-        } else {
-            ext = "." + ext;
-        }
-        if (FileTypeExtensions.getImageExtensions().contains(ext)) {
-            return ExtensionMediaType.IMAGE;
-        } else if (FileTypeExtensions.getVideoExtensions().contains(ext)) {
-            return ExtensionMediaType.VIDEO;
-        } else if (FileTypeExtensions.getAudioExtensions().contains(ext)) {
-            return ExtensionMediaType.AUDIO;
-        } else if (FileTypeExtensions.getDocumentExtensions().contains(ext)) {
-            return ExtensionMediaType.DOC;
-        } else if (FileTypeExtensions.getExecutableExtensions().contains(ext)) {
-            return ExtensionMediaType.EXECUTABLE;
-        } else if (FileTypeExtensions.getTextExtensions().contains(ext)) {
-            return ExtensionMediaType.TEXT;
-        } else if (FileTypeExtensions.getWebExtensions().contains(ext)) {
-            return ExtensionMediaType.WEB;
-        } else if (FileTypeExtensions.getPDFExtensions().contains(ext)) {
-            return ExtensionMediaType.PDF;
-        } else if (FileTypeExtensions.getArchiveExtensions().contains(ext)) {
-            return ExtensionMediaType.ARCHIVE;
-        } else {
-            return ExtensionMediaType.UNCATEGORIZED;
-        }
-    }
-
     private SleuthkitCase getCase() throws NoCurrentCaseException {
         return Case.getCurrentCaseThrows().getSleuthkitCase();
     }
 
-    public SearchResultsDTO getFilesByExtension(FileTypeExtensionsSearchParams key, long startItem, Long maxCount, boolean hardRefresh) throws ExecutionException, IllegalArgumentException {
+    public SearchResultsDTO getFilesByExtension(FileTypeExtensionsSearchParams key, long startItem, Long maxCount) throws ExecutionException, IllegalArgumentException {
         if (key.getFilter() == null) {
             throw new IllegalArgumentException("Must have non-null filter");
         } else if (key.getDataSourceId() != null && key.getDataSourceId() <= 0) {
@@ -110,14 +98,10 @@ public class ViewsDAO {
         }
 
         SearchParams<FileTypeExtensionsSearchParams> searchParams = new SearchParams<>(key, startItem, maxCount);
-        if (hardRefresh) {
-            this.searchParamsCache.invalidate(searchParams);
-        }
-
         return searchParamsCache.get(searchParams, () -> fetchExtensionSearchResultsDTOs(key.getFilter(), key.getDataSourceId(), startItem, maxCount));
     }
 
-    public SearchResultsDTO getFilesByMime(FileTypeMimeSearchParams key, long startItem, Long maxCount, boolean hardRefresh) throws ExecutionException, IllegalArgumentException {
+    public SearchResultsDTO getFilesByMime(FileTypeMimeSearchParams key, long startItem, Long maxCount) throws ExecutionException, IllegalArgumentException {
         if (key.getMimeType() == null) {
             throw new IllegalArgumentException("Must have non-null filter");
         } else if (key.getDataSourceId() != null && key.getDataSourceId() <= 0) {
@@ -125,14 +109,10 @@ public class ViewsDAO {
         }
 
         SearchParams<FileTypeMimeSearchParams> searchParams = new SearchParams<>(key, startItem, maxCount);
-        if (hardRefresh) {
-            this.searchParamsCache.invalidate(searchParams);
-        }
-
         return searchParamsCache.get(searchParams, () -> fetchMimeSearchResultsDTOs(key.getMimeType(), key.getDataSourceId(), startItem, maxCount));
     }
 
-    public SearchResultsDTO getFilesBySize(FileTypeSizeSearchParams key, long startItem, Long maxCount, boolean hardRefresh) throws ExecutionException, IllegalArgumentException {
+    public SearchResultsDTO getFilesBySize(FileTypeSizeSearchParams key, long startItem, Long maxCount) throws ExecutionException, IllegalArgumentException {
         if (key.getSizeFilter() == null) {
             throw new IllegalArgumentException("Must have non-null filter");
         } else if (key.getDataSourceId() != null && key.getDataSourceId() <= 0) {
@@ -140,93 +120,107 @@ public class ViewsDAO {
         }
 
         SearchParams<FileTypeSizeSearchParams> searchParams = new SearchParams<>(key, startItem, maxCount);
-        if (hardRefresh) {
-            this.searchParamsCache.invalidate(searchParams);
-        }
-
         return searchParamsCache.get(searchParams, () -> fetchSizeSearchResultsDTOs(key.getSizeFilter(), key.getDataSourceId(), startItem, maxCount));
     }
 
-    public boolean isFilesByExtInvalidating(FileTypeExtensionsSearchParams key, Content eventData) {
-        if (!(eventData instanceof AbstractFile)) {
+    private boolean isFilesByExtInvalidating(FileTypeExtensionsSearchParams key, DAOEvent eventData) {
+        if (!(eventData instanceof FileTypeExtensionsEvent)) {
             return false;
         }
 
-        AbstractFile file = (AbstractFile) eventData;
-        String extension = "." + file.getNameExtension().toLowerCase();
-        return key.getFilter().getFilter().contains(extension);
+        FileTypeExtensionsEvent extEvt = (FileTypeExtensionsEvent) eventData;
+        String extension = extEvt.getExtension().toLowerCase();
+        return key.getFilter().getFilter().contains(extension)
+                && (key.getDataSourceId() == null || key.getDataSourceId().equals(extEvt.getDataSourceId()));
     }
 
-    public boolean isFilesByMimeInvalidating(FileTypeMimeSearchParams key, Content eventData) {
-        if (!(eventData instanceof AbstractFile)) {
+    private boolean isFilesByMimeInvalidating(FileTypeMimeSearchParams key, DAOEvent eventData) {
+        if (!(eventData instanceof FileTypeMimeEvent)) {
             return false;
         }
 
-        AbstractFile file = (AbstractFile) eventData;
-        String mimeType = file.getMIMEType();
-        return key.getMimeType().equalsIgnoreCase(mimeType);
+        FileTypeMimeEvent mimeEvt = (FileTypeMimeEvent) eventData;
+        return mimeEvt.getMimeType().startsWith(key.getMimeType())
+                && (key.getDataSourceId() == null || Objects.equals(key.getDataSourceId(), mimeEvt.getDataSourceId()));
     }
 
-    public boolean isFilesBySizeInvalidating(FileTypeSizeSearchParams key, Content eventData) {
-        if (!(eventData instanceof AbstractFile)) {
+    private boolean isFilesBySizeInvalidating(FileTypeSizeSearchParams key, DAOEvent eventData) {
+        if (!(eventData instanceof FileTypeSizeEvent)) {
             return false;
         }
 
-        long size = eventData.getSize();
-
-        switch (key.getSizeFilter()) {
-            case SIZE_50_200:
-                return size >= 50_000_000 && size < 200_000_000;
-            case SIZE_200_1000:
-                return size >= 200_000_000 && size < 1_000_000_000;
-            case SIZE_1000_:
-                return size >= 1_000_000_000;
-            default:
-                throw new IllegalArgumentException("Unsupported filter type to get files by size: " + key.getSizeFilter());
-        }
+        FileTypeSizeEvent sizeEvt = (FileTypeSizeEvent) eventData;
+        return sizeEvt.getSizeFilter().equals(key.getSizeFilter())
+                && (key.getDataSourceId() == null || Objects.equals(key.getDataSourceId(), sizeEvt.getDataSourceId()));
     }
 
-//    private ViewFileTableSearchResultsDTO fetchFilesForTable(ViewFileCacheKey cacheKey) throws NoCurrentCaseException, TskCoreException {
-//
-//    }
-//
-//    public ViewFileTableSearchResultsDTO getFilewViewForTable(BlackboardArtifact.Type artType, Long dataSourceId) throws ExecutionException, IllegalArgumentException {
-//        if (artType == null || artType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
-//            throw new IllegalArgumentException(MessageFormat.format("Illegal data.  "
-//                    + "Artifact type must be non-null and data artifact.  "
-//                    + "Received {0}", artType));
-//        }
-//
-//        ViewFileCacheKey cacheKey = new ViewFileCacheKey(artType, dataSourceId);
-//        return dataArtifactCache.get(cacheKey, () -> fetchFilesForTable(cacheKey));
-//    }
-    private Map<Integer, Long> fetchFileViewCounts(List<FileExtSearchFilter> filters, Long dataSourceId) throws NoCurrentCaseException, TskCoreException {
-        Map<Integer, Long> counts = new HashMap<>();
-        for (FileExtSearchFilter filter : filters) {
-            String whereClause = getFileExtensionWhereStatement(filter, dataSourceId);
-            long count = getCase().countFilesWhere(whereClause);
-            counts.put(filter.getId(), count);
-        }
-
-        return counts;
+    /**
+     * Returns a sql 'and' clause to filter by data source id if one is present.
+     *
+     * @param dataSourceId The data source id or null.
+     *
+     * @return Returns clause if data source id is present or blank string if
+     *         not.
+     */
+    private static String getDataSourceAndClause(Long dataSourceId) {
+        return (dataSourceId != null && dataSourceId > 0
+                ? " AND data_source_obj_id = " + dataSourceId
+                : " ");
     }
 
+    /**
+     * Returns clause that will determine if file extension is within the
+     * filter's set of extensions.
+     *
+     * @param filter The filter.
+     *
+     * @return The sql clause that will need to be proceeded with 'where' or
+     *         'and'.
+     */
+    private static String getFileExtensionClause(FileExtSearchFilter filter) {
+        return "extension IN (" + filter.getFilter().stream()
+                .map(String::toLowerCase)
+                .map(s -> "'" + StringUtils.substringAfter(s, ".") + "'")
+                .collect(Collectors.joining(", ")) + ")";
+    }
+
+    /**
+     * Returns a clause that will filter out files that aren't to be counted in
+     * the file extensions view.
+     *
+     * @return The filter that will need to be proceeded with 'where' or 'and'.
+     */
+    private String getBaseFileExtensionFilter() {
+        return "(dir_type = " + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getValue() + ")"
+                + (hideKnownFilesInViewsTree() ? (" AND (known IS NULL OR known <> " + TskData.FileKnown.KNOWN.getFileKnownValue() + ")") : "");
+    }
+
+    /**
+     * Returns a statement to be proceeded with 'where' or 'and' that will
+     * filter results to the provided filter and data source id (if non null).
+     *
+     * @param filter       The file extension filter.
+     * @param dataSourceId The data source id or null if no data source
+     *                     filtering is to occur.
+     *
+     * @return The sql statement to be proceeded with 'and' or 'where'.
+     */
     private String getFileExtensionWhereStatement(FileExtSearchFilter filter, Long dataSourceId) {
-        String whereClause = "(dir_type = " + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getValue() + ")"
-                + (hideKnownFilesInViewsTree() ? (" AND (known IS NULL OR known != " + TskData.FileKnown.KNOWN.getFileKnownValue() + ")") : "")
-                + (dataSourceId != null && dataSourceId > 0
-                        ? " AND data_source_obj_id = " + dataSourceId
-                        : " ")
-                + " AND (extension IN (" + filter.getFilter().stream()
-                        .map(String::toLowerCase)
-                        .map(s -> "'" + StringUtils.substringAfter(s, ".") + "'")
-                        .collect(Collectors.joining(", ")) + "))";
+        String whereClause = getBaseFileExtensionFilter()
+                + getDataSourceAndClause(dataSourceId)
+                + " AND (" + getFileExtensionClause(filter) + ")";
         return whereClause;
     }
 
-    private String getFileMimeWhereStatement(String mimeType, Long dataSourceId) {
-
-        String whereClause = "(dir_type = " + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getValue() + ")"
+    /**
+     * Returns a statement to be proceeded with 'where' or 'and' that will
+     * filter out results that should not be viewed in mime types view.
+     *
+     * @return A statement to be proceeded with 'and' or 'where'.
+     */
+    private String getBaseFileMimeFilter() {
+        return "(dir_type = " + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getValue() + ")"
+                + (hideKnownFilesInViewsTree() ? (" AND (known IS NULL OR known != " + TskData.FileKnown.KNOWN.getFileKnownValue() + ")") : "")
                 + " AND (type IN ("
                 + TskData.TSK_DB_FILES_TYPE_ENUM.FS.ordinal() + ","
                 + TskData.TSK_DB_FILES_TYPE_ENUM.CARVED.ordinal() + ","
@@ -234,44 +228,331 @@ public class ViewsDAO {
                 + TskData.TSK_DB_FILES_TYPE_ENUM.LAYOUT_FILE.ordinal() + ","
                 + TskData.TSK_DB_FILES_TYPE_ENUM.LOCAL.ordinal()
                 + (hideSlackFilesInViewsTree() ? "" : ("," + TskData.TSK_DB_FILES_TYPE_ENUM.SLACK.ordinal()))
-                + "))"
-                + (dataSourceId != null && dataSourceId > 0 ? " AND data_source_obj_id = " + dataSourceId : " ")
-                + (hideKnownFilesInViewsTree() ? (" AND (known IS NULL OR known != " + TskData.FileKnown.KNOWN.getFileKnownValue() + ")") : "")
-                + " AND mime_type = '" + mimeType + "'";
+                + "))";
+    }
 
+    /**
+     * Returns a sql statement to be proceeded with 'where' or 'and' that will
+     * filter to the specified mime type.
+     *
+     * @param mimeType     The mime type.
+     * @param dataSourceId The data source object id or null if no data source
+     *                     filtering is to occur.
+     *
+     * @return A statement to be proceeded with 'and' or 'where'.
+     */
+    private String getFileMimeWhereStatement(String mimeType, Long dataSourceId) {
+        String whereClause = getBaseFileMimeFilter()
+                + getDataSourceAndClause(dataSourceId)
+                + " AND mime_type = '" + mimeType + "'";
         return whereClause;
     }
 
-    private static String getFileSizesWhereStatement(FileTypeSizeSearchParams.FileSizeFilter filter, Long dataSourceId) {
-        String query;
-        switch (filter) {
-            case SIZE_50_200:
-                query = "(size >= 50000000 AND size < 200000000)"; //NON-NLS
-                break;
-            case SIZE_200_1000:
-                query = "(size >= 200000000 AND size < 1000000000)"; //NON-NLS
-                break;
+    /**
+     * Returns clause to be proceeded with 'where' or 'and' to filter files to
+     * those within the bounds of the filter.
+     *
+     * @param filter The size filter.
+     *
+     * @return The clause to be proceeded with 'where' or 'and'.
+     */
+    private static String getFileSizeClause(FileSizeFilter filter) {
+        return filter.getMaxBound() == null
+                ? "(size >= " + filter.getMinBound() + ")"
+                : "(size >= " + filter.getMinBound() + " AND size < " + filter.getMaxBound() + ")";
+    }
 
-            case SIZE_1000_:
-                query = "(size >= 1000000000)"; //NON-NLS
-                break;
-
-            default:
-                throw new IllegalArgumentException("Unsupported filter type to get files by size: " + filter); //NON-NLS
-        }
-
+    /**
+     * The filter for all files to remove those that should never be seen in the
+     * file size views.
+     *
+     * @return The clause to be proceeded with 'where' or 'and'.
+     */
+    private String getBaseFileSizeFilter() {
         // Ignore unallocated block files.
-        query += " AND (type != " + TskData.TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType() + ")"; //NON-NLS
+        return "(type != " + TskData.TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType() + ")"
+                + ((hideKnownFilesInViewsTree() ? (" AND (known IS NULL OR known != " + TskData.FileKnown.KNOWN.getFileKnownValue() + ")") : "")); //NON-NLS
+    }
 
-        // hide known files if specified by configuration
-        query += (hideKnownFilesInViewsTree() ? (" AND (known IS NULL OR known != " + TskData.FileKnown.KNOWN.getFileKnownValue() + ")") : ""); //NON-NLS
-
-        // filter by datasource if indicated in case preferences
-        if (dataSourceId != null && dataSourceId > 0) {
-            query += " AND data_source_obj_id = " + dataSourceId;
-        }
+    /**
+     * Creates a clause to be proceeded with 'where' or 'and' that will show
+     * files specified by the filter and the specified data source.
+     *
+     * @param filter       The file size filter.
+     * @param dataSourceId The id of the data source or null if no data source
+     *                     filtering.
+     *
+     * @return The clause to be proceeded with 'where' or 'and'.
+     */
+    private String getFileSizesWhereStatement(FileSizeFilter filter, Long dataSourceId) {
+        String query = getBaseFileSizeFilter()
+                + " AND " + getFileSizeClause(filter)
+                + getDataSourceAndClause(dataSourceId);
 
         return query;
+    }
+
+    /**
+     * Returns counts for a collection of file extension search filters.
+     *
+     * @param filters      The filters. Each one will have an entry in the
+     *                     returned results.
+     * @param dataSourceId The data source object id or null if no data source
+     *                     filtering should occur.
+     *
+     * @return The results.
+     *
+     * @throws IllegalArgumentException
+     * @throws ExecutionException
+     */
+    public TreeResultsDTO<FileTypeExtensionsSearchParams> getFileExtCounts(Collection<FileExtSearchFilter> filters, Long dataSourceId) throws IllegalArgumentException, ExecutionException {
+        Map<FileExtSearchFilter, String> whereClauses = filters.stream()
+                .collect(Collectors.toMap(
+                        filter -> filter,
+                        filter -> getFileExtensionClause(filter)));
+
+        Map<FileExtSearchFilter, Long> countsByFilter = getFilesCounts(whereClauses, getBaseFileExtensionFilter(), dataSourceId, true);
+
+        List<TreeItemDTO<FileTypeExtensionsSearchParams>> treeList = countsByFilter.entrySet().stream()
+                .map(entry -> {
+                    return new TreeItemDTO<>(
+                            "FILE_EXT",
+                            new FileTypeExtensionsSearchParams(entry.getKey(), dataSourceId),
+                            entry.getKey(),
+                            entry.getKey().getDisplayName(),
+                            TreeDisplayCount.getDeterminate(entry.getValue()));
+                })
+                .sorted((a, b) -> a.getDisplayName().compareToIgnoreCase(b.getDisplayName()))
+                .collect(Collectors.toList());
+
+        return new TreeResultsDTO<>(treeList);
+    }
+
+    /**
+     * Returns counts for file size categories.
+     *
+     * @param dataSourceId The data source object id or null if no data source
+     *                     filtering should occur.
+     *
+     * @return The results.
+     *
+     * @throws IllegalArgumentException
+     * @throws ExecutionException
+     */
+    public TreeResultsDTO<FileTypeSizeSearchParams> getFileSizeCounts(Long dataSourceId) throws IllegalArgumentException, ExecutionException {
+        Map<FileSizeFilter, String> whereClauses = Stream.of(FileSizeFilter.values())
+                .collect(Collectors.toMap(
+                        filter -> filter,
+                        filter -> getFileSizeClause(filter)));
+
+        Map<FileSizeFilter, Long> countsByFilter = getFilesCounts(whereClauses, getBaseFileSizeFilter(), dataSourceId, true);
+
+        List<TreeItemDTO<FileTypeSizeSearchParams>> treeList = countsByFilter.entrySet().stream()
+                .map(entry -> {
+                    return new TreeItemDTO<>(
+                            "FILE_SIZE",
+                            new FileTypeSizeSearchParams(entry.getKey(), dataSourceId),
+                            entry.getKey(),
+                            entry.getKey().getDisplayName(),
+                            TreeDisplayCount.getDeterminate(entry.getValue()));
+                })
+                .sorted((a, b) -> a.getDisplayName().compareToIgnoreCase(b.getDisplayName()))
+                .collect(Collectors.toList());
+
+        return new TreeResultsDTO<>(treeList);
+    }
+
+    /**
+     * Returns counts for file mime type categories.
+     *
+     * @param prefix       The prefix mime type (i.e. 'application', 'audio').
+     *                     If null, prefix counts are gathered.
+     * @param dataSourceId The data source object id or null if no data source
+     *                     filtering should occur.
+     *
+     * @return The results.
+     *
+     * @throws IllegalArgumentException
+     * @throws ExecutionException
+     */
+    public TreeResultsDTO<FileTypeMimeSearchParams> getFileMimeCounts(String prefix, Long dataSourceId) throws IllegalArgumentException, ExecutionException {
+        String prefixWithSlash = StringUtils.isNotBlank(prefix) ? prefix.replaceAll("/", "") + "/" : null;
+        String likeItem = StringUtils.isNotBlank(prefixWithSlash) ? prefixWithSlash.replaceAll("%", "") + "%" : null;
+
+        String baseFilter = "WHERE " + getBaseFileMimeFilter()
+                + getDataSourceAndClause(dataSourceId)
+                + (StringUtils.isNotBlank(prefix) ? " AND mime_type LIKE ? " : " AND mime_type IS NOT NULL ");
+
+        try {
+            SleuthkitCase skCase = getCase();
+            String mimeType;
+            if (StringUtils.isNotBlank(prefix)) {
+                mimeType = "mime_type";
+            } else {
+                switch (skCase.getDatabaseType()) {
+                    case POSTGRESQL:
+                        mimeType = "SPLIT_PART(mime_type, '/', 1)";
+                        break;
+                    case SQLITE:
+                        mimeType = "SUBSTR(mime_type, 0, instr(mime_type, '/'))";
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown database type: " + skCase.getDatabaseType());
+                }
+            }
+
+            String query = mimeType + " AS mime_type, COUNT(*) AS count\n"
+                    + "FROM tsk_files\n"
+                    + baseFilter + "\n"
+                    + "GROUP BY " + mimeType;
+
+            Map<String, Long> typeCounts = new HashMap<>();
+
+            try (CaseDbPreparedStatement casePreparedStatement = skCase.getCaseDbAccessManager().prepareSelect(query)) {
+
+                if (likeItem != null) {
+                    casePreparedStatement.setString(1, likeItem);
+                }
+
+                skCase.getCaseDbAccessManager().select(casePreparedStatement, (resultSet) -> {
+                    try {
+                        while (resultSet.next()) {
+                            String mimeTypeId = resultSet.getString("mime_type");
+                            if (mimeTypeId != null) {
+                                long count = resultSet.getLong("count");
+                                typeCounts.put(mimeTypeId, count);
+                            }
+                        }
+                    } catch (SQLException ex) {
+                        logger.log(Level.WARNING, "An error occurred while fetching file mime type counts.", ex);
+                    }
+                });
+
+                List<TreeItemDTO<FileTypeMimeSearchParams>> treeList = typeCounts.entrySet().stream()
+                        .map(entry -> {
+                            String name = prefixWithSlash != null && entry.getKey().startsWith(prefixWithSlash)
+                                    ? entry.getKey().substring(prefixWithSlash.length())
+                                    : entry.getKey();
+
+                            return new TreeItemDTO<>(
+                                    "FILE_MIME_TYPE",
+                                    new FileTypeMimeSearchParams(entry.getKey(), dataSourceId),
+                                    name,
+                                    name,
+                                    TreeDisplayCount.getDeterminate(entry.getValue()));
+                        })
+                        .sorted((a, b) -> stringCompare(a.getSearchParams().getMimeType(), b.getSearchParams().getMimeType()))
+                        .collect(Collectors.toList());
+
+                return new TreeResultsDTO<>(treeList);
+            } catch (TskCoreException | SQLException ex) {
+                throw new ExecutionException("An error occurred while fetching file counts with query:\n" + query, ex);
+            }
+        } catch (NoCurrentCaseException ex) {
+            throw new ExecutionException("An error occurred while fetching file counts.", ex);
+        }
+    }
+
+    /**
+     * Provides case insensitive comparator integer for strings that may be
+     * null.
+     *
+     * @param a String that may be null.
+     * @param b String that may be null.
+     *
+     * @return The comparator value placing null first.
+     */
+    private int stringCompare(String a, String b) {
+        if (a == null && b == null) {
+            return 0;
+        } else if (a == null) {
+            return -1;
+        } else if (b == null) {
+            return 1;
+        } else {
+            return a.compareToIgnoreCase(b);
+        }
+    }
+
+    /**
+     * Determines counts for files in multiple categories.
+     *
+     * @param whereClauses     A mapping of objects to their respective where
+     *                         clauses.
+     * @param baseFilter       A filter for files applied before performing
+     *                         groupings and counts. It shouldn't have a leading
+     *                         'AND' or 'WHERE'.
+     * @param dataSourceId     The data source object id or null if no data
+     *                         source filtering.
+     * @param includeZeroCount Whether or not to return an item if there are 0
+     *                         matches.
+     *
+     * @return A mapping of the keys in the 'whereClauses' mapping to their
+     *         respective counts.
+     *
+     * @throws ExecutionException
+     */
+    private <T> Map<T, Long> getFilesCounts(Map<T, String> whereClauses, String baseFilter, Long dataSourceId, boolean includeZeroCount) throws ExecutionException {
+        // get artifact types and counts
+
+        Map<Integer, T> types = new HashMap<>();
+        String whenClauses = "";
+
+        int idx = 0;
+        for (Entry<T, String> e : whereClauses.entrySet()) {
+            types.put(idx, e.getKey());
+            whenClauses += "    WHEN " + e.getValue() + " THEN " + idx + " \n";
+            idx++;
+        }
+
+        String switchStatement = "  CASE \n"
+                + whenClauses
+                + "    ELSE -1 \n"
+                + "  END AS type_id \n";
+
+        String dataSourceClause = dataSourceId != null && dataSourceId > 0 ? "data_source_obj_id = " + dataSourceId : null;
+
+        String baseWhereClauses = Stream.of(dataSourceClause, baseFilter)
+                .filter(s -> StringUtils.isNotBlank(s))
+                .collect(Collectors.joining(" AND "));
+
+        String query = "res.type_id, COUNT(*) AS count FROM \n"
+                + "(SELECT \n"
+                + switchStatement
+                + "FROM tsk_files \n"
+                + (baseWhereClauses != null ? ("WHERE " + baseWhereClauses) : "") + ") res \n"
+                + "WHERE res.type_id >= 0 \n"
+                + "GROUP BY res.type_id";
+
+        Map<T, Long> typeCounts = new HashMap<>();
+        try {
+            SleuthkitCase skCase = getCase();
+
+            skCase.getCaseDbAccessManager().select(query, (resultSet) -> {
+                try {
+                    while (resultSet.next()) {
+                        int typeIdx = resultSet.getInt("type_id");
+                        T type = types.remove(typeIdx);
+                        if (type != null) {
+                            long count = resultSet.getLong("count");
+                            typeCounts.put(type, count);
+                        }
+                    }
+                } catch (SQLException ex) {
+                    logger.log(Level.WARNING, "An error occurred while fetching file type counts.", ex);
+                }
+            });
+        } catch (NoCurrentCaseException | TskCoreException ex) {
+            throw new ExecutionException("An error occurred while fetching file counts with query:\n" + query, ex);
+        }
+
+        if (includeZeroCount) {
+            for (T remaining : types.values()) {
+                typeCounts.put(remaining, 0L);
+            }
+        }
+
+        return typeCounts;
     }
 
     private SearchResultsDTO fetchExtensionSearchResultsDTOs(FileExtSearchFilter filter, Long dataSourceId, long startItem, Long maxResultCount) throws NoCurrentCaseException, TskCoreException {
@@ -286,7 +567,7 @@ public class ViewsDAO {
         return fetchFileViewFiles(whereStatement, MIME_TYPE_DISPLAY_NAME, startItem, maxResultCount);
     }
 
-    private SearchResultsDTO fetchSizeSearchResultsDTOs(FileTypeSizeSearchParams.FileSizeFilter filter, Long dataSourceId, long startItem, Long maxResultCount) throws NoCurrentCaseException, TskCoreException {
+    private SearchResultsDTO fetchSizeSearchResultsDTOs(FileSizeFilter filter, Long dataSourceId, long startItem, Long maxResultCount) throws NoCurrentCaseException, TskCoreException {
         String whereStatement = getFileSizesWhereStatement(filter, dataSourceId);
         return fetchFileViewFiles(whereStatement, filter.getDisplayName(), startItem, maxResultCount);
     }
@@ -322,13 +603,188 @@ public class ViewsDAO {
                     file.getId(),
                     file.getName(),
                     file.getNameExtension(),
-                    getExtensionMediaType(file.getNameExtension()),
+                    MediaTypeUtils.getExtensionMediaType(file.getNameExtension()),
                     file.isDirNameFlagSet(TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC),
                     file.getType(),
                     cellValues));
         }
 
-        return new BaseSearchResultsDTO(FILE_VIEW_EXT_TYPE_ID, displayName, FileSystemColumnUtils.getColumnKeysForAbstractfile(), fileRows, startItem, totalResultsCount);
+        return new BaseSearchResultsDTO(FILE_VIEW_EXT_TYPE_ID, displayName, FileSystemColumnUtils.getColumnKeysForAbstractfile(), fileRows, AbstractFile.class.getName(), startItem, totalResultsCount);
+    }
+
+    @Override
+    void clearCaches() {
+        this.searchParamsCache.invalidateAll();
+    }
+
+    private Pair<String, String> getMimePieces(String mimeType) {
+        int idx = mimeType.indexOf("/");
+        String mimePrefix = idx > 0 ? mimeType.substring(0, idx) : mimeType;
+        String mimeSuffix = idx > 0 ? mimeType.substring(idx + 1) : null;
+        return Pair.of(mimePrefix, mimeSuffix);
+    }
+
+    @Override
+    Set<DAOEvent> handleIngestComplete() {
+        // GVDTODO
+        return Collections.emptySet();
+    }
+
+    @Override
+    Set<TreeEvent> shouldRefreshTree() {
+        // GVDTODO
+        return Collections.emptySet();
+    }
+
+    @Override
+    Set<DAOEvent> processEvent(PropertyChangeEvent evt) {
+        // GVDTODO maps may not be necessary now that this isn't processing a list of events.
+        Map<String, Set<Long>> fileExtensionDsMap = new HashMap<>();
+        Map<String, Map<String, Set<Long>>> mimeTypeDsMap = new HashMap<>();
+        Map<FileSizeFilter, Set<Long>> fileSizeDsMap = new HashMap<>();
+
+        AbstractFile af = DAOEventUtils.getFileFromFileEvent(evt);
+        if (af == null) {
+            return Collections.emptySet();
+        }
+
+        // create an extension mapping if extension present
+        if (!StringUtils.isBlank(af.getNameExtension())) {
+            fileExtensionDsMap
+                    .computeIfAbsent("." + af.getNameExtension(), (k) -> new HashSet<>())
+                    .add(af.getDataSourceObjectId());
+        }
+
+        // create a mime type mapping if mime type present
+        if (!StringUtils.isBlank(af.getMIMEType())) {
+            Pair<String, String> mimePieces = getMimePieces(af.getMIMEType());
+            mimeTypeDsMap
+                    .computeIfAbsent(mimePieces.getKey(), (k) -> new HashMap<>())
+                    .computeIfAbsent(mimePieces.getValue(), (k) -> new HashSet<>())
+                    .add(af.getDataSourceObjectId());
+        }
+
+        // create a size mapping if size present
+        FileSizeFilter sizeFilter = Stream.of(FileSizeFilter.values())
+                .filter(filter -> af.getSize() >= filter.getMinBound() && (filter.getMaxBound() == null || af.getSize() < filter.getMaxBound()))
+                .findFirst()
+                .orElse(null);
+
+        if (sizeFilter != null) {
+            fileSizeDsMap
+                    .computeIfAbsent(sizeFilter, (k) -> new HashSet<>())
+                    .add(af.getDataSourceObjectId());
+        }
+
+        if (fileExtensionDsMap.isEmpty() && mimeTypeDsMap.isEmpty() && fileSizeDsMap.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        clearRelevantCacheEntries(fileExtensionDsMap, mimeTypeDsMap, fileSizeDsMap);
+
+        return getDAOEvents(fileExtensionDsMap, mimeTypeDsMap, fileSizeDsMap);
+    }
+
+    /**
+     *
+     * Clears relevant cache entries from cache based on digest of autopsy
+     * events.
+     *
+     * @param fileExtensionDsMap Maps the file extension to the data sources
+     *                           where files were found with that extension.
+     * @param mimeTypeDsMap      Maps the mime type to the data sources where
+     *                           files were found with that mime type.
+     * @param fileSizeDsMap      Maps the size to the data sources where files
+     *
+     * @return The list of affected dao events.
+     */
+    private Set<DAOEvent> getDAOEvents(Map<String, Set<Long>> fileExtensionDsMap,
+            Map<String, Map<String, Set<Long>>> mimeTypeDsMap,
+            Map<FileSizeFilter, Set<Long>> fileSizeDsMap) {
+
+        Stream<DAOEvent> fileExtStream = fileExtensionDsMap.entrySet().stream()
+                .flatMap(entry -> entry.getValue().stream().map(dsId -> new FileTypeExtensionsEvent(entry.getKey(), dsId)));
+
+        Set<DAOEvent> fileMimeList = new HashSet<>();
+        for (Entry<String, Map<String, Set<Long>>> prefixEntry : mimeTypeDsMap.entrySet()) {
+            String mimePrefix = prefixEntry.getKey();
+            for (Entry<String, Set<Long>> suffixEntry : prefixEntry.getValue().entrySet()) {
+                String mimeSuffix = suffixEntry.getKey();
+                for (long dsId : suffixEntry.getValue()) {
+                    String mimeType = mimePrefix + (mimeSuffix == null ? "" : ("/" + mimeSuffix));
+                    fileMimeList.add(new FileTypeMimeEvent(mimeType, dsId));
+                }
+            }
+        }
+
+        Stream<DAOEvent> fileSizeStream = fileSizeDsMap.entrySet().stream()
+                .flatMap(entry -> entry.getValue().stream().map(dsId -> new FileTypeSizeEvent(entry.getKey(), dsId)));
+
+        return Stream.of(fileExtStream, fileMimeList.stream(), fileSizeStream)
+                .flatMap(stream -> stream)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Clears relevant cache entries from cache based on digest of autopsy
+     * events.
+     *
+     * @param fileExtensionDsMap Maps the file extension to the data sources
+     *                           where files were found with that extension.
+     * @param mimeTypeDsMap      Maps the mime type to the data sources where
+     *                           files were found with that mime type.
+     * @param fileSizeDsMap      Maps the size to the data sources where files
+     *                           were found within that size filter.
+     */
+    private void clearRelevantCacheEntries(Map<String, Set<Long>> fileExtensionDsMap,
+            Map<String, Map<String, Set<Long>>> mimeTypeDsMap,
+            Map<FileSizeFilter, Set<Long>> fileSizeDsMap) {
+
+        // invalidate cache entries that are affected by events
+        ConcurrentMap<SearchParams<?>, SearchResultsDTO> concurrentMap = this.searchParamsCache.asMap();
+        concurrentMap.forEach((k, v) -> {
+            Object baseParams = k.getParamData();
+            if (baseParams instanceof FileTypeExtensionsSearchParams) {
+                FileTypeExtensionsSearchParams extParams = (FileTypeExtensionsSearchParams) baseParams;
+                // if search params have a filter where extension is present and the data source id is null or ==
+                boolean isMatch = extParams.getFilter().getFilter().stream().anyMatch((ext) -> {
+                    Set<Long> dsIds = fileExtensionDsMap.get(ext);
+                    return (dsIds != null && (extParams.getDataSourceId() == null || dsIds.contains(extParams.getDataSourceId())));
+                });
+
+                if (isMatch) {
+                    concurrentMap.remove(k);
+                }
+            } else if (baseParams instanceof FileTypeMimeSearchParams) {
+                FileTypeMimeSearchParams mimeParams = (FileTypeMimeSearchParams) baseParams;
+                Pair<String, String> mimePieces = getMimePieces(mimeParams.getMimeType());
+                Map<String, Set<Long>> suffixes = mimeTypeDsMap.get(mimePieces.getKey());
+                if (suffixes == null) {
+                    return;
+                }
+
+                // if search params is top level mime prefix (without suffix) and data source is null or ==.
+                if (mimePieces.getValue() == null
+                        && (mimeParams.getDataSourceId() == null
+                        || suffixes.values().stream().flatMap(set -> set.stream()).anyMatch(ds -> Objects.equals(mimeParams.getDataSourceId(), ds)))) {
+
+                    concurrentMap.remove(k);
+                    // otherwise, see if suffix is present
+                } else {
+                    Set<Long> dataSources = suffixes.get(mimePieces.getValue());
+                    if (dataSources != null && (mimeParams.getDataSourceId() == null || dataSources.contains(mimeParams.getDataSourceId()))) {
+                        concurrentMap.remove(k);
+                    }
+                }
+
+            } else if (baseParams instanceof FileTypeSizeSearchParams) {
+                FileTypeSizeSearchParams sizeParams = (FileTypeSizeSearchParams) baseParams;
+                Set<Long> dataSources = fileSizeDsMap.get(sizeParams.getSizeFilter());
+                if (dataSources != null && (sizeParams.getDataSourceId() == null || dataSources.contains(sizeParams.getDataSourceId()))) {
+                    concurrentMap.remove(k);
+                }
+            }
+        });
     }
 
     /**
@@ -345,19 +801,18 @@ public class ViewsDAO {
             super(params);
         }
 
-        @Override
-        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, boolean hardRefresh) throws ExecutionException {
-            return MainDAO.getInstance().getViewsDAO().getFilesByExtension(this.getParameters(), pageIdx * pageSize, (long) pageSize, hardRefresh);
+        protected ViewsDAO getDAO() {
+            return MainDAO.getInstance().getViewsDAO();
         }
 
         @Override
-        public boolean isRefreshRequired(PropertyChangeEvent evt) {
-            Content content = this.getContentFromEvt(evt);
-            if (content == null) {
-                return false;
-            }
+        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException {
+            return getDAO().getFilesByExtension(this.getParameters(), pageIdx * pageSize, (long) pageSize);
+        }
 
-            return MainDAO.getInstance().getViewsDAO().isFilesByExtInvalidating(this.getParameters(), content);
+        @Override
+        public boolean isRefreshRequired(DAOEvent evt) {
+            return getDAO().isFilesByExtInvalidating(this.getParameters(), evt);
         }
     }
 
@@ -375,26 +830,25 @@ public class ViewsDAO {
             super(params);
         }
 
-        @Override
-        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, boolean hardRefresh) throws ExecutionException {
-            return MainDAO.getInstance().getViewsDAO().getFilesByMime(this.getParameters(), pageIdx * pageSize, (long) pageSize, hardRefresh);
+        protected ViewsDAO getDAO() {
+            return MainDAO.getInstance().getViewsDAO();
         }
 
         @Override
-        public boolean isRefreshRequired(PropertyChangeEvent evt) {
-            Content content = this.getContentFromEvt(evt);
-            if (content == null) {
-                return false;
-            }
+        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException {
+            return getDAO().getFilesByMime(this.getParameters(), pageIdx * pageSize, (long) pageSize);
+        }
 
-            return MainDAO.getInstance().getViewsDAO().isFilesByMimeInvalidating(this.getParameters(), content);
+        @Override
+        public boolean isRefreshRequired(DAOEvent evt) {
+            return getDAO().isFilesByMimeInvalidating(this.getParameters(), evt);
         }
     }
 
     /**
      * Handles fetching and paging of data for file types by size.
      */
-    public static class FileTypeSizeFetcher extends DAOFetcher<FileTypeSizeSearchParams> {
+    public class FileTypeSizeFetcher extends DAOFetcher<FileTypeSizeSearchParams> {
 
         /**
          * Main constructor.
@@ -405,19 +859,18 @@ public class ViewsDAO {
             super(params);
         }
 
-        @Override
-        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, boolean hardRefresh) throws ExecutionException {
-            return MainDAO.getInstance().getViewsDAO().getFilesBySize(this.getParameters(), pageIdx * pageSize, (long) pageSize, hardRefresh);
+        protected ViewsDAO getDAO() {
+            return MainDAO.getInstance().getViewsDAO();
         }
 
         @Override
-        public boolean isRefreshRequired(PropertyChangeEvent evt) {
-            Content content = this.getContentFromEvt(evt);
-            if (content == null) {
-                return false;
-            }
+        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException {
+            return getDAO().getFilesBySize(this.getParameters(), pageIdx * pageSize, (long) pageSize);
+        }
 
-            return MainDAO.getInstance().getViewsDAO().isFilesBySizeInvalidating(this.getParameters(), content);
+        @Override
+        public boolean isRefreshRequired(DAOEvent evt) {
+            return getDAO().isFilesBySizeInvalidating(this.getParameters(), evt);
         }
     }
 }
