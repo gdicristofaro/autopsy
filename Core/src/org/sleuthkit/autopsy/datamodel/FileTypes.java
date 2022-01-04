@@ -49,11 +49,8 @@ import org.sleuthkit.datamodel.Directory;
 import org.sleuthkit.datamodel.File;
 import org.sleuthkit.datamodel.LayoutFile;
 import org.sleuthkit.datamodel.LocalFile;
-import org.sleuthkit.datamodel.OsAccount;
 import org.sleuthkit.datamodel.Score;
 import org.sleuthkit.datamodel.SlackFile;
-import org.sleuthkit.datamodel.SleuthkitCase;
-import org.sleuthkit.datamodel.SleuthkitItemVisitor;
 import org.sleuthkit.datamodel.TskCoreException;
 
 /**
@@ -306,11 +303,6 @@ public final class FileTypes implements AutopsyVisitableItem {
             int hash = 7;
             hash = 101 * hash + (int)(this.content.getId() ^ (this.content.getId() >>> 32));
             return hash;
-        }
-
-        @Override
-        public <T> T accept(SleuthkitItemVisitor<T> v) {
-            return content.accept(v);
         }
 
         @Override
