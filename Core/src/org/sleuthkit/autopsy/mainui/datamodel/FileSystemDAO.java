@@ -160,7 +160,7 @@ public class FileSystemDAO extends AbstractDAO {
             contentForTable.addAll(FileSystemColumnUtils.getDisplayableContentForTable(content));
         }
 
-        return fetchContentForTable(cacheKey, contentForTable, parentName);
+        return fetchContentForTable(parentContent, cacheKey, contentForTable, parentName);
     }
 
     private BaseSearchResultsDTO fetchContentForTableFromHost(SearchParams<FileSystemHostSearchParam> cacheKey) throws NoCurrentCaseException, TskCoreException {
@@ -177,7 +177,7 @@ public class FileSystemDAO extends AbstractDAO {
         } else {
             throw new TskCoreException("Error loading host with ID " + objectId);
         }
-        return fetchContentForTable(cacheKey, contentForTable, parentName);
+        return fetchContentForTable(host.get(), cacheKey, contentForTable, parentName);
     }
 
     private BaseSearchResultsDTO fetchHostsForTable(SearchParams<FileSystemPersonSearchParam> cacheKey) throws NoCurrentCaseException, TskCoreException {
@@ -219,7 +219,7 @@ public class FileSystemDAO extends AbstractDAO {
         return new BaseSearchResultsDTO(FILE_SYSTEM_TYPE_ID, parentName, columnKeys, rows, Host.class.getName(), cacheKey.getStartItem(), hostsForTable.size());
     }
 
-    private BaseSearchResultsDTO fetchContentForTable(SearchParams<?> cacheKey, List<Content> contentForTable,
+    private BaseSearchResultsDTO fetchContentForTable(Object parent, SearchParams<?> cacheKey, List<Content> contentForTable,
             String parentName) throws NoCurrentCaseException, TskCoreException {
         // Ensure consistent columns for each page by doing this before paging
         List<FileSystemColumnUtils.ContentType> displayableTypes = FileSystemColumnUtils.getDisplayableTypesForContentList(contentForTable);
@@ -279,7 +279,7 @@ public class FileSystemDAO extends AbstractDAO {
                         cellValues));
             }
         }
-        return new BaseSearchResultsDTO(FILE_SYSTEM_TYPE_ID, parentName, columnKeys, rows, FILE_SYSTEM_TYPE_ID, cacheKey.getStartItem(), contentForTable.size());
+        return new BaseSearchResultsDTO(FILE_SYSTEM_TYPE_ID, parentName, columnKeys, rows, FILE_SYSTEM_TYPE_ID, cacheKey.getStartItem(), contentForTable.size(), Collections.singleton(parent));
     }
 
     /**

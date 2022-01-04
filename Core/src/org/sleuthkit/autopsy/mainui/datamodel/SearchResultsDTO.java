@@ -19,6 +19,7 @@
 package org.sleuthkit.autopsy.mainui.datamodel;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Interface for all search results that are used to display in the table/DataResultViewer area. 
@@ -45,4 +46,9 @@ public interface SearchResultsDTO {
     
     // Index in the total results that this set/page starts at
     long getStartItem();
+    
+    /**
+     * @return The items to put in the node's lookup.
+     */
+    Set<Object> getNodeLookupData();
 }

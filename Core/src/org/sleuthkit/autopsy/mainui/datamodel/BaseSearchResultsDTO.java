@@ -18,7 +18,10 @@
  */
 package org.sleuthkit.autopsy.mainui.datamodel;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import org.apache.commons.collections.set.UnmodifiableSet;
 
 /**
  * Base implementation for a series of results to be displayed in the results viewer.
@@ -32,12 +35,17 @@ public class BaseSearchResultsDTO implements SearchResultsDTO {
     private final long totalResultsCount;
     private final long startItem;
     private final String signature;
+    private final Set<Object> nodeLookupData;
 
     public BaseSearchResultsDTO(String typeId, String displayName, List<ColumnKey> columns, List<RowDTO> items, String signature) {
         this(typeId, displayName, columns, items, signature, 0, items == null ? 0 : items.size());
     }
 
     public BaseSearchResultsDTO(String typeId, String displayName, List<ColumnKey> columns, List<RowDTO> items, String signature, long startItem, long totalResultsCount) {
+        this(typeId, displayName, columns, items, signature, startItem, totalResultsCount, null);
+    }
+
+    public BaseSearchResultsDTO(String typeId, String displayName, List<ColumnKey> columns, List<RowDTO> items, String signature, long startItem, long totalResultsCount, Set<Object> nodeLookupData) {
         this.typeId = typeId;
         this.displayName = displayName;
         this.columns = columns;
@@ -45,8 +53,9 @@ public class BaseSearchResultsDTO implements SearchResultsDTO {
         this.startItem = startItem;
         this.totalResultsCount = totalResultsCount;
         this.signature = signature;
+        this.nodeLookupData = nodeLookupData == null ? Collections.emptySet() : UnmodifiableSet.decorate(nodeLookupData);
     }
-
+        
     @Override
     public String getTypeId() {
         return typeId;
@@ -80,5 +89,10 @@ public class BaseSearchResultsDTO implements SearchResultsDTO {
     @Override
     public String getSignature() {
         return signature;
+    }
+
+    @Override
+    public Set<Object> getNodeLookupData() {
+        return nodeLookupData;
     }
 }
