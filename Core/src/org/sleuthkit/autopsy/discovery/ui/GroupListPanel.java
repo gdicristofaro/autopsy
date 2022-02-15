@@ -77,12 +77,9 @@ final class GroupListPanel extends javax.swing.JPanel {
         + "Reminder:\n"
         + "  -The File Type Identification module must be run on each data source you want to find results in.\n"
         + "  -The Hash Lookup module must be run on each data source if you want to filter by past occurrence.\n"
-        + "  -The Picture Analyzer module must be run on each data source if you are filtering by User Created content.",
         "GroupsListPanel.noDomainResults.message.text=No domains were found for the selected filters.\n\n"
         + "Reminder:\n"
-        + "  -The Recent Activity module must be run on each data source you want to find results in.\n"
         + "  -The Central Repository module must be run on each data source if you want to filter or sort by past occurrences.\n"
-        + "  -The iOS Analyzer (iLEAPP) module must be run on each data source which contains data from an iOS device.\n",
         "GroupsListPanel.noResults.title.text=No results found"})
     /**
      * Subscribe to and update list of groups in response to
