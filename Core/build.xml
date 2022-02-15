@@ -42,10 +42,6 @@
             <fileset dir="${thirdparty.dir}/NetbeansLocalization"/>
         </copy>
 
-        <!--Copy photorec to release-->
-        <copy todir="${basedir}/release/photorec_exec" >
-            <fileset dir="${thirdparty.dir}/photorec_exec"/>
-        </copy>
         <!--Copy ewfexport to release-->
         <copy todir="${basedir}/release/ewfexport_exec" >
             <fileset dir="${thirdparty.dir}/ewfexport_exec"/>

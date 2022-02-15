@@ -35,7 +35,7 @@ import org.sleuthkit.autopsy.modules.fileextmismatch.FileExtMismatchDetectorModu
 import org.sleuthkit.autopsy.modules.filetypeid.FileTypeIdModuleFactory;
 import org.sleuthkit.autopsy.modules.hashdatabase.HashLookupModuleFactory;
 import org.sleuthkit.autopsy.modules.interestingitems.InterestingItemsIngestModuleFactory;
-import org.sleuthkit.autopsy.modules.photoreccarver.PhotoRecCarverIngestModuleFactory;
+// import org.sleuthkit.autopsy.modules.photoreccarver.PhotoRecCarverIngestModuleFactory;
 import org.sleuthkit.autopsy.modules.embeddedfileextractor.EmbeddedFileExtractorModuleFactory;
 import org.sleuthkit.autopsy.modules.encryptiondetection.EncryptionDetectionModuleFactory;
 import org.sleuthkit.autopsy.centralrepository.ingestmodule.CentralRepoIngestModuleFactory;
@@ -66,7 +66,7 @@ final class IngestModuleFactoryLoader {
             add(EncryptionDetectionModuleFactory.class.getCanonicalName());
             add(InterestingItemsIngestModuleFactory.class.getCanonicalName());
             add(CentralRepoIngestModuleFactory.class.getCanonicalName());
-            add(PhotoRecCarverIngestModuleFactory.class.getCanonicalName());
+            // add(PhotoRecCarverIngestModuleFactory.class.getCanonicalName());
             add(VMExtractorIngestModuleFactory.class.getCanonicalName());
             add(DataSourceIntegrityModuleFactory.class.getCanonicalName());
         }

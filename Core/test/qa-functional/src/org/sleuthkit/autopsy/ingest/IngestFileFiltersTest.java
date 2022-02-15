@@ -43,7 +43,7 @@ import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.ExtensionCon
 import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.FullNameCondition;
 import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.MetaTypeCondition;
 import org.sleuthkit.autopsy.modules.interestingitems.FilesSet.Rule.ParentPathCondition;
-import org.sleuthkit.autopsy.modules.photoreccarver.PhotoRecCarverIngestModuleFactory;
+// import org.sleuthkit.autopsy.modules.photoreccarver.PhotoRecCarverIngestModuleFactory;
 import org.sleuthkit.autopsy.testutils.CaseUtils;
 import org.sleuthkit.autopsy.testutils.IngestJobRunner;
 import org.sleuthkit.autopsy.testutils.IngestUtils;
@@ -238,87 +238,87 @@ public class IngestFileFiltersTest extends NbTestCase {
         }
     }
 
-    public void testCarvingWithExtRuleAndUnallocSpace() {
-        try {
-            Logger.getLogger(this.getClass().getName()).log(Level.INFO, "---- Starting ----");
-            Case currentCase = CaseUtils.createAsCurrentCase("IngestFilter_testCarvingWithExtRuleAndUnallocSpace");
-            ImageDSProcessor dataSourceProcessor = new ImageDSProcessor();
-            IngestUtils.addDataSource(dataSourceProcessor, IMAGE_PATH);
+    // public void testCarvingWithExtRuleAndUnallocSpace() {
+    //     try {
+    //         Logger.getLogger(this.getClass().getName()).log(Level.INFO, "---- Starting ----");
+    //         Case currentCase = CaseUtils.createAsCurrentCase("IngestFilter_testCarvingWithExtRuleAndUnallocSpace");
+    //         ImageDSProcessor dataSourceProcessor = new ImageDSProcessor();
+    //         IngestUtils.addDataSource(dataSourceProcessor, IMAGE_PATH);
 
-            HashMap<String, Rule> rules = new HashMap<>();
-            rules.put("rule1", new Rule("FindJpgExtention", new ExtensionCondition("jpg"), new MetaTypeCondition(MetaTypeCondition.Type.FILES), null, null, null, null));
-            rules.put("rule2", new Rule("FindGifExtention", new ExtensionCondition("gif"), new MetaTypeCondition(MetaTypeCondition.Type.FILES), null, null, null, null));
+    //         HashMap<String, Rule> rules = new HashMap<>();
+    //         rules.put("rule1", new Rule("FindJpgExtention", new ExtensionCondition("jpg"), new MetaTypeCondition(MetaTypeCondition.Type.FILES), null, null, null, null));
+    //         rules.put("rule2", new Rule("FindGifExtention", new ExtensionCondition("gif"), new MetaTypeCondition(MetaTypeCondition.Type.FILES), null, null, null, null));
 
-            //Build the filter to find files with .jpg and .gif extension and unallocated space
-            FilesSet extensionFilter = new FilesSet("Filter", "Filter to files with .jpg and .gif extension.", false, false, rules);
+    //         //Build the filter to find files with .jpg and .gif extension and unallocated space
+    //         FilesSet extensionFilter = new FilesSet("Filter", "Filter to files with .jpg and .gif extension.", false, false, rules);
 
-            ArrayList<IngestModuleTemplate> templates = new ArrayList<>();
-            templates.add(IngestUtils.getIngestModuleTemplate(new FileTypeIdModuleFactory()));
-            templates.add(IngestUtils.getIngestModuleTemplate(new PhotoRecCarverIngestModuleFactory()));
-            IngestJobSettings ingestJobSettings = new IngestJobSettings(IngestFileFiltersTest.class.getCanonicalName(), IngestJobSettings.IngestType.FILES_ONLY, templates, extensionFilter);
-            IngestUtils.runIngestJob(currentCase.getDataSources(), ingestJobSettings);
-            FileManager fileManager = currentCase.getServices().getFileManager();
-            List<AbstractFile> results = fileManager.findFiles("%%");
-            assertEquals(72, results.size()); 
-            int carvedJpgGifFiles = 0;
-            for (AbstractFile file : results) {
-                if (file.getNameExtension().equalsIgnoreCase("jpg") || file.getNameExtension().equalsIgnoreCase("gif")) { //Unalloc file and .jpg files in dir1, dir2, $CarvedFiles, root directory should have MIME type
-                    String errMsg = String.format("File %s (objId=%d) unexpectedly blocked by the file filter.", file.getName(), file.getId());
-                    assertTrue(errMsg, file.getMIMEType() != null && !file.getMIMEType().isEmpty());
+    //         ArrayList<IngestModuleTemplate> templates = new ArrayList<>();
+    //         templates.add(IngestUtils.getIngestModuleTemplate(new FileTypeIdModuleFactory()));
+    //         templates.add(IngestUtils.getIngestModuleTemplate(new PhotoRecCarverIngestModuleFactory()));
+    //         IngestJobSettings ingestJobSettings = new IngestJobSettings(IngestFileFiltersTest.class.getCanonicalName(), IngestJobSettings.IngestType.FILES_ONLY, templates, extensionFilter);
+    //         IngestUtils.runIngestJob(currentCase.getDataSources(), ingestJobSettings);
+    //         FileManager fileManager = currentCase.getServices().getFileManager();
+    //         List<AbstractFile> results = fileManager.findFiles("%%");
+    //         assertEquals(72, results.size()); 
+    //         int carvedJpgGifFiles = 0;
+    //         for (AbstractFile file : results) {
+    //             if (file.getNameExtension().equalsIgnoreCase("jpg") || file.getNameExtension().equalsIgnoreCase("gif")) { //Unalloc file and .jpg files in dir1, dir2, $CarvedFiles, root directory should have MIME type
+    //                 String errMsg = String.format("File %s (objId=%d) unexpectedly blocked by the file filter.", file.getName(), file.getId());
+    //                 assertTrue(errMsg, file.getMIMEType() != null && !file.getMIMEType().isEmpty());
 
-                    if (file.getParentPath().startsWith("/$CarvedFiles/")) {
-                        carvedJpgGifFiles++;
-                    }
-                } else if (file.getName().startsWith("Unalloc_")) {
-                    String errMsg = String.format("File %s (objId=%d) unexpectedly blocked by the file filter.", file.getName(), file.getId());
-                    assertTrue(errMsg, file.getMIMEType() != null && !file.getMIMEType().isEmpty());
-                } else { //All other files should not have MIME type. 
-                    String errMsg = String.format("File %s (objId=%d) unexpectedly passed by the file filter.", file.getName(), file.getId());
-                    assertTrue(errMsg, file.getMIMEType() == null);
-                }
-            }
-            //Make sure we have carved jpg/gif files
-            assertEquals(2, carvedJpgGifFiles);
+    //                 if (file.getParentPath().startsWith("/$CarvedFiles/")) {
+    //                     carvedJpgGifFiles++;
+    //                 }
+    //             } else if (file.getName().startsWith("Unalloc_")) {
+    //                 String errMsg = String.format("File %s (objId=%d) unexpectedly blocked by the file filter.", file.getName(), file.getId());
+    //                 assertTrue(errMsg, file.getMIMEType() != null && !file.getMIMEType().isEmpty());
+    //             } else { //All other files should not have MIME type. 
+    //                 String errMsg = String.format("File %s (objId=%d) unexpectedly passed by the file filter.", file.getName(), file.getId());
+    //                 assertTrue(errMsg, file.getMIMEType() == null);
+    //             }
+    //         }
+    //         //Make sure we have carved jpg/gif files
+    //         assertEquals(2, carvedJpgGifFiles);
 
-        } catch (TskCoreException | TestUtilsException ex) {
-            Exceptions.printStackTrace(ex);
-            Assert.fail(ex.getMessage());
-        }
-    }
+    //     } catch (TskCoreException | TestUtilsException ex) {
+    //         Exceptions.printStackTrace(ex);
+    //         Assert.fail(ex.getMessage());
+    //     }
+    // }
 
-    public void testCarvingNoUnallocatedSpace() {
-        try {
-            Logger.getLogger(this.getClass().getName()).log(Level.INFO, "---- Starting ----");
-            Case currentCase = CaseUtils.createAsCurrentCase("IngestFilter_testCarvingNoUnallocatedSpace");
-            ImageDSProcessor dataSourceProcessor = new ImageDSProcessor();
-            IngestUtils.addDataSource(dataSourceProcessor, IMAGE_PATH);
+    // public void testCarvingNoUnallocatedSpace() {
+    //     try {
+    //         Logger.getLogger(this.getClass().getName()).log(Level.INFO, "---- Starting ----");
+    //         Case currentCase = CaseUtils.createAsCurrentCase("IngestFilter_testCarvingNoUnallocatedSpace");
+    //         ImageDSProcessor dataSourceProcessor = new ImageDSProcessor();
+    //         IngestUtils.addDataSource(dataSourceProcessor, IMAGE_PATH);
 
-            HashMap<String, Rule> rules = new HashMap<>();
-            rules.put("rule1", new Rule("FindJpgExtention", new ExtensionCondition("jpg"), new MetaTypeCondition(MetaTypeCondition.Type.FILES), null, null, null, null));
-            rules.put("rule2", new Rule("FindGifExtention", new ExtensionCondition("gif"), new MetaTypeCondition(MetaTypeCondition.Type.FILES), null, null, null, null));
+    //         HashMap<String, Rule> rules = new HashMap<>();
+    //         rules.put("rule1", new Rule("FindJpgExtention", new ExtensionCondition("jpg"), new MetaTypeCondition(MetaTypeCondition.Type.FILES), null, null, null, null));
+    //         rules.put("rule2", new Rule("FindGifExtention", new ExtensionCondition("gif"), new MetaTypeCondition(MetaTypeCondition.Type.FILES), null, null, null, null));
 
-            //Build the filter to find files with .jpg and .gif extension
-            FilesSet extensionFilter = new FilesSet("Filter", "Filter to files with .jpg and .gif extension.", false, true, rules);
+    //         //Build the filter to find files with .jpg and .gif extension
+    //         FilesSet extensionFilter = new FilesSet("Filter", "Filter to files with .jpg and .gif extension.", false, true, rules);
 
-            ArrayList<IngestModuleTemplate> templates = new ArrayList<>();
-            templates.add(IngestUtils.getIngestModuleTemplate(new FileTypeIdModuleFactory()));
-            templates.add(IngestUtils.getIngestModuleTemplate(new PhotoRecCarverIngestModuleFactory()));
-            IngestJobSettings ingestJobSettings = new IngestJobSettings(IngestFileFiltersTest.class.getCanonicalName(), IngestType.FILES_ONLY, templates, extensionFilter);
-            try {
-                Logger.getLogger(this.getClass().getName()).log(Level.INFO, "*********************  NOTE: A PhotoRec exception is expected below for this test   ****************************");
-                List<IngestModuleError> errs = IngestJobRunner.runIngestJob(currentCase.getDataSources(), ingestJobSettings);
-                //Ingest fails because Carving wants unallocated space
-                assertEquals(1, errs.size());
-                assertEquals("PhotoRec Carver", errs.get(0).getModuleDisplayName());
-            } catch (InterruptedException ex) {
-                Exceptions.printStackTrace(ex);
-                Assert.fail(ex.getMessage());
-            }
-        } catch (TskCoreException | TestUtilsException ex) {
-            Exceptions.printStackTrace(ex);
-            Assert.fail(ex.getMessage());
-        }
-    }
+    //         ArrayList<IngestModuleTemplate> templates = new ArrayList<>();
+    //         templates.add(IngestUtils.getIngestModuleTemplate(new FileTypeIdModuleFactory()));
+    //         templates.add(IngestUtils.getIngestModuleTemplate(new PhotoRecCarverIngestModuleFactory()));
+    //         IngestJobSettings ingestJobSettings = new IngestJobSettings(IngestFileFiltersTest.class.getCanonicalName(), IngestType.FILES_ONLY, templates, extensionFilter);
+    //         try {
+    //             Logger.getLogger(this.getClass().getName()).log(Level.INFO, "*********************  NOTE: A PhotoRec exception is expected below for this test   ****************************");
+    //             List<IngestModuleError> errs = IngestJobRunner.runIngestJob(currentCase.getDataSources(), ingestJobSettings);
+    //             //Ingest fails because Carving wants unallocated space
+    //             assertEquals(1, errs.size());
+    //             assertEquals("PhotoRec Carver", errs.get(0).getModuleDisplayName());
+    //         } catch (InterruptedException ex) {
+    //             Exceptions.printStackTrace(ex);
+    //             Assert.fail(ex.getMessage());
+    //         }
+    //     } catch (TskCoreException | TestUtilsException ex) {
+    //         Exceptions.printStackTrace(ex);
+    //         Assert.fail(ex.getMessage());
+    //     }
+    // }
 
     public void testEmbeddedJpg() {
         try {

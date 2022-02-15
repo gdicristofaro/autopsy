@@ -57,7 +57,7 @@ import org.sleuthkit.autopsy.modules.dataSourceIntegrity.DataSourceIntegrityModu
 import org.sleuthkit.autopsy.modules.embeddedfileextractor.EmbeddedFileExtractorModuleFactory;
 import org.sleuthkit.autopsy.modules.fileextmismatch.FileExtMismatchDetectorModuleFactory;
 import org.sleuthkit.autopsy.modules.interestingitems.InterestingItemsIngestModuleFactory;
-import org.sleuthkit.autopsy.modules.photoreccarver.PhotoRecCarverIngestModuleFactory;
+// import org.sleuthkit.autopsy.modules.photoreccarver.PhotoRecCarverIngestModuleFactory;
 import org.sleuthkit.autopsy.modules.vmextractor.VMExtractorIngestModuleFactory;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepository;
@@ -175,7 +175,7 @@ class InterCaseTestUtils {
         final IngestModuleTemplate mimeTypeLookupTemplate = IngestUtils.getIngestModuleTemplate(new FileTypeIdModuleFactory());
         final IngestModuleTemplate hashLookupTemplate = IngestUtils.getIngestModuleTemplate(new HashLookupModuleFactory());
         final IngestModuleTemplate vmExtractorTemplate = IngestUtils.getIngestModuleTemplate(new VMExtractorIngestModuleFactory());
-        final IngestModuleTemplate photoRecTemplate = IngestUtils.getIngestModuleTemplate(new PhotoRecCarverIngestModuleFactory());
+        // final IngestModuleTemplate photoRecTemplate = IngestUtils.getIngestModuleTemplate(new PhotoRecCarverIngestModuleFactory());
         final IngestModuleTemplate dataSourceIntegrityTemplate = IngestUtils.getIngestModuleTemplate(new DataSourceIntegrityModuleFactory());
         final IngestModuleTemplate eamDbTemplate = IngestUtils.getIngestModuleTemplate(new org.sleuthkit.autopsy.centralrepository.ingestmodule.CentralRepoIngestModuleFactory());
         final IngestModuleTemplate fileExtMismatchDetectorTemplate = IngestUtils.getIngestModuleTemplate(new FileExtMismatchDetectorModuleFactory());
@@ -208,7 +208,7 @@ class InterCaseTestUtils {
         kitchenSink.add(mimeTypeLookupTemplate);
         kitchenSink.add(hashLookupTemplate);
         kitchenSink.add(vmExtractorTemplate);
-        kitchenSink.add(photoRecTemplate);
+        // kitchenSink.add(photoRecTemplate);
         kitchenSink.add(dataSourceIntegrityTemplate);
         kitchenSink.add(eamDbTemplate);
         kitchenSink.add(fileExtMismatchDetectorTemplate);
