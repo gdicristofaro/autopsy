@@ -662,17 +662,6 @@
                 <package>org.dom4j.xpp</package>
                 <package>org.etsi.uri.x01903.v13</package>
                 <package>org.etsi.uri.x01903.v13.impl</package>
-                <package>org.freedesktop.gstreamer</package>
-                <package>org.freedesktop.gstreamer.device</package>
-                <package>org.freedesktop.gstreamer.elements</package>
-                <package>org.freedesktop.gstreamer.event</package>
-                <package>org.freedesktop.gstreamer.glib</package>
-                <package>org.freedesktop.gstreamer.interfaces</package>
-                <package>org.freedesktop.gstreamer.lowlevel</package>
-                <package>org.freedesktop.gstreamer.lowlevel.annotations</package>
-                <package>org.freedesktop.gstreamer.message</package>
-                <package>org.freedesktop.gstreamer.query</package>
-                <package>org.freedesktop.gstreamer.webrtc</package>
                 <package>org.hyperic.jni</package>
                 <package>org.hyperic.sigar</package>
                 <package>org.hyperic.sigar.cmd</package>

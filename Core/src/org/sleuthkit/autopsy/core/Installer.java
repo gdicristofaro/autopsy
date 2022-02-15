@@ -92,7 +92,7 @@ public class Installer extends ModuleInstall {
          */
         if (PlatformUtil.isWindowsOS()) {
             try {
-                addGstreamerPathsToEnv();
+                // addGstreamerPathsToEnv();
 
                 //Note: if shipping with a different CRT version, this will only print a warning
                 //and try to use linker mechanism to find the correct versions of libs.
@@ -285,41 +285,41 @@ public class Installer extends ModuleInstall {
      * that the correct plugins and libraries are found when Gstreamer is
      * initialized later.
      */
-    private static void addGstreamerPathsToEnv() {
-        if (System.getProperty("jna.nosys") == null) {
-            System.setProperty("jna.nosys", "true");
-        }
+    // private static void addGstreamerPathsToEnv() {
+    //     if (System.getProperty("jna.nosys") == null) {
+    //         System.setProperty("jna.nosys", "true");
+    //     }
 
-        Path gstreamerPath = InstalledFileLocator.getDefault().locate("gstreamer", Installer.class.getPackage().getName(), false).toPath();
+    //     Path gstreamerPath = InstalledFileLocator.getDefault().locate("gstreamer", Installer.class.getPackage().getName(), false).toPath();
 
-        if (gstreamerPath == null) {
-            logger.log(Level.SEVERE, "Failed to find GStreamer.");
-        } else {
-            String arch = "x86_64";
-            if (!PlatformUtil.is64BitJVM()) {
-                arch = "x86";
-            }
+    //     if (gstreamerPath == null) {
+    //         logger.log(Level.SEVERE, "Failed to find GStreamer.");
+    //     } else {
+    //         String arch = "x86_64";
+    //         if (!PlatformUtil.is64BitJVM()) {
+    //             arch = "x86";
+    //         }
 
-            Path gstreamerBasePath = Paths.get(gstreamerPath.toString(), "1.0", arch);
-            Path gstreamerBinPath = Paths.get(gstreamerBasePath.toString(), "bin");
-            Path gstreamerLibPath = Paths.get(gstreamerBasePath.toString(), "lib", "gstreamer-1.0");
+    //         Path gstreamerBasePath = Paths.get(gstreamerPath.toString(), "1.0", arch);
+    //         Path gstreamerBinPath = Paths.get(gstreamerBasePath.toString(), "bin");
+    //         Path gstreamerLibPath = Paths.get(gstreamerBasePath.toString(), "lib", "gstreamer-1.0");
 
-            // Update the PATH environment variable to contain the GStreamer
-            // lib and bin paths.
-            Kernel32 k32 = Kernel32.INSTANCE;
-            String path = System.getenv("PATH");
-            if (StringUtils.isBlank(path)) {
-                k32.SetEnvironmentVariable("PATH", gstreamerLibPath.toString());
-            } else {
-                /*
-                 * Note that we *prepend* the paths so that the Gstreamer
-                 * binaries associated with the current release are found rather
-                 * than binaries associated with an earlier version of Autopsy.
-                 */
-                k32.SetEnvironmentVariable("PATH", gstreamerBinPath.toString() + File.pathSeparator + gstreamerLibPath.toString() + path);
-            }
-        }
-    }
+    //         // Update the PATH environment variable to contain the GStreamer
+    //         // lib and bin paths.
+    //         Kernel32 k32 = Kernel32.INSTANCE;
+    //         String path = System.getenv("PATH");
+    //         if (StringUtils.isBlank(path)) {
+    //             k32.SetEnvironmentVariable("PATH", gstreamerLibPath.toString());
+    //         } else {
+    //             /*
+    //              * Note that we *prepend* the paths so that the Gstreamer
+    //              * binaries associated with the current release are found rather
+    //              * than binaries associated with an earlier version of Autopsy.
+    //              */
+    //             k32.SetEnvironmentVariable("PATH", gstreamerBinPath.toString() + File.pathSeparator + gstreamerLibPath.toString() + path);
+    //         }
+    //     }
+    // }
 
     /**
      * Make a folder in the config directory for object detection classifiers if

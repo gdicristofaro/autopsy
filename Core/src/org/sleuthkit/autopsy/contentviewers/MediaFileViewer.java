@@ -23,7 +23,7 @@ import java.awt.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
-import org.freedesktop.gstreamer.GstException;
+//import org.freedesktop.gstreamer.GstException;
 import org.openide.util.NbBundle;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.coreutils.MessageNotifyUtil;
@@ -39,7 +39,7 @@ class MediaFileViewer extends javax.swing.JPanel implements FileTypeViewer {
     private static final long serialVersionUID = 1L;
     private AbstractFile lastFile;
     //UI
-    private MediaPlayerPanel mediaPlayerPanel;
+//    private MediaPlayerPanel mediaPlayerPanel;
     private final MediaViewImagePanel imagePanel;
     private final boolean imagePanelInited;
 
@@ -53,14 +53,14 @@ class MediaFileViewer extends javax.swing.JPanel implements FileTypeViewer {
 
         initComponents();
 
-        try {
-            mediaPlayerPanel = new MediaPlayerPanel();
-        } catch (GstException | UnsatisfiedLinkError ex) {
-            LOGGER.log(Level.SEVERE, "Error initializing gstreamer for audio/video viewing and frame extraction capabilities", ex); //NON-NLS
-            MessageNotifyUtil.Notify.error(
-                    NbBundle.getMessage(this.getClass(), "MediaFileViewer.initGst.gstException.msg"),
-                    ex.getMessage());
-        }
+//        try {
+//            mediaPlayerPanel = new MediaPlayerPanel();
+//        } catch (GstException | UnsatisfiedLinkError ex) {
+//            LOGGER.log(Level.SEVERE, "Error initializing gstreamer for audio/video viewing and frame extraction capabilities", ex); //NON-NLS
+//            MessageNotifyUtil.Notify.error(
+//                    NbBundle.getMessage(this.getClass(), "MediaFileViewer.initGst.gstException.msg"),
+//                    ex.getMessage());
+//        }
         imagePanel = new MediaViewImagePanel();
         imagePanelInited = imagePanel.isInited();
 
@@ -71,9 +71,9 @@ class MediaFileViewer extends javax.swing.JPanel implements FileTypeViewer {
     private void customizeComponents() {
         add(imagePanel, IMAGE_VIEWER_LAYER);
 
-        if (mediaPlayerPanel != null) {
-            add(mediaPlayerPanel, MEDIA_PLAYER_LAYER);
-        }
+//        if (mediaPlayerPanel != null) {
+//            add(mediaPlayerPanel, MEDIA_PLAYER_LAYER);
+//        }
 
         showImagePanel();
     }
@@ -104,9 +104,9 @@ class MediaFileViewer extends javax.swing.JPanel implements FileTypeViewer {
         List<String> mimeTypes = new ArrayList<>();
 
         mimeTypes.addAll(this.imagePanel.getSupportedMimeTypes());
-        if (mediaPlayerPanel != null) {
-            mimeTypes.addAll(this.mediaPlayerPanel.getSupportedMimeTypes());
-        }
+//        if (mediaPlayerPanel != null) {
+//            mimeTypes.addAll(this.mediaPlayerPanel.getSupportedMimeTypes());
+//        }
 
         return mimeTypes;
     }
@@ -130,10 +130,11 @@ class MediaFileViewer extends javax.swing.JPanel implements FileTypeViewer {
             }
 
             lastFile = file;
-            if (mediaPlayerPanel != null && mediaPlayerPanel.isSupported(file)) {
-                mediaPlayerPanel.loadFile(file);
-                this.showVideoPanel();
-            } else if (imagePanelInited && imagePanel.isSupported(file)) {
+//            if (mediaPlayerPanel != null && mediaPlayerPanel.isSupported(file)) {
+//                mediaPlayerPanel.loadFile(file);
+//                this.showVideoPanel();
+//            } else 
+            if (imagePanelInited && imagePanel.isSupported(file)) {
                 imagePanel.loadFile(file);
                 this.showImagePanel();
             }
@@ -165,9 +166,9 @@ class MediaFileViewer extends javax.swing.JPanel implements FileTypeViewer {
 
     @Override
     public void resetComponent() {
-        if (mediaPlayerPanel != null) {
-            mediaPlayerPanel.reset();
-        }
+//        if (mediaPlayerPanel != null) {
+//            mediaPlayerPanel.reset();
+//        }
         imagePanel.reset();
         lastFile = null;
     }
@@ -194,6 +195,8 @@ class MediaFileViewer extends javax.swing.JPanel implements FileTypeViewer {
 
     @Override
     public boolean isSupported(AbstractFile file){
-        return mediaPlayerPanel.isSupported(file) || imagePanel.isSupported(file);
+        return 
+//                mediaPlayerPanel.isSupported(file) || 
+                imagePanel.isSupported(file);
     }
 }

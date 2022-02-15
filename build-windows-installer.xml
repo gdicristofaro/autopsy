@@ -114,8 +114,6 @@
         <var name="aut-bin-name-todelete" value="${app.name}64.exe"/>
         <var name="aut-bin-name" value="${app.name}.exe"/>
 
-        <var name="gstreamer-path-todelete" value="${app.name}\gstreamer\1.0\x86_64"/>
-
         <!-- The path to the correct version of photorec to use. -->
         <var name="photorec-path-to-use" value="${photorec-inst-path}\bin"/>
 
@@ -142,8 +140,6 @@
         
         <var name="aut-bin-name" value="${app.name}64.exe"/>
         <var name="aut-bin-name-todelete" value="${app.name}.exe"/>
-
-        <var name="gstreamer-path-todelete" value="${app.name}\gstreamer\1.0\x86"/>
 
         <!-- The path to the correct version of photorec to use. -->
         <var name="photorec-path-to-use" value="${photorec-inst-path}\64-bit\bin"/>
@@ -200,11 +196,6 @@
         <echo message="Removing extra Autopsy executable..."/>
         <exec executable="${ai-exe-path}">
             <arg line="/edit ${aip-path} /DelFile APPDIR\bin\${aut-bin-name-todelete}"/>
-        </exec>
-
-        <echo message="Removing extra Gstreamer binaries..."/>
-        <exec executable="${ai-exe-path}">
-            <arg line="/edit ${aip-path} /DelFolder APPDIR\${gstreamer-path-todelete}"/>
         </exec>
 
         <echo message="Placing correct PhotoRec binaries..."/>
