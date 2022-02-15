@@ -13,7 +13,9 @@
         <property environment="env"/>
         
         <property name="inst-path" value="${nbdist.dir}\${app.name}-installer"/>
-        
+        <property name="inst-path-x32" value="${nbdist.dir}\${app.name}-installer-win-x32"/>
+        <property name="inst-path-x64" value="${nbdist.dir}\${app.name}-installer-win-x64"/>
+
         <!-- see what JREs they have installed -->
         <condition property="jre.home.32">
             <isset property="env.JRE_HOME_32"/>
@@ -118,10 +120,13 @@
             <arg line="/edit ${aip-path-base} /SetAppdir -buildname DefaultBuild -path [ProgramFilesFolder][ProductName]-${app.version}"/>
         </exec>
 
-        <antcall target="ai-build" inheritAll="true" />
+        <antcall target="ai-build" inheritAll="true">
+            <param name="installer_os_arch" value="x32"/>
+        </antcall>
 
         <delete dir="${nbdist.dir}/installer_${app.name}_32-cache"/>
         <move file="${nbdist.dir}/installer_${app.name}_32-SetupFiles/installer_${app.name}_32.msi" tofile="${nbdist.dir}/${app.name}-${app.version}-32bit.msi" />
+        <delete dir="${inst-path-x32}" />
     </target>
     
     
@@ -147,10 +152,13 @@
             <arg line="/edit ${aip-path} /SetPackageType x64"/>
         </exec>
 
-        <antcall target="ai-build" inheritAll="true" />
+        <antcall target="ai-build" inheritAll="true">
+            <param name="installer_os_arch" value="x64"/>
+        </antcall>
 
         <delete dir="${nbdist.dir}/installer_${app.name}_64-cache"/>
         <move file="${nbdist.dir}/installer_${app.name}_64-SetupFiles/installer_${app.name}_64.msi" tofile="${nbdist.dir}/${app.name}-${app.version}-64bit.msi" />
+        <delete dir="${inst-path-x64}" />
     </target>
 
     <!-- 32/64 specific since config settings are different -->
@@ -171,12 +179,34 @@
         
     
     <target name="add-ai-files" depends="update-config" description="Add the files in the installation path to the installer file">
+
+        <!-- exclude docs from installer -->
+        <property name="add-ai-files-exclude-doc" value="**/docs/**" />
+        <if>
+            <equals arg1="${installer_os_arch}" arg2="x64"/>
+            <then>
+                <var name="add-ai-files-excludes" value="**/autopsy/modules/lib/i386/**,**/autopsy/modules/lib/i586/**,**/autopsy/modules/lib/i686/**,**/autopsy/modules/lib/ia64/**,**/autopsy/modules/lib/x86/**"/>
+                <var name="inst-path-arch" value="${inst-path-x64}"/>
+            </then>
+            <else>
+                <var name="add-ai-files-excludes" value="**/autopsy/modules/lib/amd64/**,**/autopsy/modules/lib/i386/**,**/autopsy/modules/lib/i586/**,**/autopsy/modules/lib/i686/**,**/autopsy/modules/lib/ia64/**,**/autopsy/modules/lib/x86_64/**"/>
+                <var name="inst-path-arch" value="${inst-path-x32}"/>
+            </else>
+        </if>
+
+        <!-- create a folder for the given architecture -->
+        <!-- filter out unused items -->
+        <copy todir="${inst-path-arch}">
+            <fileset dir="${inst-path}" excludes="${add-ai-files-exclude-doc},${add-ai-files-excludes}" />
+        </copy>
+
+        <!-- make installer with architecture folder -->
         <foreach target="add-file-or-dir" param="theFile" inheritall="true" inheritrefs="true">
             <path> 
-                <fileset dir="${inst-path}">
+                <fileset dir="${inst-path-arch}">
                     <include name="*" /> 
                 </fileset>
-                <dirset dir="${inst-path}">
+                <dirset dir="${inst-path-arch}">
                     <include name="*"/> 
                 </dirset>
             </path>
@@ -209,7 +239,9 @@
     </target>
     
     <target name="ai-build" description="Build the installer based on properties set by 32/64 targets.">
-        <antcall target="add-ai-files" inheritAll="true" />
+        <antcall target="add-ai-files" inheritAll="true" >
+            <param name="installer_os_arch" value="${installer_os_arch}"/>
+        </antcall>
         <antcall target="add-ai-shortcuts" inheritAll="true" />
         <exec executable="${ai-exe-path}">
             <arg line="/build ${aip-path}"/>
