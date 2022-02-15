@@ -59,12 +59,7 @@
         <!--Copy Tesseract OCR to release-->
         <copy todir="${basedir}/release/Tesseract-OCR" >
             <fileset dir="${thirdparty.dir}/Tesseract-OCR"/>
-        </copy>
-        
-        <!--Copy Plaso to release-->
-        <copy todir="${basedir}/release/plaso" >
-            <fileset dir="${thirdparty.dir}/plaso"/>
-        </copy>     
+        </copy>    
 
         <!--Copy iLeapp to release-->
         <copy todir="${basedir}/release/iLeapp" >
