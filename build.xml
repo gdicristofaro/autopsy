@@ -130,8 +130,6 @@
         <mkdir dir="${zip-tmp}"/>
         <unzip src="${nbdist.dir}/${app.name}.zip" dest="${zip-tmp}"/>
         
-        <!-- Disable the Experimental module by default for the installed version.  Need to update .lastModified time for change to be seen. -->
-        <replace file="${zip-tmp}/autopsy/autopsy/config/Modules/org-sleuthkit-autopsy-experimental.xml" token="&lt;param name=&quot;enabled&quot;&gt;true&lt;/param&gt;" value="&lt;param name=&quot;enabled&quot;&gt;false&lt;/param&gt;"/>
         <echo file="${zip-tmp}/autopsy/autopsy/.lastModified" message="" />
 
         <!-- step (3) do your copying stuff here, check the ant doc for copy, move, etc file -->
