@@ -65,11 +65,12 @@ public class TextExtractorFactory {
             TextExtractor artifactExtractor = new ArtifactTextExtractor((BlackboardArtifact) content);
             artifactExtractor.setExtractionSettings(context);
             return artifactExtractor;
-        } else if (content instanceof Report) {
-            TextExtractor reportExtractor = new TikaTextExtractor(content);
-            reportExtractor.setExtractionSettings(context);
-            return reportExtractor;
-        }
+        } 
+//        else if (content instanceof Report) {
+//            TextExtractor reportExtractor = new TikaTextExtractor(content);
+//            reportExtractor.setExtractionSettings(context);
+//            return reportExtractor;
+//        }
 
         throw new NoTextExtractorFound(
                 String.format("Could not find a suitable reader for "
@@ -91,8 +92,10 @@ public class TextExtractorFactory {
         List<TextExtractor> fileExtractors = Arrays.asList(
                 new TextFileExtractor(content),
                 new HtmlTextExtractor(content),
-                new SqliteTextExtractor(content),
-                new TikaTextExtractor(content));   /// This should go last to ensure the more specific ones are picked first. 
+                new SqliteTextExtractor(content)
+//                ,
+//                new TikaTextExtractor(content)
+        );   /// This should go last to ensure the more specific ones are picked first. 
 
         fileExtractors.forEach((fileExtractor) -> {
             fileExtractor.setExtractionSettings(context);

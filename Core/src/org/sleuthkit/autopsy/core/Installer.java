@@ -349,15 +349,15 @@ public class Installer extends ModuleInstall {
 
         //If the directory did not exist, copy the tessdata folder over so we 
         //support english.
-        if (createDirectory) {
-            File tessdataDir = InstalledFileLocator.getDefault().locate(
-                    "Tesseract-OCR/tessdata", Installer.class.getPackage().getName(), false);
-            try {
-                FileUtils.copyDirectory(tessdataDir, ocrLanguagePacksDir);
-            } catch (IOException ex) {
-                logger.log(Level.SEVERE, "Copying over default language packs for Tesseract failed.", ex);
-            }
-        }
+        // if (createDirectory) {
+        //     File tessdataDir = InstalledFileLocator.getDefault().locate(
+        //             "Tesseract-OCR/tessdata", Installer.class.getPackage().getName(), false);
+        //     try {
+        //         FileUtils.copyDirectory(tessdataDir, ocrLanguagePacksDir);
+        //     } catch (IOException ex) {
+        //         logger.log(Level.SEVERE, "Copying over default language packs for Tesseract failed.", ex);
+        //     }
+        // }
     }
 
     @Override

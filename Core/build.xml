@@ -55,11 +55,6 @@
         <copy todir="${basedir}/release/Volatility" >
             <fileset dir="${thirdparty.dir}/Volatility"/>
         </copy>
-        
-        <!--Copy Tesseract OCR to release-->
-        <copy todir="${basedir}/release/Tesseract-OCR" >
-            <fileset dir="${thirdparty.dir}/Tesseract-OCR"/>
-        </copy>    
 
         <!--Copy iLeapp to release-->
         <copy todir="${basedir}/release/iLeapp" >
@@ -84,11 +79,6 @@
         <!--Copy OfficialHashSets to release-->
         <copy todir="${basedir}/release/OfficialHashSets" >
             <fileset dir="${thirdparty.dir}/OfficialHashSets"/>
-        </copy>
-        
-        <!--Copy ImageMagick to release-->
-        <copy todir="${basedir}/release/ImageMagick-7.0.10-27-portable-Q16-x64" >
-            <fileset dir="${thirdparty.dir}/ImageMagick-7.0.10-27-portable-Q16-x64"/>
         </copy>
 
         <!--Copy DomainCategorization to release-->
