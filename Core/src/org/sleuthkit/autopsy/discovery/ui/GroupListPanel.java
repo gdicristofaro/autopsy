@@ -77,10 +77,10 @@ final class GroupListPanel extends javax.swing.JPanel {
         + "Reminder:\n"
         + "  -The File Type Identification module must be run on each data source you want to find results in.\n"
         + "  -The Hash Lookup module must be run on each data source if you want to filter by past occurrence.\n"
-        "GroupsListPanel.noDomainResults.message.text=No domains were found for the selected filters.\n\n"
+        + "GroupsListPanel.noDomainResults.message.text=No domains were found for the selected filters.\n\n"
         + "Reminder:\n"
         + "  -The Central Repository module must be run on each data source if you want to filter or sort by past occurrences.\n"
-        "GroupsListPanel.noResults.title.text=No results found"})
+        + "GroupsListPanel.noResults.title.text=No results found"})
     /**
      * Subscribe to and update list of groups in response to
      * SearchCompleteEvents.
