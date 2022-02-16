@@ -31,8 +31,8 @@ import java.util.Date;
 import java.util.logging.Level;
 import org.sleuthkit.autopsy.casemodule.CaseMetadata;
 import org.sleuthkit.autopsy.casemodule.CaseMetadata.CaseMetadataException;
-import org.sleuthkit.autopsy.coordinationservice.CoordinationService;
-import org.sleuthkit.autopsy.coordinationservice.CoordinationService.CoordinationServiceException;
+//import org.sleuthkit.autopsy.coordinationservice.CoordinationService;
+//import org.sleuthkit.autopsy.coordinationservice.CoordinationService.CoordinationServiceException;
 import org.sleuthkit.autopsy.coreutils.Logger;
 
 /**
@@ -84,10 +84,10 @@ public final class CaseNodeData {
     public static CaseNodeData createCaseNodeData(final CaseMetadata metadata) throws CaseNodeDataException, InterruptedException {
         try {
             final CaseNodeData nodeData = new CaseNodeData(metadata);
-            CoordinationService.getInstance().setNodeData(CoordinationService.CategoryNode.CASES, nodeData.getDirectory().toString(), nodeData.toArray());
+//            CoordinationService.getInstance().setNodeData(CoordinationService.CategoryNode.CASES, nodeData.getDirectory().toString(), nodeData.toArray());
             return nodeData;
 
-        } catch (ParseException | IOException | CoordinationServiceException ex) {
+        } catch (ParseException ex) { //| IOException | CoordinationServiceException ex) {
             throw new CaseNodeDataException(String.format("Error creating case node data for coordination service node with path %s", metadata.getCaseDirectory().toUpperCase()), ex); //NON-NLS
         }
     }
@@ -109,20 +109,20 @@ public final class CaseNodeData {
     public static CaseNodeData readCaseNodeData(String nodePath) throws CaseNodeDataException, InterruptedException {
         try {
             CaseNodeData nodeData;
-            final byte[] nodeBytes = CoordinationService.getInstance().getNodeData(CoordinationService.CategoryNode.CASES, nodePath);
-            if (nodeBytes != null && nodeBytes.length > 0) {
-                try {
-                    nodeData = new CaseNodeData(nodeBytes);
-                } catch (IOException ex) {
-                    /*
-                     * The existing case node data is corrupted.
-                     */
-                    logger.log(Level.WARNING, String.format("Error reading node data for coordination service node with path %s, will attempt to replace it", nodePath.toUpperCase()), ex); //NON-NLS
-                    final CaseMetadata metadata = getCaseMetadata(nodePath);
-                    nodeData = createCaseNodeData(metadata);
-                    logger.log(Level.INFO, String.format("Replaced corrupt node data for coordination service node with path %s", nodePath.toUpperCase())); //NON-NLS
-                }
-            } else {
+//            final byte[] nodeBytes = CoordinationService.getInstance().getNodeData(CoordinationService.CategoryNode.CASES, nodePath);
+//            if (nodeBytes != null && nodeBytes.length > 0) {
+//                try {
+//                    nodeData = new CaseNodeData(nodeBytes);
+//                } catch (IOException ex) {
+//                    /*
+//                     * The existing case node data is corrupted.
+//                     */
+//                    logger.log(Level.WARNING, String.format("Error reading node data for coordination service node with path %s, will attempt to replace it", nodePath.toUpperCase()), ex); //NON-NLS
+//                    final CaseMetadata metadata = getCaseMetadata(nodePath);
+//                    nodeData = createCaseNodeData(metadata);
+//                    logger.log(Level.INFO, String.format("Replaced corrupt node data for coordination service node with path %s", nodePath.toUpperCase())); //NON-NLS
+//                }
+//            } else {
                 /*
                  * The case node data is missing. Version 0 node data was only
                  * written to the coordination service node if an auto ingest
@@ -132,13 +132,13 @@ public final class CaseNodeData {
                 final CaseMetadata metadata = getCaseMetadata(nodePath);
                 nodeData = createCaseNodeData(metadata);
                 logger.log(Level.INFO, String.format("Created node data for coordination service node with path %s", nodePath.toUpperCase())); //NON-NLS
-            }
-            if (nodeData.getVersion() < CaseNodeData.MAJOR_VERSION) {
-                nodeData = upgradeCaseNodeData(nodePath, nodeData);
-            }
+//            }
+//            if (nodeData.getVersion() < CaseNodeData.MAJOR_VERSION) {
+//                nodeData = upgradeCaseNodeData(nodePath, nodeData);
+//            }
             return nodeData;
 
-        } catch (CaseNodeDataException | CaseMetadataException | ParseException | IOException | CoordinationServiceException ex) {
+        } catch (CaseNodeDataException | CaseMetadataException ex) { //| ParseException ex | IOException | CoordinationServiceException ex) {
             throw new CaseNodeDataException(String.format("Error reading/writing node data coordination service node with path %s", nodePath.toUpperCase()), ex); //NON-NLS
         }
     }
@@ -156,12 +156,12 @@ public final class CaseNodeData {
      *                               waiting for the coordination service.
      */
     public static void writeCaseNodeData(CaseNodeData nodeData) throws CaseNodeDataException, InterruptedException {
-        try {
-            CoordinationService.getInstance().setNodeData(CoordinationService.CategoryNode.CASES, nodeData.getDirectory().toString(), nodeData.toArray());
-
-        } catch (IOException | CoordinationServiceException ex) {
-            throw new CaseNodeDataException(String.format("Error writing node data coordination service node with path %s", nodeData.getDirectory().toString().toUpperCase()), ex); //NON-NLS
-        }
+//        try {
+//            CoordinationService.getInstance().setNodeData(CoordinationService.CategoryNode.CASES, nodeData.getDirectory().toString(), nodeData.toArray());
+//
+//        } catch (IOException | CoordinationServiceException ex) {
+//            throw new CaseNodeDataException(String.format("Error writing node data coordination service node with path %s", nodeData.getDirectory().toString().toUpperCase()), ex); //NON-NLS
+//        }
     }
 
     /**
@@ -177,7 +177,7 @@ public final class CaseNodeData {
      *                               directory do not exist.
      * @throws CaseMetadataException If the case metadata cannot be read.
      */
-    private static CaseNodeData upgradeCaseNodeData(String nodePath, CaseNodeData oldNodeData) throws CaseNodeDataException, CaseMetadataException, ParseException, IOException, CoordinationServiceException, InterruptedException {
+    private static CaseNodeData upgradeCaseNodeData(String nodePath, CaseNodeData oldNodeData) throws CaseNodeDataException, CaseMetadataException, ParseException, IOException, InterruptedException { //CoordinationServiceException
         CaseNodeData nodeData;
         switch (oldNodeData.getVersion()) {
             case 0:

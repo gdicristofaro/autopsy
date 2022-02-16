@@ -57,7 +57,7 @@ import org.openide.windows.WindowManager;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
 import org.sleuthkit.autopsy.core.RuntimeProperties;
-import org.sleuthkit.autopsy.core.ServicesMonitor;
+//import org.sleuthkit.autopsy.core.ServicesMonitor;
 import org.sleuthkit.autopsy.core.UserPreferences;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.coreutils.MessageNotifyUtil;
@@ -141,7 +141,7 @@ public class IngestManager implements IngestProgressSnapshotProvider {
     private final ExecutorService analysisResultIngestTasksExecutor;
     private final ExecutorService eventPublishingExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("IM-ingest-events-%d").build()); //NON-NLS;
     private final IngestMonitor ingestMonitor = new IngestMonitor();
-    private final ServicesMonitor servicesMonitor = ServicesMonitor.getInstance();
+//    private final ServicesMonitor servicesMonitor = ServicesMonitor.getInstance();
     private final AutopsyEventPublisher jobEventPublisher = new AutopsyEventPublisher();
     private final AutopsyEventPublisher moduleEventPublisher = new AutopsyEventPublisher();
     private final Object ingestMessageBoxLock = new Object();
@@ -200,47 +200,47 @@ public class IngestManager implements IngestProgressSnapshotProvider {
      * The event handler cancels all ingest jobs if a key service goes down.
      */
     private void subscribeToServiceMonitorEvents() {
-        PropertyChangeListener propChangeListener = (PropertyChangeEvent evt) -> {
-            if (evt.getNewValue().equals(ServicesMonitor.ServiceStatus.DOWN.toString())) {
-                /*
-                 * The application services considered to be key services are
-                 * only necessary for multi-user cases.
-                 */
-                try {
-                    if (Case.getCurrentCaseThrows().getCaseType() != Case.CaseType.MULTI_USER_CASE) {
-                        return;
-                    }
-                } catch (NoCurrentCaseException noCaseOpenException) {
-                    return;
-                }
-
-                String serviceDisplayName = ServicesMonitor.Service.valueOf(evt.getPropertyName()).getDisplayName();
-                logger.log(Level.SEVERE, "Service {0} is down, cancelling all running ingest jobs", serviceDisplayName); //NON-NLS
-                if (isIngestRunning() && RuntimeProperties.runningWithGUI()) {
-                    EventQueue.invokeLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            JOptionPane.showMessageDialog(WindowManager.getDefault().getMainWindow(),
-                                    NbBundle.getMessage(this.getClass(), "IngestManager.cancellingIngest.msgDlg.text"),
-                                    NbBundle.getMessage(this.getClass(), "IngestManager.serviceIsDown.msgDlg.text", serviceDisplayName),
-                                    JOptionPane.ERROR_MESSAGE);
-                        }
-                    });
-                }
-                cancelAllIngestJobs(IngestJob.CancellationReason.SERVICES_DOWN);
-            }
-        };
-
-        /*
-         * The key services for multi-user cases are currently the case database
-         * server and the Solr server. The Solr server is a key service not
-         * because search is essential, but because the coordination service
-         * (ZooKeeper) is running embedded within the Solr server.
-         */
-        Set<String> servicesList = new HashSet<>();
-        servicesList.add(ServicesMonitor.Service.REMOTE_CASE_DATABASE.toString());
-        servicesList.add(ServicesMonitor.Service.REMOTE_KEYWORD_SEARCH.toString());
-        this.servicesMonitor.addSubscriber(servicesList, propChangeListener);
+//        PropertyChangeListener propChangeListener = (PropertyChangeEvent evt) -> {
+//            if (evt.getNewValue().equals(ServicesMonitor.ServiceStatus.DOWN.toString())) {
+//                /*
+//                 * The application services considered to be key services are
+//                 * only necessary for multi-user cases.
+//                 */
+//                try {
+//                    if (Case.getCurrentCaseThrows().getCaseType() != Case.CaseType.MULTI_USER_CASE) {
+//                        return;
+//                    }
+//                } catch (NoCurrentCaseException noCaseOpenException) {
+//                    return;
+//                }
+//
+//                String serviceDisplayName = ServicesMonitor.Service.valueOf(evt.getPropertyName()).getDisplayName();
+//                logger.log(Level.SEVERE, "Service {0} is down, cancelling all running ingest jobs", serviceDisplayName); //NON-NLS
+//                if (isIngestRunning() && RuntimeProperties.runningWithGUI()) {
+//                    EventQueue.invokeLater(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            JOptionPane.showMessageDialog(WindowManager.getDefault().getMainWindow(),
+//                                    NbBundle.getMessage(this.getClass(), "IngestManager.cancellingIngest.msgDlg.text"),
+//                                    NbBundle.getMessage(this.getClass(), "IngestManager.serviceIsDown.msgDlg.text", serviceDisplayName),
+//                                    JOptionPane.ERROR_MESSAGE);
+//                        }
+//                    });
+//                }
+//                cancelAllIngestJobs(IngestJob.CancellationReason.SERVICES_DOWN);
+//            }
+//        };
+//
+//        /*
+//         * The key services for multi-user cases are currently the case database
+//         * server and the Solr server. The Solr server is a key service not
+//         * because search is essential, but because the coordination service
+//         * (ZooKeeper) is running embedded within the Solr server.
+//         */
+//        Set<String> servicesList = new HashSet<>();
+//        servicesList.add(ServicesMonitor.Service.REMOTE_CASE_DATABASE.toString());
+//        servicesList.add(ServicesMonitor.Service.REMOTE_KEYWORD_SEARCH.toString());
+//        this.servicesMonitor.addSubscriber(servicesList, propChangeListener);
     }
 
     /**
@@ -594,25 +594,25 @@ public class IngestManager implements IngestProgressSnapshotProvider {
             return new IngestJobStartResult(null, new IngestManagerException("Exception while getting open case.", ex), Collections.<IngestModuleError>emptyList()); //NON-NLS
         }
         if (openCase.getCaseType() == Case.CaseType.MULTI_USER_CASE) {
-            try {
-                if (!servicesMonitor.getServiceStatus(ServicesMonitor.Service.REMOTE_CASE_DATABASE.toString()).equals(ServicesMonitor.ServiceStatus.UP.toString())) {
-                    if (RuntimeProperties.runningWithGUI()) {
-                        EventQueue.invokeLater(new Runnable() {
-                            @Override
-                            public void run() {
-                                String serviceDisplayName = ServicesMonitor.Service.REMOTE_CASE_DATABASE.getDisplayName();
-                                JOptionPane.showMessageDialog(WindowManager.getDefault().getMainWindow(),
-                                        NbBundle.getMessage(this.getClass(), "IngestManager.cancellingIngest.msgDlg.text"),
-                                        NbBundle.getMessage(this.getClass(), "IngestManager.serviceIsDown.msgDlg.text", serviceDisplayName),
-                                        JOptionPane.ERROR_MESSAGE);
-                            }
-                        });
-                    }
-                    return new IngestJobStartResult(null, new IngestManagerException("Ingest aborted. Remote database is down"), Collections.<IngestModuleError>emptyList()); //NON-NLS
-                }
-            } catch (ServicesMonitor.ServicesMonitorException ex) {
-                return new IngestJobStartResult(null, new IngestManagerException("Database server is down", ex), Collections.<IngestModuleError>emptyList()); //NON-NLS
-            }
+//            try {
+//                if (!servicesMonitor.getServiceStatus(ServicesMonitor.Service.REMOTE_CASE_DATABASE.toString()).equals(ServicesMonitor.ServiceStatus.UP.toString())) {
+//                    if (RuntimeProperties.runningWithGUI()) {
+//                        EventQueue.invokeLater(new Runnable() {
+//                            @Override
+//                            public void run() {
+//                                String serviceDisplayName = ServicesMonitor.Service.REMOTE_CASE_DATABASE.getDisplayName();
+//                                JOptionPane.showMessageDialog(WindowManager.getDefault().getMainWindow(),
+//                                        NbBundle.getMessage(this.getClass(), "IngestManager.cancellingIngest.msgDlg.text"),
+//                                        NbBundle.getMessage(this.getClass(), "IngestManager.serviceIsDown.msgDlg.text", serviceDisplayName),
+//                                        JOptionPane.ERROR_MESSAGE);
+//                            }
+//                        });
+//                    }
+//                    return new IngestJobStartResult(null, new IngestManagerException("Ingest aborted. Remote database is down"), Collections.<IngestModuleError>emptyList()); //NON-NLS
+//                }
+//            } catch (ServicesMonitor.ServicesMonitorException ex) {
+//                return new IngestJobStartResult(null, new IngestManagerException("Database server is down", ex), Collections.<IngestModuleError>emptyList()); //NON-NLS
+//            }
         }
 
         if (!ingestMonitor.isRunning()) {

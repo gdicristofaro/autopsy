@@ -231,7 +231,7 @@
 //             return;
 //         }
 
-//         aLeappFileProcessor.processFiles(dataSource, moduleOutputPath, aLeappFile);
+//         aLeappFileProcessor.processFiles(dataSource, moduleOutputPath, aLeappFile, statusHelper);
 //     }
 
 //     /**
@@ -274,7 +274,7 @@
 //             return;
 //         }
 
-//         aLeappFileProcessor.processFileSystem(dataSource, moduleOutputPath);
+//         aLeappFileProcessor.processFileSystem(dataSource, moduleOutputPath, statusHelper);
 //     }
 
 //     /**

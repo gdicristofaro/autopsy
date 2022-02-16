@@ -94,7 +94,7 @@ public class StartupWindowProvider implements StartupWindowInterface {
             }
 
             if (RuntimeProperties.runningWithGUI()) {
-                checkSolr();
+                // checkSolr();
             }
             //discover the registered windows
             Collection<? extends StartupWindowInterface> startupWindows
@@ -180,20 +180,20 @@ public class StartupWindowProvider implements StartupWindowInterface {
         }
     }
 
-    private void checkSolr() {
+    // private void checkSolr() {
 
-        // if Multi-User settings are enabled and Solr8 server is not configured,
-        // display an error message and a dialog
-        if (UserPreferences.getIsMultiUserModeEnabled() && UserPreferences.getIndexingServerHost().isEmpty()) {
-            // Solr 8 host name is not configured. This could be the first time user 
-            // runs Autopsy with Solr 8. Display a message.
-            MessageNotifyUtil.Notify.error(NbBundle.getMessage(CueBannerPanel.class, "SolrNotConfiguredDialog.title"),
-                    NbBundle.getMessage(SolrNotConfiguredDialog.class, "SolrNotConfiguredDialog.EmptyKeywordSearchHostName"));
+    //     // if Multi-User settings are enabled and Solr8 server is not configured,
+    //     // display an error message and a dialog
+    //     if (UserPreferences.getIsMultiUserModeEnabled() && UserPreferences.getIndexingServerHost().isEmpty()) {
+    //         // Solr 8 host name is not configured. This could be the first time user 
+    //         // runs Autopsy with Solr 8. Display a message.
+    //         MessageNotifyUtil.Notify.error(NbBundle.getMessage(CueBannerPanel.class, "SolrNotConfiguredDialog.title"),
+    //                 NbBundle.getMessage(SolrNotConfiguredDialog.class, "SolrNotConfiguredDialog.EmptyKeywordSearchHostName"));
 
-            SolrNotConfiguredDialog dialog = new SolrNotConfiguredDialog();
-            dialog.setVisible(true);
-        }
-    }
+    //         SolrNotConfiguredDialog dialog = new SolrNotConfiguredDialog();
+    //         dialog.setVisible(true);
+    //     }
+    // }
 
     /**
      * Checks whether Autopsy is running from command line. There is an
