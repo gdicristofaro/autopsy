@@ -30,11 +30,11 @@ import java.util.logging.Level;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.coreutils.Logger;
 
-@OptionsPanelController.TopLevelRegistration(categoryName = "#OptionsCategory_Name_Multi_User_Settings",
-        iconBase = "org/sleuthkit/autopsy/images/User-Group-icon-green32.png",
-        position = 4,
-        keywords = "#OptionsCategory_Keywords_Multi_User_Options",
-        keywordsCategory = "Multi-User")
+// @OptionsPanelController.TopLevelRegistration(categoryName = "#OptionsCategory_Name_Multi_User_Settings",
+//         iconBase = "org/sleuthkit/autopsy/images/User-Group-icon-green32.png",
+//         position = 4,
+//         keywords = "#OptionsCategory_Keywords_Multi_User_Options",
+//         keywordsCategory = "Multi-User")
 public final class MultiUserSettingsPanelController extends OptionsPanelController {
 
     private MultiUserSettingsPanel panel;

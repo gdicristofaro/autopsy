@@ -332,14 +332,11 @@ public final class MultiUserSettingsPanel extends javax.swing.JPanel {
 
         tbSolr8Hostname.setFont(tbSolr8Hostname.getFont().deriveFont(tbSolr8Hostname.getFont().getSize()+1f));
         tbSolr8Hostname.setToolTipText(org.openide.util.NbBundle.getMessage(MultiUserSettingsPanel.class, "MultiUserSettingsPanel.tbSolr8Hostname.toolTipText")); // NOI18N
-        tbSolr8Hostname.setEnabled(false);
 
         tbSolr8Port.setFont(tbSolr8Port.getFont().deriveFont(tbSolr8Port.getFont().getSize()+1f));
         tbSolr8Port.setToolTipText(org.openide.util.NbBundle.getMessage(MultiUserSettingsPanel.class, "MultiUserSettingsPanel.tbSolr8Port.toolTipText")); // NOI18N
-        tbSolr8Port.setEnabled(false);
 
         org.openide.awt.Mnemonics.setLocalizedText(bnTestSolr8, org.openide.util.NbBundle.getMessage(MultiUserSettingsPanel.class, "MultiUserSettingsPanel.bnTestSolr8.text")); // NOI18N
-        bnTestSolr8.setEnabled(false);
         bnTestSolr8.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 bnTestSolr8ActionPerformed(evt);
@@ -353,11 +350,9 @@ public final class MultiUserSettingsPanel extends javax.swing.JPanel {
 
         tbSolr4Hostname.setFont(tbSolr4Hostname.getFont().deriveFont(tbSolr4Hostname.getFont().getSize()+1f));
         tbSolr4Hostname.setToolTipText(org.openide.util.NbBundle.getMessage(MultiUserSettingsPanel.class, "MultiUserSettingsPanel.tbSolr4Hostname.toolTipText")); // NOI18N
-        tbSolr4Hostname.setEnabled(false);
 
         tbSolr4Port.setFont(tbSolr4Port.getFont().deriveFont(tbSolr4Port.getFont().getSize()+1f));
         tbSolr4Port.setToolTipText(org.openide.util.NbBundle.getMessage(MultiUserSettingsPanel.class, "MultiUserSettingsPanel.tbSolr4Port.toolTipText")); // NOI18N
-        tbSolr4Port.setEnabled(false);
 
         lbSolr4Settings.setFont(lbSolr4Settings.getFont().deriveFont(lbSolr4Settings.getFont().getSize()+1f));
         org.openide.awt.Mnemonics.setLocalizedText(lbSolr4Settings, org.openide.util.NbBundle.getMessage(MultiUserSettingsPanel.class, "MultiUserSettingsPanel.lbSolr4Settings.text")); // NOI18N
@@ -367,11 +362,9 @@ public final class MultiUserSettingsPanel extends javax.swing.JPanel {
 
         tbZkHostname.setFont(tbZkHostname.getFont().deriveFont(tbZkHostname.getFont().getSize()+1f));
         tbZkHostname.setToolTipText(org.openide.util.NbBundle.getMessage(MultiUserSettingsPanel.class, "MultiUserSettingsPanel.tbZkHostname.toolTipText")); // NOI18N
-        tbZkHostname.setEnabled(false);
 
         tbZkPort.setFont(tbZkPort.getFont().deriveFont(tbZkPort.getFont().getSize()+1f));
         tbZkPort.setToolTipText(org.openide.util.NbBundle.getMessage(MultiUserSettingsPanel.class, "MultiUserSettingsPanel.tbZkPort.toolTipText")); // NOI18N
-        tbZkPort.setEnabled(false);
 
         lbSolrNote1.setFont(lbSolrNote1.getFont().deriveFont(lbSolrNote1.getFont().getSize()+1f));
         lbSolrNote1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/sleuthkit/autopsy/corecomponents/warning16.png"))); // NOI18N
@@ -381,7 +374,6 @@ public final class MultiUserSettingsPanel extends javax.swing.JPanel {
         org.openide.awt.Mnemonics.setLocalizedText(lbSolrNote2, org.openide.util.NbBundle.getMessage(MultiUserSettingsPanel.class, "MultiUserSettingsPanel.lbSolrNote2.text")); // NOI18N
 
         org.openide.awt.Mnemonics.setLocalizedText(bnTestSolr4, org.openide.util.NbBundle.getMessage(MultiUserSettingsPanel.class, "MultiUserSettingsPanel.bnTestSolr4.text")); // NOI18N
-        bnTestSolr4.setEnabled(false);
         bnTestSolr4.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 bnTestSolr4ActionPerformed(evt);
@@ -393,7 +385,6 @@ public final class MultiUserSettingsPanel extends javax.swing.JPanel {
         org.openide.awt.Mnemonics.setLocalizedText(lbTestZK, org.openide.util.NbBundle.getMessage(MultiUserSettingsPanel.class, "MultiUserSettingsPanel.lbTestZK.text")); // NOI18N
 
         org.openide.awt.Mnemonics.setLocalizedText(bnTestZK, org.openide.util.NbBundle.getMessage(MultiUserSettingsPanel.class, "MultiUserSettingsPanel.bnTestZK.text")); // NOI18N
-        bnTestZK.setEnabled(false);
         bnTestZK.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 bnTestZKActionPerformed(evt);
