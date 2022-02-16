@@ -23,6 +23,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
@@ -46,7 +47,8 @@ public class ConfigurationModuleManager {
     private static final Logger logger = Logger.getLogger(ConfigurationModuleManager.class.getName());
 
     private static final IngestJobSettings.IngestType DEFAULT_INGEST_FILTER_TYPE = IngestJobSettings.IngestType.ALL_MODULES;
-    private static final Set<String> DEFAULT_EXCLUDED_MODULES = Stream.of("Plaso").collect(Collectors.toSet());
+    private static final Set<String> DEFAULT_EXCLUDED_MODULES = new HashSet<>();
+    //Stream.of("Plaso").collect(Collectors.toSet());
     private static final ConfigDeserializer configDeserializer = new ConfigDeserializer();
 
     /**
