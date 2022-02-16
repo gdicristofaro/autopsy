@@ -333,7 +333,8 @@ public final class UserPreferences {
     }
 
     public static boolean getIsMultiUserModeEnabled() {
-        return preferences.getBoolean(IS_MULTI_USER_MODE_ENABLED, false);
+        return false;
+        //return preferences.getBoolean(IS_MULTI_USER_MODE_ENABLED, false);
     }
 
     public static String getIndexingServerHost() {
