@@ -309,7 +309,7 @@ public class Installer extends ModuleInstall {
             Kernel32 k32 = Kernel32.INSTANCE;
             String path = System.getenv("PATH");
             if (StringUtils.isBlank(path)) {
-                k32.SetEnvironmentVariable("PATH", gstreamerLibPath.toString());
+                k32.SetEnvironmentVariable("PATH", gstreamerBinPath.toString() + File.pathSeparator + gstreamerLibPath.toString());
             } else {
                 /*
                  * Note that we *prepend* the paths so that the Gstreamer
