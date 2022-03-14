@@ -1,0 +1,11 @@
+<ivy-module version="2.0">
+    <info organisation="org.sleuthkit.autopsy" module="leapp"/>
+    <configurations >
+        <!-- module dependencies -->
+        <conf name="leapp"/>
+    </configurations>
+
+    <dependencies>
+        <dependency conf="leapp->default" org="com.fasterxml.jackson.dataformat" name="jackson-dataformat-csv" rev="2.9.7"/>
+    </dependencies>
+</ivy-module>
