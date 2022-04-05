@@ -167,7 +167,7 @@ public class StandardInterestingFilesSetsLoader implements Runnable {
      * @param src  The source map.
      * @param dest The destination map.
      */
-    private static void copyOnNewer(Map<String, FilesSet> src, Map<String, FilesSet> dest) {
+    static void copyOnNewer(Map<String, FilesSet> src, Map<String, FilesSet> dest) {
         copyOnNewer(src, dest, false);
     }
 

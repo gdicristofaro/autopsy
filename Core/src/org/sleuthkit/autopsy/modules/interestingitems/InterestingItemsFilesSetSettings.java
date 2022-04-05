@@ -73,7 +73,7 @@ class InterestingItemsFilesSetSettings implements Serializable {
     private static final String TYPE_FILTER_VALUE_DIRS = "dir"; //NON-NLS
     private static final String REGEX_ATTR = "regex"; //NON-NLS
     private static final List<String> illegalFileNameChars = FilesSetsManager.getIllegalFileNameChars();
-    private static final String FILE_SET_TAG = "INTERESTING_FILE_SET"; //NON-NLS
+    static final String FILE_SET_TAG = "INTERESTING_FILE_SET"; //NON-NLS
     private static final String NAME_RULE_TAG = "NAME"; //NON-NLS
     private static final String NAME_ATTR = "name"; //NON-NLS
     private static final String DAYS_INCLUDED_ATTR = "daysIncluded";
@@ -431,7 +431,7 @@ class InterestingItemsFilesSetSettings implements Serializable {
      * @throws
      * org.sleuthkit.autopsy.modules.interestingitems.FilesSetsManager.FilesSetsManagerException
      */
-    private static void readFilesSet(Element setElem, Map<String, FilesSet> filesSets, String filePath) throws FilesSetsManager.FilesSetsManagerException {
+    static void readFilesSet(Element setElem, Map<String, FilesSet> filesSets, String filePath) throws FilesSetsManager.FilesSetsManagerException {
         // The file set must have a unique name.
         String setName = setElem.getAttribute(NAME_ATTR);
         if (setName.isEmpty()) {
@@ -658,104 +658,122 @@ class InterestingItemsFilesSetSettings implements Serializable {
             Document doc = docBuilder.newDocument();
             Element rootElement = doc.createElement(FILE_SETS_ROOT_TAG);
             doc.appendChild(rootElement);
-            // Add the interesting files sets to the document.
-
-            List<FilesSet> sortedFilesSets = sortOnField(
-                    interestingFilesSets, 
-                    filesSet -> filesSet == null ? null : filesSet.getName());
             
-            for (FilesSet set : sortedFilesSets) {
-                // Add the files set element and its attributes.
-                Element setElement = doc.createElement(FILE_SET_TAG);
-                setElement.setAttribute(NAME_ATTR, set.getName());
-                setElement.setAttribute(DESC_ATTR, set.getDescription());
-                setElement.setAttribute(IGNORE_KNOWN_FILES_ATTR, Boolean.toString(set.ignoresKnownFiles()));
-                setElement.setAttribute(STANDARD_SET, Boolean.toString(set.isStandardSet()));
-                setElement.setAttribute(VERSION_NUMBER, Integer.toString(set.getVersionNumber()));
-                // Add the child elements for the set membership rules.
-                // All conditions of a rule will be written as a single element in the xml
-                
-                List<FilesSet.Rule> sortedRules = sortOnField(
-                        set.getRules().values(), 
-                        rule -> rule == null ? null : rule.getName());
-                
-                for (FilesSet.Rule rule : sortedRules) {
-                    // Add a rule element with the appropriate name Condition 
-                    // type tag.
-                    Element ruleElement;
-
-                    FileNameCondition nameCondition = rule.getFileNameCondition();
-                    //The element type is just being used as another attribute for 
-                    //the name condition in legacy xmls.
-                    //For rules which don't contain a name condition it doesn't matter
-                    //what type of element it is 
-                    if (nameCondition instanceof FilesSet.Rule.FullNameCondition) {
-                        ruleElement = doc.createElement(NAME_RULE_TAG);
-                    } else {
-                        ruleElement = doc.createElement(EXTENSION_RULE_TAG);
-                    }
-                    // Add the optional rule name attribute.
-                    ruleElement.setAttribute(NAME_ATTR, rule.getName());
-                    if (nameCondition != null) {
-                        // Add the name Condition regex attribute
-                        ruleElement.setAttribute(REGEX_ATTR, Boolean.toString(nameCondition.isRegex()));
-                        // Add the name Condition text as the rule element content.
-                        ruleElement.setTextContent(nameCondition.getTextToMatch());
-                    }
-                    // Add the type Condition attribute.
-                    MetaTypeCondition typeCondition = rule.getMetaTypeCondition();
-                    switch (typeCondition.getMetaType()) {
-                        case FILES:
-                            ruleElement.setAttribute(TYPE_FILTER_ATTR, TYPE_FILTER_VALUE_FILES);
-                            break;
-                        case DIRECTORIES:
-                            ruleElement.setAttribute(TYPE_FILTER_ATTR, TYPE_FILTER_VALUE_DIRS);
-                            break;
-                        default:
-                            ruleElement.setAttribute(TYPE_FILTER_ATTR, TYPE_FILTER_VALUE_ALL);
-                            break;
-                    }
-                    // Add the optional path Condition.
-                    ParentPathCondition pathCondition = rule.getPathCondition();
-                    if (pathCondition != null) {
-                        if (pathCondition.isRegex()) {
-                            ruleElement.setAttribute(PATH_REGEX_ATTR, pathCondition.getTextToMatch());
-                        } else {
-                            ruleElement.setAttribute(PATH_FILTER_ATTR, pathCondition.getTextToMatch());
-                        }
-                    }
-                    //Add the optional MIME type condition
-                    MimeTypeCondition mimeCondition = rule.getMimeTypeCondition();
-                    if (mimeCondition != null) {
-                        ruleElement.setAttribute(MIME_ATTR, mimeCondition.getMimeType());
-                    }
-                    //Add the optional file size condition
-                    FileSizeCondition sizeCondition = rule.getFileSizeCondition();
-                    if (sizeCondition != null) {
-                        ruleElement.setAttribute(FS_COMPARATOR_ATTR, sizeCondition.getComparator().getSymbol());
-                        ruleElement.setAttribute(FS_SIZE_ATTR, Integer.toString(sizeCondition.getSizeValue()));
-                        ruleElement.setAttribute(FS_UNITS_ATTR, sizeCondition.getUnit().getName());
-                    }
-
-                    //Add the optional date condition
-                    DateCondition dateCondition = rule.getDateCondition();
-                    if (dateCondition != null) {
-                        ruleElement.setAttribute(DAYS_INCLUDED_ATTR, Integer.toString(dateCondition.getDaysIncluded()));
-                    }
-                    
-                    ruleElement.setAttribute(EXCLUSIVE_ATTR, Boolean.toString(rule.isExclusive()));
-
-                    setElement.appendChild(ruleElement);
-                }
-                rootElement.appendChild(setElement);
-            }
+            
+            // Add the interesting files sets to the document.
             // Overwrite the previous definitions file. Note that the utility 
             // method logs an error on failure.
-            return XMLUtil.saveDoc(InterestingItemsFilesSetSettings.class, xmlFile.getPath(), XML_ENCODING, doc);
+            if (writeXmlSets(doc, rootElement, interestingFilesSets)) {
+                return XMLUtil.saveDoc(InterestingItemsFilesSetSettings.class, xmlFile.getPath(), XML_ENCODING, doc);    
+            } else {
+                return false;
+            }
         } catch (ParserConfigurationException ex) {
             logger.log(Level.SEVERE, "Error writing interesting files definition file to " + xmlFile.getPath(), ex); // NON-NLS
             return false;
         }
+    }
+    
+    /**
+     * Write a list of files sets to an in-memory xml document.
+     * @param doc The xml document.
+     * @param rootElement The root element of the document where items should be appended.
+     * @param filesSets The file sets to be written.
+     * @return True if operation was successful.
+     */
+    static boolean writeXmlSets(Document doc, Element rootElement, List<FilesSet> filesSets) {
+        List<FilesSet> sortedFilesSets = sortOnField(
+                filesSets, 
+                filesSet -> filesSet == null ? null : filesSet.getName());
+
+        for (FilesSet set : sortedFilesSets) {
+            // Add the files set element and its attributes.
+            Element setElement = doc.createElement(FILE_SET_TAG);
+            setElement.setAttribute(NAME_ATTR, set.getName());
+            setElement.setAttribute(DESC_ATTR, set.getDescription());
+            setElement.setAttribute(IGNORE_KNOWN_FILES_ATTR, Boolean.toString(set.ignoresKnownFiles()));
+            setElement.setAttribute(STANDARD_SET, Boolean.toString(set.isStandardSet()));
+            setElement.setAttribute(VERSION_NUMBER, Integer.toString(set.getVersionNumber()));
+            // Add the child elements for the set membership rules.
+            // All conditions of a rule will be written as a single element in the xml
+
+            List<FilesSet.Rule> sortedRules = sortOnField(
+                    set.getRules().values(), 
+                    rule -> rule == null ? null : rule.getName());
+
+            for (FilesSet.Rule rule : sortedRules) {
+                // Add a rule element with the appropriate name Condition 
+                // type tag.
+                Element ruleElement;
+
+                FileNameCondition nameCondition = rule.getFileNameCondition();
+                //The element type is just being used as another attribute for 
+                //the name condition in legacy xmls.
+                //For rules which don't contain a name condition it doesn't matter
+                //what type of element it is 
+                if (nameCondition instanceof FilesSet.Rule.FullNameCondition) {
+                    ruleElement = doc.createElement(NAME_RULE_TAG);
+                } else {
+                    ruleElement = doc.createElement(EXTENSION_RULE_TAG);
+                }
+                // Add the optional rule name attribute.
+                ruleElement.setAttribute(NAME_ATTR, rule.getName());
+                if (nameCondition != null) {
+                    // Add the name Condition regex attribute
+                    ruleElement.setAttribute(REGEX_ATTR, Boolean.toString(nameCondition.isRegex()));
+                    // Add the name Condition text as the rule element content.
+                    ruleElement.setTextContent(nameCondition.getTextToMatch());
+                }
+                // Add the type Condition attribute.
+                MetaTypeCondition typeCondition = rule.getMetaTypeCondition();
+                switch (typeCondition.getMetaType()) {
+                    case FILES:
+                        ruleElement.setAttribute(TYPE_FILTER_ATTR, TYPE_FILTER_VALUE_FILES);
+                        break;
+                    case DIRECTORIES:
+                        ruleElement.setAttribute(TYPE_FILTER_ATTR, TYPE_FILTER_VALUE_DIRS);
+                        break;
+                    default:
+                        ruleElement.setAttribute(TYPE_FILTER_ATTR, TYPE_FILTER_VALUE_ALL);
+                        break;
+                }
+                // Add the optional path Condition.
+                ParentPathCondition pathCondition = rule.getPathCondition();
+                if (pathCondition != null) {
+                    if (pathCondition.isRegex()) {
+                        ruleElement.setAttribute(PATH_REGEX_ATTR, pathCondition.getTextToMatch());
+                    } else {
+                        ruleElement.setAttribute(PATH_FILTER_ATTR, pathCondition.getTextToMatch());
+                    }
+                }
+                //Add the optional MIME type condition
+                MimeTypeCondition mimeCondition = rule.getMimeTypeCondition();
+                if (mimeCondition != null) {
+                    ruleElement.setAttribute(MIME_ATTR, mimeCondition.getMimeType());
+                }
+                //Add the optional file size condition
+                FileSizeCondition sizeCondition = rule.getFileSizeCondition();
+                if (sizeCondition != null) {
+                    ruleElement.setAttribute(FS_COMPARATOR_ATTR, sizeCondition.getComparator().getSymbol());
+                    ruleElement.setAttribute(FS_SIZE_ATTR, Integer.toString(sizeCondition.getSizeValue()));
+                    ruleElement.setAttribute(FS_UNITS_ATTR, sizeCondition.getUnit().getName());
+                }
+
+                //Add the optional date condition
+                DateCondition dateCondition = rule.getDateCondition();
+                if (dateCondition != null) {
+                    ruleElement.setAttribute(DAYS_INCLUDED_ATTR, Integer.toString(dateCondition.getDaysIncluded()));
+                }
+
+                ruleElement.setAttribute(EXCLUSIVE_ATTR, Boolean.toString(rule.isExclusive()));
+
+                setElement.appendChild(ruleElement);
+            }
+            rootElement.appendChild(setElement);
+        }
+        // Overwrite the previous definitions file. Note that the utility 
+        // method logs an error on failure.
+        return true;
     }
 
     /**
