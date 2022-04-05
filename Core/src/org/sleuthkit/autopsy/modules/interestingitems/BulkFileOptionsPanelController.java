@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2022 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,18 +19,18 @@
 package org.sleuthkit.autopsy.modules.interestingitems;
 
 import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
 import javax.swing.JComponent;
-import javax.swing.SwingUtilities;
 import org.netbeans.spi.options.OptionsPanelController;
 import org.openide.util.HelpCtx;
 import org.openide.util.Lookup;
 import org.openide.util.NbBundle.Messages;
 
+/**
+ * The options panel controller for Bulk file set import / export.
+ */
 @Messages({
     "OptionsCategory_Name_BulkFileImportExport=Bulk File Set Import/Export",
-    "OptionsCategory_Keywords_BulkFileImportExport=BulkFileSetImportExport",
-})
+    "OptionsCategory_Keywords_BulkFileImportExport=BulkFileSetImportExport",})
 @OptionsPanelController.TopLevelRegistration(
         categoryName = "#OptionsCategory_Name_BulkFileImportExport",
         iconBase = "org/sleuthkit/autopsy/images/interesting_item_32x32.png",
@@ -41,8 +41,6 @@ import org.openide.util.NbBundle.Messages;
 public final class BulkFileOptionsPanelController extends OptionsPanelController {
 
     private BulkFileSettingsPanel panel;
-    private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
-    private boolean changed;
 
     /**
      * Component should load its data here.
@@ -50,7 +48,6 @@ public final class BulkFileOptionsPanelController extends OptionsPanelController
     @Override
     public void update() {
         getPanel().load();
-        changed = false;
     }
 
     /**
@@ -60,15 +57,7 @@ public final class BulkFileOptionsPanelController extends OptionsPanelController
      */
     @Override
     public void applyChanges() {
-        if (changed) {
-            SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    getPanel().store();
-                    changed = false;
-                }
-            });
-        }
+        // panel changes happen within import functionality
     }
 
     /**
@@ -94,7 +83,7 @@ public final class BulkFileOptionsPanelController extends OptionsPanelController
      */
     @Override
     public boolean isChanged() {
-        return changed;
+        return false;
     }
 
     @Override
@@ -109,12 +98,12 @@ public final class BulkFileOptionsPanelController extends OptionsPanelController
 
     @Override
     public void addPropertyChangeListener(PropertyChangeListener l) {
-        pcs.addPropertyChangeListener(l);
+        // no action needs to take place
     }
 
     @Override
     public void removePropertyChangeListener(PropertyChangeListener l) {
-        pcs.removePropertyChangeListener(l);
+        // no action needs to take place
     }
 
     private BulkFileSettingsPanel getPanel() {
@@ -125,11 +114,7 @@ public final class BulkFileOptionsPanelController extends OptionsPanelController
     }
 
     void changed() {
-        if (!changed) {
-            changed = true;
-            pcs.firePropertyChange(OptionsPanelController.PROP_CHANGED, false, true);
-        }
-        pcs.firePropertyChange(OptionsPanelController.PROP_VALID, null, null);
+        // changed internally in panel.
     }
 
 }

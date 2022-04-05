@@ -19,6 +19,7 @@
 package org.sleuthkit.autopsy.modules.interestingitems;
 
 import java.io.File;
+import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -59,6 +60,9 @@ class BulkFileSetImportExport {
         return instance;
     }
 
+    private BulkFileSetImportExport() {
+    }
+
     /**
      * Import a bulk files sets file. This will overwrite any interesting file
      * sets or file ingest filters with the same name as the imported file.
@@ -72,14 +76,15 @@ class BulkFileSetImportExport {
 
         Element root = getChildElement(doc.getElementsByTagName(ROOT_ELEMENT));
         if (root == null) {
-            // TODO
+            logger.log(Level.WARNING, MessageFormat.format("Root element: {0} cannot be found in file: {1}.", ROOT_ELEMENT, input.getPath()));
             return false;
         }
 
-        Map<String, FilesSet> interestingFilesSets = getFilesSet(root, INTERESTING_FILES_ELEMENT);
-        Map<String, FilesSet> ingestFiltersSets = getFilesSet(root, INGEST_FILTERS_ELEMENT);
+        Map<String, FilesSet> interestingFilesSets = getFilesSet(root, INTERESTING_FILES_ELEMENT, input.getPath());
+        Map<String, FilesSet> ingestFiltersSets = getFilesSet(root, INGEST_FILTERS_ELEMENT, input.getPath());
 
         if (MapUtils.isEmpty(ingestFiltersSets) && MapUtils.isEmpty(interestingFilesSets)) {
+            logger.log(Level.WARNING, MessageFormat.format("No interesting file sets or ingest filters could be found in file: {1}.", ROOT_ELEMENT, input.getPath()));
             return false;
         }
 
@@ -110,14 +115,16 @@ class BulkFileSetImportExport {
      *
      * @return The map of files set names to files sets.
      */
-    private static Map<String, FilesSet> getFilesSet(Element root, String parentTag) {
+    private static Map<String, FilesSet> getFilesSet(Element root, String parentTag, String filePath) {
         Element parentEl = getChildElement(root.getElementsByTagName(parentTag));
         if (parentEl == null) {
+            logger.log(Level.WARNING, MessageFormat.format("Element of name: {0} could not be found in root element: {1} of file: {2}.", ROOT_ELEMENT, parentTag, filePath));
             return Collections.emptyMap();
         }
 
         NodeList setElems = parentEl.getElementsByTagName(InterestingItemsFilesSetSettings.FILE_SET_TAG);
         if (setElems == null) {
+            logger.log(Level.WARNING, MessageFormat.format("Could not file set tags within element: {0} could not be found in root element: {1} of file: {2}.", ROOT_ELEMENT, parentTag, filePath));
             return Collections.emptyMap();
         }
 
@@ -126,6 +133,7 @@ class BulkFileSetImportExport {
             try {
                 readFilesSet((Element) setElems.item(i), toRet, RESOURCE_NAME);
             } catch (FilesSetsManager.FilesSetsManagerException ex) {
+                logger.log(Level.WARNING, MessageFormat.format("File set {0} in {1} could not be properly parsed in file {2}.", i, parentTag, filePath));
                 logger.log(Level.WARNING, "There was an error reading file at index " + i + " from file.", ex);
                 return Collections.emptyMap();
             }

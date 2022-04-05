@@ -18,25 +18,104 @@
  */
 package org.sleuthkit.autopsy.modules.interestingitems;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import javax.swing.DefaultListModel;
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import org.apache.commons.lang3.StringUtils;
+import org.openide.util.NbBundle.Messages;
+import org.sleuthkit.autopsy.coreutils.Logger;
+import org.sleuthkit.autopsy.guiutils.JFileChooserFactory;
+
 /**
- *
- * @author gregd
+ * Panel for handling file set import / export.
  */
-public class BulkFileSettingsPanel extends javax.swing.JPanel {
+@Messages({
+    "BulkFileSettingsPanel_fileExtDescription=Bulk File Set File"
+})
+class BulkFileSettingsPanel extends javax.swing.JPanel {
+
+    private static final Logger logger = Logger.getLogger(BulkFileSettingsPanel.class.getName());
+
+    private final JFileChooserFactory chooserFactory = new JFileChooserFactory();
+    private final BulkFileSetImportExport fileImportExport = BulkFileSetImportExport.getInstance();
+    private final DefaultListModel<FilesSet> interestingFileSetsModel = new DefaultListModel<FilesSet>();
+    private final DefaultListModel<FilesSet> fileIngestFilterModel = new DefaultListModel<FilesSet>();
+    private JFileChooser fileChooser = null;
+    private FileFilter fileFilter = new FileNameExtensionFilter(Bundle.BulkFileSettingsPanel_fileExtDescription(), "xml");
 
     /**
-     * Creates new form BulkFileSettingsPanel
+     * Creates new form BulkFileSettingsPanel.
      */
     public BulkFileSettingsPanel() {
         initComponents();
+
+        // set up listener for changes in selection to enable or disable
+        fileIngestFilterList.addListSelectionListener(event -> setEnabled());
+        interestingFileSetsList.addListSelectionListener(event -> setEnabled());
     }
-    
-    void store() {
-        
+
+    /**
+     * @return A file chooser for importing or exporting.
+     */
+    private JFileChooser getChooser() {
+        if (fileChooser == null) {
+            fileChooser = chooserFactory.getChooser();
+            fileChooser.setDragEnabled(false);
+            fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+            fileChooser.setMultiSelectionEnabled(false);
+            fileChooser.addChoosableFileFilter(fileFilter);
+        }
+
+        return fileChooser;
     }
-    
+
+    /**
+     * Loads all data to display in UI and performs refresh as necessary.
+     */
     void load() {
-        
+        try {
+            FilesSetsManager setsManager = FilesSetsManager.getInstance();
+            Map<String, FilesSet> curInterestingFiles = setsManager.getInterestingFilesSets();
+            Map<String, FilesSet> curFileFilters = setsManager.getCustomFileIngestFilters();
+            loadList(interestingFileSetsModel, curInterestingFiles);
+            loadList(fileIngestFilterModel, curFileFilters);
+            setEnabled();
+        } catch (FilesSetsManager.FilesSetsManagerException ex) {
+            logger.log(Level.WARNING, "There was an error loading current file sets.", ex);
+        }
+    }
+
+    /**
+     * Loads a list of files sets.
+     *
+     * @param listModel   The list model to populate.
+     * @param fileSetList The file set map to load.
+     */
+    private void loadList(DefaultListModel<FilesSet> listModel, Map<String, FilesSet> fileSetList) {
+        listModel.clear();
+        if (fileSetList != null) {
+            fileSetList.entrySet().stream()
+                    .sorted(Comparator.comparing(e -> StringUtils.defaultString(e.getKey())))
+                    .map(e -> e.getValue())
+                    .forEachOrdered(listModel::addElement);
+        }
+    }
+
+    /**
+     * Sets export button enabled if there is a file set to export.
+     */
+    private void setEnabled() {
+        this.exportSetButton.setEnabled(
+                fileIngestFilterList.getSelectedIndex() >= 0
+                || interestingFileSetsList.getSelectedIndex() >= 0);
     }
 
     /**
@@ -48,40 +127,32 @@ public class BulkFileSettingsPanel extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jScrollPane1 = new javax.swing.JScrollPane();
-        jList1 = new javax.swing.JList<>();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        jList2 = new javax.swing.JList<>();
-        jLabel1 = new javax.swing.JLabel();
-        jLabel2 = new javax.swing.JLabel();
-        jLabel3 = new javax.swing.JLabel();
+        javax.swing.JScrollPane interestingFileSetsScrollPane = new javax.swing.JScrollPane();
+        interestingFileSetsList = new javax.swing.JList<>();
+        javax.swing.JScrollPane fileIngestFilterScrollPane = new javax.swing.JScrollPane();
+        fileIngestFilterList = new javax.swing.JList<>();
+        javax.swing.JLabel interestingFileSetLabel = new javax.swing.JLabel();
+        javax.swing.JLabel fileIngestFiltersLabel = new javax.swing.JLabel();
+        javax.swing.JLabel holdControlLabel = new javax.swing.JLabel();
         importSetButton = new javax.swing.JButton();
         exportSetButton = new javax.swing.JButton();
-        jSeparator1 = new javax.swing.JSeparator();
-        jLabel4 = new javax.swing.JLabel();
-        jLabel5 = new javax.swing.JLabel();
-        jLabel6 = new javax.swing.JLabel();
-        jLabel7 = new javax.swing.JLabel();
+        javax.swing.JSeparator separator = new javax.swing.JSeparator();
+        javax.swing.JLabel importHeader = new javax.swing.JLabel();
+        javax.swing.JLabel exportHeader = new javax.swing.JLabel();
+        javax.swing.JLabel description = new javax.swing.JLabel();
+        javax.swing.JLabel overwriteWarningLabel = new javax.swing.JLabel();
 
-        jList1.setModel(new javax.swing.AbstractListModel<String>() {
-            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-            public int getSize() { return strings.length; }
-            public String getElementAt(int i) { return strings[i]; }
-        });
-        jScrollPane1.setViewportView(jList1);
+        interestingFileSetsList.setModel(interestingFileSetsModel);
+        interestingFileSetsScrollPane.setViewportView(interestingFileSetsList);
 
-        jList2.setModel(new javax.swing.AbstractListModel<String>() {
-            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-            public int getSize() { return strings.length; }
-            public String getElementAt(int i) { return strings[i]; }
-        });
-        jScrollPane2.setViewportView(jList2);
+        fileIngestFilterList.setModel(fileIngestFilterModel);
+        fileIngestFilterScrollPane.setViewportView(fileIngestFilterList);
 
-        org.openide.awt.Mnemonics.setLocalizedText(jLabel1, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.jLabel1.text")); // NOI18N
+        org.openide.awt.Mnemonics.setLocalizedText(interestingFileSetLabel, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.interestingFileSetLabel.text")); // NOI18N
 
-        org.openide.awt.Mnemonics.setLocalizedText(jLabel2, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.jLabel2.text")); // NOI18N
+        org.openide.awt.Mnemonics.setLocalizedText(fileIngestFiltersLabel, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.fileIngestFiltersLabel.text")); // NOI18N
 
-        org.openide.awt.Mnemonics.setLocalizedText(jLabel3, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.jLabel3.text")); // NOI18N
+        org.openide.awt.Mnemonics.setLocalizedText(holdControlLabel, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.holdControlLabel.text")); // NOI18N
 
         importSetButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/sleuthkit/autopsy/images/import16.png"))); // NOI18N
         org.openide.awt.Mnemonics.setLocalizedText(importSetButton, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.importSetButton.text")); // NOI18N
@@ -97,6 +168,7 @@ public class BulkFileSettingsPanel extends javax.swing.JPanel {
 
         exportSetButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/sleuthkit/autopsy/images/export16.png"))); // NOI18N
         org.openide.awt.Mnemonics.setLocalizedText(exportSetButton, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.exportSetButton.text")); // NOI18N
+        exportSetButton.setEnabled(false);
         exportSetButton.setMargin(new java.awt.Insets(2, 6, 2, 6));
         exportSetButton.setMaximumSize(new java.awt.Dimension(111, 25));
         exportSetButton.setMinimumSize(new java.awt.Dimension(111, 25));
@@ -107,14 +179,14 @@ public class BulkFileSettingsPanel extends javax.swing.JPanel {
             }
         });
 
-        org.openide.awt.Mnemonics.setLocalizedText(jLabel4, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.jLabel4.text")); // NOI18N
+        org.openide.awt.Mnemonics.setLocalizedText(importHeader, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.importHeader.text")); // NOI18N
 
-        org.openide.awt.Mnemonics.setLocalizedText(jLabel5, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.jLabel5.text")); // NOI18N
+        org.openide.awt.Mnemonics.setLocalizedText(exportHeader, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.exportHeader.text")); // NOI18N
 
-        org.openide.awt.Mnemonics.setLocalizedText(jLabel6, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.jLabel6.text")); // NOI18N
+        org.openide.awt.Mnemonics.setLocalizedText(description, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.description.text")); // NOI18N
 
-        jLabel7.setForeground(new java.awt.Color(255, 0, 0));
-        org.openide.awt.Mnemonics.setLocalizedText(jLabel7, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.jLabel7.text")); // NOI18N
+        overwriteWarningLabel.setForeground(new java.awt.Color(255, 0, 0));
+        org.openide.awt.Mnemonics.setLocalizedText(overwriteWarningLabel, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.overwriteWarningLabel.text")); // NOI18N
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
@@ -123,87 +195,146 @@ public class BulkFileSettingsPanel extends javax.swing.JPanel {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel6)
-                    .addComponent(jLabel4)
-                    .addComponent(jLabel5)
+                    .addComponent(description)
+                    .addComponent(importHeader)
+                    .addComponent(exportHeader)
                     .addGroup(layout.createSequentialGroup()
                         .addGap(14, 14, 14)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 352, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(holdControlLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 352, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addComponent(exportSetButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(layout.createSequentialGroup()
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 252, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jLabel2))
+                                    .addComponent(fileIngestFilterScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 252, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(fileIngestFiltersLabel))
                                 .addGap(18, 18, 18)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel1)
-                                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 252, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                                    .addComponent(interestingFileSetLabel)
+                                    .addComponent(interestingFileSetsScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 252, javax.swing.GroupLayout.PREFERRED_SIZE)))))
                     .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                         .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
                             .addGap(6, 6, 6)
-                            .addComponent(jLabel7)
+                            .addComponent(overwriteWarningLabel)
                             .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(importSetButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addComponent(jSeparator1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 536, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(separator, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 536, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(94, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jLabel6)
+                .addComponent(description)
                 .addGap(18, 18, 18)
-                .addComponent(jLabel4)
+                .addComponent(importHeader)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(importSetButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel7))
+                    .addComponent(overwriteWarningLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(separator, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel5)
+                .addComponent(exportHeader)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel1)
-                    .addComponent(jLabel2))
+                    .addComponent(interestingFileSetLabel)
+                    .addComponent(fileIngestFiltersLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(fileIngestFilterScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(interestingFileSetsScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel3)
+                    .addComponent(holdControlLabel)
                     .addComponent(exportSetButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(74, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
 
+    @Messages({
+        "BulkFileSettingsPanel_importSetButtonActionPerformed_noFile_title=File Does Not Exist",
+        "# {0} - filePath",
+        "BulkFileSettingsPanel_importSetButtonActionPerformed_noFile_description=No file exists at {0}.  Please try an existing file.",
+        "BulkFileSettingsPanel_importSetButtonActionPerformed_failure_title=Import Failure",
+        "# {0} - filePath",
+        "BulkFileSettingsPanel_importSetButtonActionPerformed_failure_description=There was an error importing file at: {0}.",})
     private void importSetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_importSetButtonActionPerformed
-        
+        JFileChooser fileChooser = getChooser();
+        int returnState = fileChooser.showOpenDialog(this);
+        if (returnState == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = fileChooser.getSelectedFile();
+            if (!selectedFile.exists()) {
+                JOptionPane.showMessageDialog(this,
+                        Bundle.BulkFileSettingsPanel_importSetButtonActionPerformed_noFile_description(selectedFile.getPath()),
+                        Bundle.BulkFileSettingsPanel_importSetButtonActionPerformed_noFile_title(),
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (!fileImportExport.importFileSets(selectedFile)) {
+                JOptionPane.showMessageDialog(this,
+                        Bundle.BulkFileSettingsPanel_importSetButtonActionPerformed_failure_description(selectedFile.getPath()),
+                        Bundle.BulkFileSettingsPanel_importSetButtonActionPerformed_failure_title(),
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            load();
+        }
     }//GEN-LAST:event_importSetButtonActionPerformed
 
+    @Messages({
+        "BulkFileSettingsPanel_exportSetButtonActionPerformed_overwrite_title=File Exists",
+        "# {0} - filePath",
+        "BulkFileSettingsPanel_exportSetButtonActionPerformed_overwrite_description=Destination file {0} already exists, overwrite?",
+        "BulkFileSettingsPanel_exportSetButtonActionPerformed_noSelected_title=No File Sets Selected",
+        "BulkFileSettingsPanel_exportSetButtonActionPerformed_noSelected_description=Please select at least one file set to export.",
+        "BulkFileSettingsPanel_exportSetButtonActionPerformed_failure_title=Export Failure",
+        "BulkFileSettingsPanel_exportSetButtonActionPerformed_failure_description=There was an error exporting the file sets.",})
     private void exportSetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportSetButtonActionPerformed
-        
+        JFileChooser fileChooser = getChooser();
+        int returnState = fileChooser.showSaveDialog(this);
+        if (returnState == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = fileChooser.getSelectedFile();
+
+            if (selectedFile.exists() && JOptionPane.showConfirmDialog(this,
+                    Bundle.BulkFileSettingsPanel_exportSetButtonActionPerformed_overwrite_description(selectedFile.getPath()),
+                    Bundle.BulkFileSettingsPanel_exportSetButtonActionPerformed_overwrite_title(),
+                    JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) {
+                return;
+            }
+
+            List<FilesSet> fileIngestFilters = new ArrayList<>(fileIngestFilterList.getSelectedValuesList());
+            List<FilesSet> interestingItemFilters = new ArrayList<>(interestingFileSetsList.getSelectedValuesList());
+
+            if (fileIngestFilters.isEmpty() && interestingItemFilters.isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                        Bundle.BulkFileSettingsPanel_exportSetButtonActionPerformed_noSelected_description(),
+                        Bundle.BulkFileSettingsPanel_exportSetButtonActionPerformed_noSelected_title(),
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (!fileImportExport.exportFileSets(selectedFile, fileIngestFilters, interestingItemFilters)) {
+                JOptionPane.showMessageDialog(this,
+                        Bundle.BulkFileSettingsPanel_exportSetButtonActionPerformed_failure_description(),
+                        Bundle.BulkFileSettingsPanel_exportSetButtonActionPerformed_failure_title(),
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            fileIngestFilterList.clearSelection();
+            interestingFileSetsList.clearSelection();
+        }
     }//GEN-LAST:event_exportSetButtonActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton exportSetButton;
+    private javax.swing.JList<FilesSet> fileIngestFilterList;
     private javax.swing.JButton importSetButton;
-    private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel4;
-    private javax.swing.JLabel jLabel5;
-    private javax.swing.JLabel jLabel6;
-    private javax.swing.JLabel jLabel7;
-    private javax.swing.JList<String> jList1;
-    private javax.swing.JList<String> jList2;
-    private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JSeparator jSeparator1;
+    private javax.swing.JList<FilesSet> interestingFileSetsList;
     // End of variables declaration//GEN-END:variables
 }

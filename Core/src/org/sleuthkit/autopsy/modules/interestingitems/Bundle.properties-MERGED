@@ -1,3 +1,17 @@
+BulkFileSettingsPanel_exportSetButtonActionPerformed_failure_description=There was an error exporting the file sets.
+BulkFileSettingsPanel_exportSetButtonActionPerformed_failure_title=Export Failure
+BulkFileSettingsPanel_exportSetButtonActionPerformed_noSelected_description=Please select at least one file set to export.
+BulkFileSettingsPanel_exportSetButtonActionPerformed_noSelected_title=No File Sets Selected
+# {0} - filePath
+BulkFileSettingsPanel_exportSetButtonActionPerformed_overwrite_description=Destination file {0} already exists, overwrite?
+BulkFileSettingsPanel_exportSetButtonActionPerformed_overwrite_title=File Exists
+BulkFileSettingsPanel_fileExtDescription=Bulk File Set File
+# {0} - filePath
+BulkFileSettingsPanel_importSetButtonActionPerformed_failure_description=There was an error importing file at: {0}.
+BulkFileSettingsPanel_importSetButtonActionPerformed_failure_title=Import Failure
+# {0} - filePath
+BulkFileSettingsPanel_importSetButtonActionPerformed_noFile_description=No file exists at {0}.  Please try an existing file.
+BulkFileSettingsPanel_importSetButtonActionPerformed_noFile_title=File Does Not Exist
 FileSet_fileIsMemberOf_noInclusiveRules_ruleName=Not Excluded
 FilesIdentifierIngestJobSettingsPanel.getError=Error getting interesting files sets from settings file.
 FilesIdentifierIngestJobSettingsPanel.updateError=Error updating interesting files sets settings file.
@@ -185,15 +199,15 @@ FilesSetDefsPanel.fileSizeLabel.text=File Size:
 FilesSetRulePanel.ruleTypeLabel.text=Rule Type:
 FilesSetRulePanel.inclusiveRuleTypeRadio.text=Include - files matching this rule will be included in results
 FilesSetRulePanel.exclusiveRuleTypeRadio.text=Exclude - files matching this rule will be excluded from results
-BulkFileSettingsPanel.jLabel1.text=Interesting File Sets
-BulkFileSettingsPanel.jLabel2.text=File Ingest Filters
-BulkFileSettingsPanel.jLabel3.text=Hold the control key while selecting to select multiple sets
 BulkFileSettingsPanel.importSetButton.text=Import
 BulkFileSettingsPanel.exportSetButton.text=Export
-BulkFileSettingsPanel.jLabel4.text=Import Bulk File Set File:
-BulkFileSettingsPanel.jLabel5.text=Export Bulk File Set File:
-BulkFileSettingsPanel.jLabel6.text=This section allows for the bulk import and export of both file ingest filters and interesting file sets.
-BulkFileSettingsPanel.jLabel7.text=Warning: This will overwrite any file sets with the same name.
+BulkFileSettingsPanel.interestingFileSetLabel.text=Interesting File Sets
+BulkFileSettingsPanel.fileIngestFiltersLabel.text=File Ingest Filters
+BulkFileSettingsPanel.holdControlLabel.text=Hold the control key while selecting to select multiple sets
+BulkFileSettingsPanel.importHeader.text=Import Bulk File Set File:
+BulkFileSettingsPanel.exportHeader.text=Export Bulk File Set File:
+BulkFileSettingsPanel.description.text=This section allows for the bulk import and export of both file ingest filters and interesting file sets.
+BulkFileSettingsPanel.overwriteWarningLabel.text=Warning: This will overwrite any file sets with the same name.
 # {0} - filesSetName
 StandardInterestingFileSetsLoader.customSuffixed={0} (Custom)
 StandardInterestingFilesSetsLoader_cannotLoadStandard=Unable to properly read standard interesting files sets.
