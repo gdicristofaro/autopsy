@@ -127,32 +127,30 @@ class BulkFileSettingsPanel extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        javax.swing.JScrollPane interestingFileSetsScrollPane = new javax.swing.JScrollPane();
-        interestingFileSetsList = new javax.swing.JList<>();
+        javax.swing.JScrollPane parentScrollPanel = new javax.swing.JScrollPane();
+        javax.swing.JPanel parentPanel = new javax.swing.JPanel();
+        javax.swing.JLabel description = new javax.swing.JLabel();
+        javax.swing.JPanel importBulkFileSetPanel = new javax.swing.JPanel();
+        javax.swing.JLabel overwriteWarningLabel = new javax.swing.JLabel();
+        javax.swing.JButton importSetButton = new javax.swing.JButton();
+        javax.swing.JPanel importBulkFileSetPanel1 = new javax.swing.JPanel();
         javax.swing.JScrollPane fileIngestFilterScrollPane = new javax.swing.JScrollPane();
         fileIngestFilterList = new javax.swing.JList<>();
-        javax.swing.JLabel interestingFileSetLabel = new javax.swing.JLabel();
         javax.swing.JLabel fileIngestFiltersLabel = new javax.swing.JLabel();
+        javax.swing.JLabel interestingFileSetLabel = new javax.swing.JLabel();
+        javax.swing.JScrollPane interestingFileSetsScrollPane = new javax.swing.JScrollPane();
+        interestingFileSetsList = new javax.swing.JList<>();
         javax.swing.JLabel holdControlLabel = new javax.swing.JLabel();
-        importSetButton = new javax.swing.JButton();
         exportSetButton = new javax.swing.JButton();
-        javax.swing.JSeparator separator = new javax.swing.JSeparator();
-        javax.swing.JLabel importHeader = new javax.swing.JLabel();
-        javax.swing.JLabel exportHeader = new javax.swing.JLabel();
-        javax.swing.JLabel description = new javax.swing.JLabel();
-        javax.swing.JLabel overwriteWarningLabel = new javax.swing.JLabel();
 
-        interestingFileSetsList.setModel(interestingFileSetsModel);
-        interestingFileSetsScrollPane.setViewportView(interestingFileSetsList);
+        parentScrollPanel.setBorder(null);
 
-        fileIngestFilterList.setModel(fileIngestFilterModel);
-        fileIngestFilterScrollPane.setViewportView(fileIngestFilterList);
+        org.openide.awt.Mnemonics.setLocalizedText(description, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.description.text")); // NOI18N
 
-        org.openide.awt.Mnemonics.setLocalizedText(interestingFileSetLabel, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.interestingFileSetLabel.text")); // NOI18N
+        importBulkFileSetPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.importBulkFileSetPanel.border.title"))); // NOI18N
 
-        org.openide.awt.Mnemonics.setLocalizedText(fileIngestFiltersLabel, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.fileIngestFiltersLabel.text")); // NOI18N
-
-        org.openide.awt.Mnemonics.setLocalizedText(holdControlLabel, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.holdControlLabel.text")); // NOI18N
+        overwriteWarningLabel.setForeground(new java.awt.Color(255, 0, 0));
+        org.openide.awt.Mnemonics.setLocalizedText(overwriteWarningLabel, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.overwriteWarningLabel.text")); // NOI18N
 
         importSetButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/sleuthkit/autopsy/images/import16.png"))); // NOI18N
         org.openide.awt.Mnemonics.setLocalizedText(importSetButton, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.importSetButton.text")); // NOI18N
@@ -166,9 +164,43 @@ class BulkFileSettingsPanel extends javax.swing.JPanel {
             }
         });
 
+        javax.swing.GroupLayout importBulkFileSetPanelLayout = new javax.swing.GroupLayout(importBulkFileSetPanel);
+        importBulkFileSetPanel.setLayout(importBulkFileSetPanelLayout);
+        importBulkFileSetPanelLayout.setHorizontalGroup(
+            importBulkFileSetPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(importBulkFileSetPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(importBulkFileSetPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(overwriteWarningLabel)
+                    .addComponent(importSetButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        importBulkFileSetPanelLayout.setVerticalGroup(
+            importBulkFileSetPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(importBulkFileSetPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(overwriteWarningLabel)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(importSetButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
+        importBulkFileSetPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder(org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.importBulkFileSetPanel1.border.title"))); // NOI18N
+
+        fileIngestFilterList.setModel(fileIngestFilterModel);
+        fileIngestFilterScrollPane.setViewportView(fileIngestFilterList);
+
+        org.openide.awt.Mnemonics.setLocalizedText(fileIngestFiltersLabel, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.fileIngestFiltersLabel.text")); // NOI18N
+
+        org.openide.awt.Mnemonics.setLocalizedText(interestingFileSetLabel, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.interestingFileSetLabel.text")); // NOI18N
+
+        interestingFileSetsList.setModel(interestingFileSetsModel);
+        interestingFileSetsScrollPane.setViewportView(interestingFileSetsList);
+
+        org.openide.awt.Mnemonics.setLocalizedText(holdControlLabel, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.holdControlLabel.text")); // NOI18N
+
         exportSetButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/sleuthkit/autopsy/images/export16.png"))); // NOI18N
         org.openide.awt.Mnemonics.setLocalizedText(exportSetButton, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.exportSetButton.text")); // NOI18N
-        exportSetButton.setEnabled(false);
         exportSetButton.setMargin(new java.awt.Insets(2, 6, 2, 6));
         exportSetButton.setMaximumSize(new java.awt.Dimension(111, 25));
         exportSetButton.setMinimumSize(new java.awt.Dimension(111, 25));
@@ -179,77 +211,76 @@ class BulkFileSettingsPanel extends javax.swing.JPanel {
             }
         });
 
-        org.openide.awt.Mnemonics.setLocalizedText(importHeader, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.importHeader.text")); // NOI18N
+        javax.swing.GroupLayout importBulkFileSetPanel1Layout = new javax.swing.GroupLayout(importBulkFileSetPanel1);
+        importBulkFileSetPanel1.setLayout(importBulkFileSetPanel1Layout);
+        importBulkFileSetPanel1Layout.setHorizontalGroup(
+            importBulkFileSetPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(importBulkFileSetPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(importBulkFileSetPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(importBulkFileSetPanel1Layout.createSequentialGroup()
+                        .addGroup(importBulkFileSetPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(fileIngestFilterScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 252, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(fileIngestFiltersLabel))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addGroup(importBulkFileSetPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(interestingFileSetLabel)
+                            .addComponent(interestingFileSetsScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 252, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addComponent(holdControlLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 352, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(exportSetButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        importBulkFileSetPanel1Layout.setVerticalGroup(
+            importBulkFileSetPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, importBulkFileSetPanel1Layout.createSequentialGroup()
+                .addGroup(importBulkFileSetPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(fileIngestFiltersLabel)
+                    .addComponent(interestingFileSetLabel))
+                .addGap(9, 9, 9)
+                .addGroup(importBulkFileSetPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(interestingFileSetsScrollPane)
+                    .addComponent(fileIngestFilterScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(holdControlLabel)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(exportSetButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
 
-        org.openide.awt.Mnemonics.setLocalizedText(exportHeader, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.exportHeader.text")); // NOI18N
+        javax.swing.GroupLayout parentPanelLayout = new javax.swing.GroupLayout(parentPanel);
+        parentPanel.setLayout(parentPanelLayout);
+        parentPanelLayout.setHorizontalGroup(
+            parentPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(parentPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(parentPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(description)
+                    .addComponent(importBulkFileSetPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(importBulkFileSetPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
+        );
+        parentPanelLayout.setVerticalGroup(
+            parentPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(parentPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(description)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(importBulkFileSetPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(importBulkFileSetPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+        );
 
-        org.openide.awt.Mnemonics.setLocalizedText(description, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.description.text")); // NOI18N
-
-        overwriteWarningLabel.setForeground(new java.awt.Color(255, 0, 0));
-        org.openide.awt.Mnemonics.setLocalizedText(overwriteWarningLabel, org.openide.util.NbBundle.getMessage(BulkFileSettingsPanel.class, "BulkFileSettingsPanel.overwriteWarningLabel.text")); // NOI18N
+        parentScrollPanel.setViewportView(parentPanel);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(description)
-                    .addComponent(importHeader)
-                    .addComponent(exportHeader)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(14, 14, 14)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(holdControlLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 352, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(exportSetButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(fileIngestFilterScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 252, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(fileIngestFiltersLabel))
-                                .addGap(18, 18, 18)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(interestingFileSetLabel)
-                                    .addComponent(interestingFileSetsScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 252, javax.swing.GroupLayout.PREFERRED_SIZE)))))
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                            .addGap(6, 6, 6)
-                            .addComponent(overwriteWarningLabel)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(importSetButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addComponent(separator, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 536, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(94, Short.MAX_VALUE))
+            .addComponent(parentScrollPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 665, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(description)
-                .addGap(18, 18, 18)
-                .addComponent(importHeader)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(importSetButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(overwriteWarningLabel))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(separator, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(exportHeader)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(interestingFileSetLabel)
-                    .addComponent(fileIngestFiltersLabel))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(fileIngestFilterScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(interestingFileSetsScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(holdControlLabel)
-                    .addComponent(exportSetButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(74, Short.MAX_VALUE))
+            .addComponent(parentScrollPanel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 549, Short.MAX_VALUE)
         );
     }// </editor-fold>//GEN-END:initComponents
 
@@ -334,7 +365,6 @@ class BulkFileSettingsPanel extends javax.swing.JPanel {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton exportSetButton;
     private javax.swing.JList<FilesSet> fileIngestFilterList;
-    private javax.swing.JButton importSetButton;
     private javax.swing.JList<FilesSet> interestingFileSetsList;
     // End of variables declaration//GEN-END:variables
 }
