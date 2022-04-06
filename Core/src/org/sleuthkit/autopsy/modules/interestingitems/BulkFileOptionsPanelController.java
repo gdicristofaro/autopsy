@@ -18,8 +18,11 @@
  */
 package org.sleuthkit.autopsy.modules.interestingitems;
 
+import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import javax.swing.JComponent;
+import javax.swing.SwingUtilities;
 import org.netbeans.spi.options.OptionsPanelController;
 import org.openide.util.HelpCtx;
 import org.openide.util.Lookup;
@@ -41,6 +44,8 @@ import org.openide.util.NbBundle.Messages;
 public final class BulkFileOptionsPanelController extends OptionsPanelController {
 
     private BulkFileSettingsPanel panel;
+    private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
+    private boolean changed;
 
     /**
      * Component should load its data here.
@@ -48,6 +53,7 @@ public final class BulkFileOptionsPanelController extends OptionsPanelController
     @Override
     public void update() {
         getPanel().load();
+        changed = false;
     }
 
     /**
@@ -57,7 +63,15 @@ public final class BulkFileOptionsPanelController extends OptionsPanelController
      */
     @Override
     public void applyChanges() {
-        // panel changes happen within import functionality
+        if (changed) {
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    getPanel().store();
+                    changed = false;
+                }
+            });
+        }
     }
 
     /**
@@ -83,7 +97,7 @@ public final class BulkFileOptionsPanelController extends OptionsPanelController
      */
     @Override
     public boolean isChanged() {
-        return false;
+        return changed;
     }
 
     @Override
@@ -98,23 +112,35 @@ public final class BulkFileOptionsPanelController extends OptionsPanelController
 
     @Override
     public void addPropertyChangeListener(PropertyChangeListener l) {
-        // no action needs to take place
+        pcs.addPropertyChangeListener(l);
     }
 
     @Override
     public void removePropertyChangeListener(PropertyChangeListener l) {
-        // no action needs to take place
+        pcs.removePropertyChangeListener(l);
     }
 
     private BulkFileSettingsPanel getPanel() {
         if (panel == null) {
             panel = new BulkFileSettingsPanel();
+            panel.addPropertyChangeListener(new PropertyChangeListener() {
+                @Override
+                public void propertyChange(PropertyChangeEvent evt) {
+                    if (evt.getPropertyName().equals(OptionsPanelController.PROP_CHANGED)) {
+                        changed();
+                    }
+                }
+            });
         }
         return panel;
     }
 
     void changed() {
-        // changed internally in panel.
+        if (!changed) {
+            changed = true;
+            pcs.firePropertyChange(OptionsPanelController.PROP_CHANGED, false, true);
+        }
+        pcs.firePropertyChange(OptionsPanelController.PROP_VALID, null, null);
     }
 
 }

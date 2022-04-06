@@ -21,18 +21,23 @@ package org.sleuthkit.autopsy.modules.interestingitems;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 import javax.swing.DefaultListModel;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.netbeans.spi.options.OptionsPanelController;
 import org.openide.util.NbBundle.Messages;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.guiutils.JFileChooserFactory;
+import org.sleuthkit.autopsy.modules.interestingitems.BulkFileSetImportExport.FileSetsData;
 
 /**
  * Panel for handling file set import / export.
@@ -48,6 +53,10 @@ class BulkFileSettingsPanel extends javax.swing.JPanel {
     private final BulkFileSetImportExport fileImportExport = BulkFileSetImportExport.getInstance();
     private final DefaultListModel<FilesSet> interestingFileSetsModel = new DefaultListModel<FilesSet>();
     private final DefaultListModel<FilesSet> fileIngestFilterModel = new DefaultListModel<FilesSet>();
+    
+    private Map<String, FilesSet> interestingFilesSetMap = new HashMap<>();
+    private Map<String, FilesSet> fileIngestFilterMap = new HashMap<>();
+    
     private JFileChooser fileChooser = null;
     private FileFilter fileFilter = new FileNameExtensionFilter(Bundle.BulkFileSettingsPanel_fileExtDescription(), "xml");
 
@@ -81,16 +90,43 @@ class BulkFileSettingsPanel extends javax.swing.JPanel {
      * Loads all data to display in UI and performs refresh as necessary.
      */
     void load() {
+        interestingFilesSetMap.clear();
+        fileIngestFilterMap.clear();
+        refresh();
+    }
+    
+    /**
+     * Refreshes the view without clearing out any loaded data.
+     */
+    void refresh() {
         try {
             FilesSetsManager setsManager = FilesSetsManager.getInstance();
-            Map<String, FilesSet> curInterestingFiles = setsManager.getInterestingFilesSets();
-            Map<String, FilesSet> curFileFilters = setsManager.getCustomFileIngestFilters();
+            // filter out any standard sets
+            Map<String, FilesSet> curInterestingFiles = setsManager.getInterestingFilesSets().entrySet().stream()
+                    .filter(e -> !e.getValue().isStandardSet())
+                    .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue(), (a,b) -> a));
+            
+            // add in any unsaved sets
+            curInterestingFiles.putAll(interestingFilesSetMap);
+            
+            Map<String, FilesSet> curFileFilters = new HashMap<>(setsManager.getCustomFileIngestFilters());
+            // add in any unsaved sets
+            curFileFilters.putAll(fileIngestFilterMap);
+            
+            
             loadList(interestingFileSetsModel, curInterestingFiles);
             loadList(fileIngestFilterModel, curFileFilters);
             setEnabled();
         } catch (FilesSetsManager.FilesSetsManagerException ex) {
             logger.log(Level.WARNING, "There was an error loading current file sets.", ex);
-        }
+        }        
+    }
+    
+    /**
+     * Stores data in settings.
+     */
+    void store() {
+        fileImportExport.importFileSets(fileIngestFilterMap, interestingFilesSetMap);
     }
 
     /**
@@ -303,8 +339,9 @@ class BulkFileSettingsPanel extends javax.swing.JPanel {
                         JOptionPane.ERROR_MESSAGE);
                 return;
             }
-
-            if (!fileImportExport.importFileSets(selectedFile)) {
+            
+            FileSetsData fileSetData = fileImportExport.getFileSets(selectedFile);
+            if (fileSetData == null) {
                 JOptionPane.showMessageDialog(this,
                         Bundle.BulkFileSettingsPanel_importSetButtonActionPerformed_failure_description(selectedFile.getPath()),
                         Bundle.BulkFileSettingsPanel_importSetButtonActionPerformed_failure_title(),
@@ -312,7 +349,12 @@ class BulkFileSettingsPanel extends javax.swing.JPanel {
                 return;
             }
 
-            load();
+            this.fileIngestFilterMap.putAll(fileSetData.getFileFilterSets());
+            this.interestingFilesSetMap.putAll(fileSetData.getInterestingFileSets());
+            
+            firePropertyChange(OptionsPanelController.PROP_CHANGED, null, null);
+
+            refresh();
         }
     }//GEN-LAST:event_importSetButtonActionPerformed
 
@@ -329,6 +371,10 @@ class BulkFileSettingsPanel extends javax.swing.JPanel {
         int returnState = fileChooser.showSaveDialog(this);
         if (returnState == JFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
+            
+            if (!FilenameUtils.getExtension(selectedFile.getName()).equalsIgnoreCase("xml")) {
+                selectedFile = new File(selectedFile.getAbsolutePath() + ".xml");
+            }
 
             if (selectedFile.exists() && JOptionPane.showConfirmDialog(this,
                     Bundle.BulkFileSettingsPanel_exportSetButtonActionPerformed_overwrite_description(selectedFile.getPath()),

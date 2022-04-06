@@ -28,6 +28,7 @@ import java.util.logging.Level;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import org.apache.commons.collections.map.UnmodifiableMap;
 import org.apache.commons.collections4.MapUtils;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.coreutils.XMLUtil;
@@ -64,34 +65,75 @@ class BulkFileSetImportExport {
     }
 
     /**
-     * Import a bulk files sets file. This will overwrite any interesting file
-     * sets or file ingest filters with the same name as the imported file.
+     * Contains interesting file set and ingest file filter set information.
+     */
+    public static class FileSetsData {
+
+        private final Map<String, FilesSet> interestingFileSets;
+        private final Map<String, FilesSet> fileFilterSets;
+
+        /**
+         * Main constructor.
+         *
+         * @param interestingFileSets The interesting file sets.
+         * @param fileFilterSets      The file filter sets.
+         */
+        FileSetsData(Map<String, FilesSet> interestingFileSets, Map<String, FilesSet> fileFilterSets) {
+            this.interestingFileSets = interestingFileSets == null ? Collections.emptyMap() : UnmodifiableMap.decorate(interestingFileSets);
+            this.fileFilterSets = fileFilterSets == null ? Collections.emptyMap() : UnmodifiableMap.decorate(fileFilterSets);
+        }
+
+        /**
+         * @return The interesting file sets.
+         */
+        public Map<String, FilesSet> getInterestingFileSets() {
+            return interestingFileSets;
+        }
+
+        /**
+         * @return The file filter sets.
+         */
+        public Map<String, FilesSet> getFileFilterSets() {
+            return fileFilterSets;
+        }
+    }
+
+    /**
+     * Import a bulk files sets file.
      *
      * @param input The input file.
      *
-     * @return True if operation was successful.
+     * @return The data from the file or null if the file could not be
+     *         processed.
      */
-    public boolean importFileSets(File input) {
+    public FileSetsData getFileSets(File input) {
         Document doc = XMLUtil.loadDoc(BulkFileSetImportExport.class, input.getPath());
 
         Element root = getChildElement(doc.getElementsByTagName(ROOT_ELEMENT));
         if (root == null) {
             logger.log(Level.WARNING, MessageFormat.format("Root element: {0} cannot be found in file: {1}.", ROOT_ELEMENT, input.getPath()));
-            return false;
+            return null;
         }
 
         Map<String, FilesSet> interestingFilesSets = getFilesSet(root, INTERESTING_FILES_ELEMENT, input.getPath());
         Map<String, FilesSet> ingestFiltersSets = getFilesSet(root, INGEST_FILTERS_ELEMENT, input.getPath());
 
-        if (MapUtils.isEmpty(ingestFiltersSets) && MapUtils.isEmpty(interestingFilesSets)) {
-            logger.log(Level.WARNING, MessageFormat.format("No interesting file sets or ingest filters could be found in file: {1}.", ROOT_ELEMENT, input.getPath()));
-            return false;
-        }
+        return new FileSetsData(interestingFilesSets, ingestFiltersSets);
+    }
 
+    /**
+     * Stores imported file set data in settings.
+     *
+     * @param ingestFilterSets     The map of ingest filter sets to add.
+     * @param interestingFilesSets The map of interesting file sets to add.
+     *
+     * @return True if operation was successful.
+     */
+    public boolean importFileSets(Map<String, FilesSet> ingestFilterSets, Map<String, FilesSet> interestingFilesSets) {
         FilesSetsManager setsManager = FilesSetsManager.getInstance();
         try {
-            if (MapUtils.isNotEmpty(ingestFiltersSets)) {
-                setsManager.setCustomFileIngestFilters(getMerged(setsManager.getCustomFileIngestFilters(), ingestFiltersSets));
+            if (MapUtils.isNotEmpty(ingestFilterSets)) {
+                setsManager.setCustomFileIngestFilters(getMerged(setsManager.getCustomFileIngestFilters(), ingestFilterSets));
             }
 
             if (MapUtils.isNotEmpty(interestingFilesSets)) {
@@ -166,7 +208,7 @@ class BulkFileSetImportExport {
      */
     private static Map<String, FilesSet> getMerged(Map<String, FilesSet> orig, Map<String, FilesSet> newItems) {
         Map<String, FilesSet> dest = new HashMap<>(orig);
-        StandardInterestingFilesSetsLoader.copyOnNewer(newItems, dest);
+        dest.putAll(newItems);
         return dest;
     }
 
@@ -188,11 +230,11 @@ class BulkFileSetImportExport {
             doc.appendChild(rootElement);
 
             Element ingestFiltersEl = doc.createElement(INGEST_FILTERS_ELEMENT);
-            rootElement.appendChild(rootElement);
+            rootElement.appendChild(ingestFiltersEl);
             InterestingItemsFilesSetSettings.writeXmlSets(doc, ingestFiltersEl, fileIngestFilters);
 
             Element interestingFilesEl = doc.createElement(INTERESTING_FILES_ELEMENT);
-            rootElement.appendChild(rootElement);
+            rootElement.appendChild(interestingFilesEl);
             InterestingItemsFilesSetSettings.writeXmlSets(doc, interestingFilesEl, interestingItemFilters);
 
             return XMLUtil.saveDoc(InterestingItemsFilesSetSettings.class, output.getPath(), XML_ENCODING, doc);
