@@ -32,7 +32,7 @@ import org.sleuthkit.autopsy.datamodel.DataArtifactItem;
 import org.sleuthkit.autopsy.mainui.datamodel.DataArtifactRowDTO;
 import org.sleuthkit.autopsy.mainui.datamodel.DataArtifactTableSearchResultsDTO;
 import org.sleuthkit.datamodel.BlackboardArtifactTag;
-import org.sleuthkit.autopsy.mainui.datamodel.DataArtifactTableSearchResultsDTO.CommAccoutTableSearchResultsDTO;
+import org.sleuthkit.autopsy.mainui.datamodel.DataArtifactTableSearchResultsDTO.CommAccountTableSearchResultsDTO;
 import org.sleuthkit.datamodel.DataArtifact;
 import org.sleuthkit.datamodel.Tag;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -78,11 +78,11 @@ public class DataArtifactNode extends ArtifactNode<DataArtifact, DataArtifactRow
     }
     
     private static String getIconFilePath(DataArtifactTableSearchResultsDTO tableData) {
-        if(!(tableData instanceof CommAccoutTableSearchResultsDTO)) {
+        if(!(tableData instanceof CommAccountTableSearchResultsDTO)) {
             return IconsUtil.getIconFilePath(tableData.getArtifactType().getTypeID());
         }
         
-        return IconsUtil.getIconFilePath(((CommAccoutTableSearchResultsDTO)tableData).getAccountType());  
+        return IconsUtil.getIconFilePath(((CommAccountTableSearchResultsDTO)tableData).getAccountType());  
     }
     
     @Override

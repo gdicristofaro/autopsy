@@ -1243,7 +1243,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
     
     private SearchManager getSearchManager(DAOFetcher<?> fetcher) {
         int pageSize = getPageSize();
-        List<ColumnSort> initialSorting = ResultViewerPersistence.getColumnSorting(fetcher.getSignature(), fetcher.getColumnKeys());
+        List<ColumnSort> initialSorting = ResultViewerPersistence.getColumnSorting(fetcher.getSignature());
         return new SearchManager(fetcher, pageSize, initialSorting);
     }
     

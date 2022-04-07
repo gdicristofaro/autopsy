@@ -47,7 +47,7 @@ import org.sleuthkit.autopsy.ingest.ModuleDataEvent;
 import static org.sleuthkit.autopsy.mainui.datamodel.AbstractDAO.CACHE_DURATION;
 import static org.sleuthkit.autopsy.mainui.datamodel.AbstractDAO.CACHE_DURATION_UNITS;
 import static org.sleuthkit.autopsy.mainui.datamodel.AbstractDAO.CACHE_SIZE;
-import org.sleuthkit.autopsy.mainui.datamodel.DataArtifactTableSearchResultsDTO.CommAccoutTableSearchResultsDTO;
+import org.sleuthkit.autopsy.mainui.datamodel.DataArtifactTableSearchResultsDTO.CommAccountTableSearchResultsDTO;
 import org.sleuthkit.autopsy.mainui.datamodel.TreeResultsDTO.TreeDisplayCount;
 import org.sleuthkit.autopsy.mainui.datamodel.events.CommAccountsEvent;
 import org.sleuthkit.autopsy.mainui.datamodel.events.DAOEvent;
@@ -88,14 +88,14 @@ public class CommAccountsDAO extends AbstractDAO {
         return Case.getCurrentCaseThrows().getSleuthkitCase();
     }
 
-    public SearchResultsDTO getCommAcounts(CommAccountsSearchParams key, long startItem, Long maxCount) throws ExecutionException, IllegalArgumentException {
+    public SearchResultsDTO getCommAccounts(CommAccountsSearchParams key, long startItem, Long maxCount, List<ColumnSort> sortColumns) throws ExecutionException, IllegalArgumentException {
         if (key.getType() == null) {
             throw new IllegalArgumentException("Must have non-null type");
         } else if (key.getDataSourceId() != null && key.getDataSourceId() <= 0) {
             throw new IllegalArgumentException("Data source id must be greater than 0 or null");
         }
 
-        SearchParams<CommAccountsSearchParams> searchParams = new SearchParams<>(key, startItem, maxCount);
+        SearchParams<CommAccountsSearchParams> searchParams = new SearchParams<>(key, startItem, maxCount, sortColumns);
         return searchParamsCache.get(searchParams, () -> fetchCommAccountsDTOs(searchParams));
     }
 
@@ -140,6 +140,7 @@ public class CommAccountsDAO extends AbstractDAO {
     @NbBundle.Messages({"CommAccounts.name.text=Communication Accounts"})
     private SearchResultsDTO fetchCommAccountsDTOs(SearchParams<CommAccountsSearchParams> cacheKey) throws NoCurrentCaseException, TskCoreException, SQLException {
 
+        // TODO
         // get current page of communication accounts results
         SleuthkitCase skCase = Case.getCurrentCaseThrows().getSleuthkitCase();
         Blackboard blackboard = skCase.getBlackboard();
@@ -158,7 +159,7 @@ public class CommAccountsDAO extends AbstractDAO {
 
         DataArtifactDAO dataArtDAO = MainDAO.getInstance().getDataArtifactsDAO();
         BlackboardArtifactDAO.TableData tableData = dataArtDAO.createTableData(BlackboardArtifact.Type.TSK_ACCOUNT, pagedArtifacts);
-        return new CommAccoutTableSearchResultsDTO(type, BlackboardArtifact.Type.TSK_ACCOUNT, tableData.columnKeys, tableData.rows, cacheKey.getStartItem(), allArtifacts.size());
+        return new CommAccountTableSearchResultsDTO(type, BlackboardArtifact.Type.TSK_ACCOUNT, tableData.columnKeys, tableData.rows, cacheKey.getStartItem(), allArtifacts.size());
     }
 
     private static TreeResultsDTO.TreeItemDTO<CommAccountsSearchParams> createAccountTreeItem(Account.Type accountType, Long dataSourceId, TreeResultsDTO.TreeDisplayCount count) {
@@ -372,7 +373,7 @@ public class CommAccountsDAO extends AbstractDAO {
 
         @Override
         public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, List<ColumnSort> sortColumns) throws ExecutionException {
-            return getDAO().getCommAcounts(this.getParameters(), pageIdx * pageSize, (long) pageSize, sortColumns);
+            return getDAO().getCommAccounts(this.getParameters(), pageIdx * pageSize, (long) pageSize, sortColumns);
         }
 
         @Override
@@ -382,10 +383,7 @@ public class CommAccountsDAO extends AbstractDAO {
 
         @Override
         public String getSignature() {
-        }
-
-        @Override
-        public List<String> getColumnKeys() {
+            return CommAccountTableSearchResultsDTO.getTypeSignature();
         }
     }
 }

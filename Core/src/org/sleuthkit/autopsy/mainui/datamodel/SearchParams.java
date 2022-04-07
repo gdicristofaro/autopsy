@@ -18,7 +18,11 @@
  */
 package org.sleuthkit.autopsy.mainui.datamodel;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
+import org.sleuthkit.autopsy.corecomponentinterfaces.ColumnSort;
 
 /**
  * Base implementation of search parameters to provide to a DAO.
@@ -27,15 +31,21 @@ class SearchParams<T> {
     private final T paramData;
     private final long startItem;
     private final Long maxResultsCount;
-
+    private final List<ColumnSort> sortColumns;
+    
     public SearchParams(T paramData) {
         this(paramData, 0, null);
     }
     
     public SearchParams(T paramData, long startItem, Long maxResultsCount) {
+        this(paramData, startItem, maxResultsCount, Collections.emptyList());
+    }
+    
+    public SearchParams(T paramData, long startItem, Long maxResultsCount, List<ColumnSort> sortColumns) {
         this.paramData = paramData;
         this.startItem = startItem;
         this.maxResultsCount = maxResultsCount;
+        this.sortColumns = sortColumns == null ? Collections.emptyList() : new ArrayList<>(sortColumns);
     }
 
     public T getParamData() {
@@ -50,12 +60,17 @@ class SearchParams<T> {
         return maxResultsCount;
     }
 
+    public List<ColumnSort> getSortColumns() {
+        return sortColumns;
+    }
+
     @Override
     public int hashCode() {
-        int hash = 3;
+        int hash = 7;
         hash = 41 * hash + Objects.hashCode(this.paramData);
         hash = 41 * hash + (int) (this.startItem ^ (this.startItem >>> 32));
         hash = 41 * hash + Objects.hashCode(this.maxResultsCount);
+        hash = 41 * hash + Objects.hashCode(this.sortColumns);
         return hash;
     }
 
@@ -80,9 +95,13 @@ class SearchParams<T> {
         if (!Objects.equals(this.maxResultsCount, other.maxResultsCount)) {
             return false;
         }
+        if (!Objects.equals(this.sortColumns, other.sortColumns)) {
+            return false;
+        }
         return true;
     }
-
+    
+    
     
     
 }

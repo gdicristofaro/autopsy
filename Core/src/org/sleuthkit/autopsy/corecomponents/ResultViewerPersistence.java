@@ -19,36 +19,47 @@
 package org.sleuthkit.autopsy.corecomponents;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
-import java.util.stream.Collectors;
 import javax.swing.SortOrder;
 import org.openide.nodes.Children;
 import org.openide.nodes.Node;
 import org.openide.util.NbPreferences;
 import org.sleuthkit.autopsy.corecomponentinterfaces.ColumnSort;
+import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.mainui.datamodel.SearchResultsDTO;
 
 final class ResultViewerPersistence {
 
+    private static final String SORT_RANK_SUFFIX = ".sortRank";
+    private static final String SORT_ORDER_SUFFIX = ".sortOrder";
+
+    private static final Logger logger = Logger.getLogger(ResultViewerPersistence.class.getName());
+
     private ResultViewerPersistence() {
     }
 
-
     /**
      * Returns the column sort order.
-     * @param signature The signature to use when looking up keys in the properties.
-     * @param columns The columns for the search results to identify.
-     * @return The list of columns to be sorted in order of highest to lowest priority or empty.
+     *
+     * @param signature The signature to use when looking up keys in the
+     *                  properties.
+     *
+     * @return The list of columns to be sorted in order of highest to lowest
+     *         priority or empty.
      */
-    static List<ColumnSort> getColumnSorting(String signature, Collection<String> columns) {
-        if (columns == null || signature == null) {
+    static List<ColumnSort> getColumnSorting(String signature) {
+        if (signature == null) {
             return Collections.emptyList();
         }
 
@@ -57,17 +68,54 @@ final class ResultViewerPersistence {
             return Collections.emptyList();
         }
 
-        return columns.stream()
-                .map(propName -> {
-                    int sortRank = preferences.getInt(ResultViewerPersistence.getColumnSortRankKey(signature, propName), -1);
-                    boolean ascending = preferences.getBoolean(ResultViewerPersistence.getColumnSortOrderKey(signature, propName), true);
-                    return (sortRank > 0)
-                            ? new ColumnSort(ascending, propName, sortRank)
-                            : null;
-                })
-                .filter(pair -> pair != null)
-                .sorted(Comparator.comparing(ColumnSort::getSortRank))
-                .collect(Collectors.toList());
+        String prefix = stripNonAlphanumeric(signature) + ".";
+
+        Map<String, Boolean> isAscendingMap = new HashMap<>();
+        Map<String, Integer> sortOrderMap = new HashMap<>();
+        try {
+            for (String key : preferences.keys()) {
+                if (key.startsWith(prefix)) {
+                    String keySubstr = key.substring(prefix.length());
+                    if (keySubstr.endsWith(SORT_RANK_SUFFIX)) {
+                        String column = keySubstr.substring(0, keySubstr.length() - SORT_RANK_SUFFIX.length());
+                        int sortOrder = preferences.getInt(key, -1);
+                        if (sortOrder >= 0) {
+                            sortOrderMap.put(column, sortOrder);
+                        }
+                    } else if (keySubstr.endsWith(SORT_ORDER_SUFFIX)) {
+                        String column = keySubstr.substring(0, keySubstr.length() - SORT_RANK_SUFFIX.length());
+                        isAscendingMap.put(column, preferences.getBoolean(key, true));
+                    }
+                }
+            }
+
+        } catch (BackingStoreException ex) {
+            logger.log(Level.WARNING, "There was an error fetching column sorting for signature: " + signature, ex);
+            return Collections.emptyList();
+        }
+
+        List<ColumnSort> toRet = new ArrayList<>();
+        for (Entry<String, Integer> sortOrderEntry : sortOrderMap.entrySet()) {
+            String column = sortOrderEntry.getKey();
+            if (column == null) {
+                continue;
+            }
+
+            Integer sortOrder = sortOrderEntry.getValue();
+            if (sortOrder == null) {
+                continue;
+            }
+
+            Boolean isAsc = isAscendingMap.get(column);
+            if (isAsc == null) {
+                isAsc = true;
+            }
+
+            toRet.add(new ColumnSort(isAsc, column, sortOrder));
+        }
+
+        Collections.sort(toRet, Comparator.comparing(ColumnSort::getSortRank));
+        return toRet;
     }
 
     /**
@@ -97,7 +145,7 @@ final class ResultViewerPersistence {
      * @return A generated key for the preference file
      */
     static String getColumnSortOrderKey(TableFilterNode node, String propName) {
-        return getColumnKeyBase(node.getColumnOrderKey(), propName) + ".sortOrder";
+        return getColumnKeyBase(node.getColumnOrderKey(), propName) + SORT_ORDER_SUFFIX;
     }
     
     /**
@@ -117,7 +165,7 @@ final class ResultViewerPersistence {
      * @return The properties key for the sort order.
      */    
     static String getColumnSortOrderKey(String signature, String propName) {
-        return getColumnKeyBase(signature, propName) + ".sortOrder";
+        return getColumnKeyBase(signature, propName) + SORT_ORDER_SUFFIX;
     }
 
     /**
@@ -130,7 +178,7 @@ final class ResultViewerPersistence {
      * @return A generated key for the preference file
      */
     static String getColumnSortRankKey(TableFilterNode node, String propName) {
-        return getColumnKeyBase(node.getColumnOrderKey(), propName) + ".sortRank";
+        return getColumnKeyBase(node.getColumnOrderKey(), propName) + SORT_RANK_SUFFIX;
     }
     
     /**
@@ -150,7 +198,7 @@ final class ResultViewerPersistence {
      * @return The properties key to use.
      */
     static String getColumnSortRankKey(String signature, String propName) {
-        return getColumnKeyBase(signature, propName) + ".sortRank";
+        return getColumnKeyBase(signature, propName) + SORT_RANK_SUFFIX;
     }
 
     /**

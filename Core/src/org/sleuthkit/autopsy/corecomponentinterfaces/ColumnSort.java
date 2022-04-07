@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.autopsy.corecomponentinterfaces;
 
+import java.util.Objects;
+
 /**
  * Describes the sorting based on a column.
  */
@@ -59,4 +61,39 @@ public class ColumnSort {
     public int getSortRank() {
         return sortRank;
     }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 53 * hash + (this.ascending ? 1 : 0);
+        hash = 53 * hash + Objects.hashCode(this.columnKey);
+        hash = 53 * hash + this.sortRank;
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final ColumnSort other = (ColumnSort) obj;
+        if (this.ascending != other.ascending) {
+            return false;
+        }
+        if (this.sortRank != other.sortRank) {
+            return false;
+        }
+        if (!Objects.equals(this.columnKey, other.columnKey)) {
+            return false;
+        }
+        return true;
+    }
+    
+    
 }

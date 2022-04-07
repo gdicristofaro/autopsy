@@ -72,14 +72,6 @@ public abstract class DAOFetcher<P> {
         return "";
     }
 
-    // TODO to be replaced with abstract method and implemented in all fetchers.
-    /**
-     * @return The columns of search results returned by this fetcher.
-     */
-    public List<String> getColumnKeys() {
-        return Collections.emptyList();
-    }
-
     /**
      * Returns true if the ingest module event will require a refresh in the
      * data.

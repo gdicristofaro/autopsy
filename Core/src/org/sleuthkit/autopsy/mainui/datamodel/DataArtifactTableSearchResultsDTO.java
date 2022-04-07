@@ -30,6 +30,13 @@ public class DataArtifactTableSearchResultsDTO extends BaseSearchResultsDTO {
     private static final String TYPE_ID = "DATA_ARTIFACT";
     private static final String SIGNATURE = "dataartifact";
 
+    /**
+     * @return The type signature for this type.
+     */
+    public static String getTypeSignature() {
+        return SIGNATURE;
+    }
+
     private final BlackboardArtifact.Type artifactType;
 
     public DataArtifactTableSearchResultsDTO(BlackboardArtifact.Type artifactType, List<ColumnKey> columns, List<RowDTO> items, long startItem, long totalResultsCount) {
@@ -40,19 +47,26 @@ public class DataArtifactTableSearchResultsDTO extends BaseSearchResultsDTO {
     public BlackboardArtifact.Type getArtifactType() {
         return artifactType;
     }
-    
-    public static class CommAccoutTableSearchResultsDTO extends DataArtifactTableSearchResultsDTO {
-        
+
+    public static class CommAccountTableSearchResultsDTO extends DataArtifactTableSearchResultsDTO {
+
         private final Account.Type accountType;
-        
-        public CommAccoutTableSearchResultsDTO(Account.Type accountType, BlackboardArtifact.Type artifactType, List<ColumnKey> columns, List<RowDTO> items, long startItem, long totalResultsCount) {
+
+        /**
+         * @return The type signature for this type.
+         */
+        public static String getTypeSignature() {
+            return DataArtifactTableSearchResultsDTO.getTypeSignature();
+        }
+
+        public CommAccountTableSearchResultsDTO(Account.Type accountType, BlackboardArtifact.Type artifactType, List<ColumnKey> columns, List<RowDTO> items, long startItem, long totalResultsCount) {
             super(artifactType, columns, items, startItem, totalResultsCount);
             this.accountType = accountType;
         }
-        
+
         public Account.Type getAccountType() {
             return accountType;
         }
-        
+
     }
 }
