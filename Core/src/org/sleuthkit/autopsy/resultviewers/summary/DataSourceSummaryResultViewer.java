@@ -46,7 +46,7 @@ public class DataSourceSummaryResultViewer extends AbstractDataResultViewer {
     private static final Logger LOGGER = Logger.getLogger(DataSourceSummaryResultViewer.class.getName());
 
     private final String title;
-    private DataResultPanel.PagingControls pagingControls = null;
+    private DataResultPanel.PagingSortingControls pagingControls = null;
 
     /**
      * Constructs a tabular result viewer that displays a summary of the
@@ -97,7 +97,7 @@ public class DataSourceSummaryResultViewer extends AbstractDataResultViewer {
     }
     
     @Override
-    public void setPagingControls(DataResultPanel.PagingControls pagingControls) {
+    public void setPagingControls(DataResultPanel.PagingSortingControls pagingControls) {
         this.pagingControls = pagingControls;
     }
 

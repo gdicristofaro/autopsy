@@ -84,7 +84,7 @@ public final class DataResultViewerThumbnail extends AbstractDataResultViewer {
     private int totalPages;
     private int currentPageImages;
     private int thumbSize = ImageUtils.ICON_SIZE_MEDIUM;
-    private DataResultPanel.PagingControls pagingControls = null;
+    private DataResultPanel.PagingSortingControls pagingControls = null;
 
     /**
      * Constructs a thumbnail result viewer, with paging support, that displays
@@ -131,7 +131,7 @@ public final class DataResultViewerThumbnail extends AbstractDataResultViewer {
     }
     
     @Override
-    public void setPagingControls(DataResultPanel.PagingControls pagingControls) {
+    public void setPagingControls(DataResultPanel.PagingSortingControls pagingControls) {
         this.pagingControls = pagingControls;
     }
 

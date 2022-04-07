@@ -57,6 +57,7 @@ import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
 import org.sleuthkit.autopsy.commonpropertiessearch.CommonAttributeTableFilterNode;
 import org.sleuthkit.autopsy.core.UserPreferences;
+import org.sleuthkit.autopsy.corecomponentinterfaces.ColumnSort;
 import org.sleuthkit.autopsy.corecomponentinterfaces.DataContent;
 import org.sleuthkit.autopsy.corecomponentinterfaces.DataResult;
 import org.sleuthkit.autopsy.corecomponentinterfaces.DataResultViewer;
@@ -104,6 +105,7 @@ import org.sleuthkit.autopsy.mainui.datamodel.ViewsDAO.FileTypeSizeFetcher;
 import org.sleuthkit.autopsy.mainui.datamodel.ViewsDAO.DeletedFileFetcher;
 import org.sleuthkit.autopsy.mainui.datamodel.DeletedContentSearchParams;
 import org.sleuthkit.autopsy.mainui.nodes.ChildNodeSelectionInfo;
+import org.sleuthkit.autopsy.mainui.nodes.DAOFetcher;
 import org.sleuthkit.autopsy.mainui.nodes.SearchManager;
 
 /**
@@ -153,7 +155,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
     private boolean listeningToTabbedPane;
     private BaseChildFactoryPager pagingSupport = null;
     private SearchManager searchResultManager = null;
-    private final PagingControls pagingControls = new PagingControls();
+    private final PagingSortingControls pagingControls = new PagingSortingControls();
     private boolean pagingControlsEnabled = true;
 
     private final PreferenceChangeListener pageSizeListener = (PreferenceChangeEvent evt) -> {
@@ -870,7 +872,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
      * passed to result viewers and allows then to access and configure top
      * level result paging.
      */
-    public class PagingControls {
+    public class PagingSortingControls {
 
         public int getTotalPages() {
             if (searchResultManager != null) {
@@ -901,8 +903,27 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
                 updatePagingComponents();
             }
         }
+        
+        public void onSortingUpdated(List<ColumnSort> columnSort) {
+            updateSorting(columnSort);
+        }
     }
-
+    
+    
+    private void updateSorting(List<ColumnSort> columnSort) {
+        try {
+            // Switching a top level page. Reset the DataResultViewer paging so that 
+            // we start at page 1.
+            resultViewers.forEach((resultViewer) -> resultViewer.resetComponent());
+            if (this.searchResultManager != null) {
+                displaySearchResults(this.searchResultManager.updateColumnSort(columnSort), false);
+            }
+        } catch (IllegalArgumentException | ExecutionException ex) {
+            logger.log(Level.WARNING, "Go to page index failed", ex);
+            updatePagingComponents();
+        }        
+    }
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -1219,6 +1240,13 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
         return UserPreferences.getResultsTablePageSize();
     }
 
+    
+    private SearchManager getSearchManager(DAOFetcher<?> fetcher) {
+        int pageSize = getPageSize();
+        List<ColumnSort> initialSorting = ResultViewerPersistence.getColumnSorting(fetcher.getSignature(), fetcher.getColumnKeys());
+        return new SearchManager(fetcher, pageSize, initialSorting);
+    }
+    
     /**
      * Displays results of querying the DAO for data artifacts matching the
      * search parameters query.
@@ -1227,7 +1255,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
      */
     void displayDataArtifact(DataArtifactSearchParam dataArtifactParams) {
         try {
-            this.searchResultManager = new SearchManager(new DataArtifactFetcher(dataArtifactParams), getPageSize());
+            this.searchResultManager = getSearchManager(new DataArtifactFetcher(dataArtifactParams));
             SearchResultsDTO results = searchResultManager.getResults();
             displaySearchResults(results, true, dataArtifactParams.getNodeSelectionInfo());
         } catch (ExecutionException ex) {
@@ -1247,7 +1275,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
      */
     void displayAccounts(CommAccountsSearchParams accountParams) {
         try {
-            this.searchResultManager = new SearchManager(new CommAccountFetcher(accountParams), getPageSize());
+            this.searchResultManager = getSearchManager(new CommAccountFetcher(accountParams));
             SearchResultsDTO results = searchResultManager.getResults();
             displaySearchResults(results, true);
         } catch (ExecutionException ex) {
@@ -1267,7 +1295,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
      */
     void displayCreditCardsByBin(CreditCardBinSearchParams searchParams) {
         try {
-            this.searchResultManager = new SearchManager(new CreditCardByBinFetcher(searchParams), getPageSize());
+            this.searchResultManager = getSearchManager(new CreditCardByBinFetcher(searchParams));
             SearchResultsDTO results = searchResultManager.getResults();
             displaySearchResults(results, true);
         } catch (ExecutionException ex) {
@@ -1287,7 +1315,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
      */
     void displayCreditCardsByFile(CreditCardFileSearchParams searchParams) {
         try {
-            this.searchResultManager = new SearchManager(new CreditCardByFileFetcher(searchParams), getPageSize());
+            this.searchResultManager = getSearchManager(new CreditCardByFileFetcher(searchParams));
             SearchResultsDTO results = searchResultManager.getResults();
             displaySearchResults(results, true);
         } catch (ExecutionException ex) {
@@ -1307,7 +1335,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
      */
     void displayEmailMessages(EmailSearchParams searchParams) {
         try {
-            this.searchResultManager = new SearchManager(new EmailFetcher(searchParams), getPageSize());
+            this.searchResultManager = getSearchManager(new EmailFetcher(searchParams));
             SearchResultsDTO results = searchResultManager.getResults();
             displaySearchResults(results, true);
         } catch (ExecutionException ex) {
@@ -1321,7 +1349,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
 
     void displayAnalysisResult(AnalysisResultSearchParam analysisResultParams) {
         try {
-            this.searchResultManager = new SearchManager(new AnalysisResultFetcher(analysisResultParams), getPageSize());
+            this.searchResultManager = getSearchManager(new AnalysisResultFetcher(analysisResultParams));
             SearchResultsDTO results = searchResultManager.getResults();
             displaySearchResults(results, true);
         } catch (ExecutionException ex) {
@@ -1340,7 +1368,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
      */
     void displayDeletedContent(DeletedContentSearchParams deletedSearchParams) {
         try {
-            this.searchResultManager = new SearchManager(new DeletedFileFetcher(deletedSearchParams), getPageSize());
+            this.searchResultManager = getSearchManager(new DeletedFileFetcher(deletedSearchParams));
             SearchResultsDTO results = searchResultManager.getResults();
             displaySearchResults(results, true);
         } catch (ExecutionException ex) {
@@ -1361,7 +1389,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
     void displayFileExtensions(FileTypeExtensionsSearchParams fileExtensionsParams) {
         try {
 
-            this.searchResultManager = new SearchManager(new FileTypeExtFetcher(fileExtensionsParams), getPageSize());
+            this.searchResultManager = getSearchManager(new FileTypeExtFetcher(fileExtensionsParams));
             SearchResultsDTO results = searchResultManager.getResults();
             displaySearchResults(results, true);
         } catch (ExecutionException ex) {
@@ -1382,7 +1410,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
     void displayFileMimes(FileTypeMimeSearchParams fileMimeKey) {
         try {
 
-            this.searchResultManager = new SearchManager(new FileTypeMimeFetcher(fileMimeKey), getPageSize());
+            this.searchResultManager = getSearchManager(new FileTypeMimeFetcher(fileMimeKey));
             SearchResultsDTO results = searchResultManager.getResults();
             displaySearchResults(results, true);
         } catch (ExecutionException | IllegalArgumentException ex) {
@@ -1401,7 +1429,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
      */
     void displayKeywordHits(KeywordHitSearchParam keywordHitKey) {
         try {
-            this.searchResultManager = new SearchManager(new KeywordHitResultFetcher(keywordHitKey), getPageSize());
+            this.searchResultManager = getSearchManager(new KeywordHitResultFetcher(keywordHitKey));
             SearchResultsDTO results = searchResultManager.getResults();
             displaySearchResults(results, true);
         } catch (ExecutionException | IllegalArgumentException ex) {
@@ -1421,7 +1449,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
      */
     void displayFileSizes(FileTypeSizeSearchParams fileSizeKey) {
         try {
-            this.searchResultManager = new SearchManager(MainDAO.getInstance().getViewsDAO().new FileTypeSizeFetcher(fileSizeKey), getPageSize());
+            this.searchResultManager = getSearchManager(MainDAO.getInstance().getViewsDAO().new FileTypeSizeFetcher(fileSizeKey));
             SearchResultsDTO results = searchResultManager.getResults();
             displaySearchResults(results, true);
         } catch (ExecutionException | IllegalArgumentException ex) {
@@ -1441,7 +1469,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
      */
     void displayAnalysisResultSet(AnalysisResultSearchParam setKey) {
         try {
-            this.searchResultManager = new SearchManager(new AnalysisResultConfigFetcher(setKey), getPageSize());
+            this.searchResultManager = getSearchManager(new AnalysisResultConfigFetcher(setKey));
             SearchResultsDTO results = searchResultManager.getResults();
             displaySearchResults(results, true);
         } catch (ExecutionException | IllegalArgumentException ex) {
@@ -1461,7 +1489,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
      */
     void displayTags(TagsSearchParams tagParams) {
         try {
-            this.searchResultManager = new SearchManager(new TagFetcher(tagParams), getPageSize());
+            this.searchResultManager = getSearchManager(new TagFetcher(tagParams));
             SearchResultsDTO results = searchResultManager.getResults();
             displaySearchResults(results, true);
         } catch (ExecutionException | IllegalArgumentException ex) {
@@ -1482,7 +1510,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
      */
     void displayFileSystemContent(FileSystemContentSearchParam fileSystemKey) {
         try {
-            this.searchResultManager = new SearchManager(new FileSystemFetcher(fileSystemKey), getPageSize());
+            this.searchResultManager = getSearchManager(new FileSystemFetcher(fileSystemKey));
             SearchResultsDTO results = searchResultManager.getResults();
             displaySearchResults(results, true, fileSystemKey.getNodeSelectionInfo());
         } catch (ExecutionException | IllegalArgumentException ex) {
@@ -1502,7 +1530,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
      */
     void displayFileSystemForHost(FileSystemHostSearchParam hostSystemKey) {
         try {
-            this.searchResultManager = new SearchManager(new FileSystemHostFetcher(hostSystemKey), getPageSize());
+            this.searchResultManager = getSearchManager(new FileSystemHostFetcher(hostSystemKey));
             SearchResultsDTO results = searchResultManager.getResults();
             displaySearchResults(results, true);
         } catch (ExecutionException | IllegalArgumentException ex) {
@@ -1521,7 +1549,7 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
      */
     void displayOsAccount(OsAccountsSearchParams osAccountKey) {
         try {
-            this.searchResultManager = new SearchManager(new AccountFetcher(osAccountKey), getPageSize());
+            this.searchResultManager = getSearchManager(new AccountFetcher(osAccountKey));
             SearchResultsDTO results = searchResultManager.getResults();
             displaySearchResults(results, true);
         } catch (ExecutionException | IllegalArgumentException ex) {

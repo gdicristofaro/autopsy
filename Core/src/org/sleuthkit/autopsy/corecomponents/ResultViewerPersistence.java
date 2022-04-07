@@ -19,20 +19,55 @@
 package org.sleuthkit.autopsy.corecomponents;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.prefs.Preferences;
+import java.util.stream.Collectors;
 import javax.swing.SortOrder;
 import org.openide.nodes.Children;
 import org.openide.nodes.Node;
 import org.openide.util.NbPreferences;
+import org.sleuthkit.autopsy.corecomponentinterfaces.ColumnSort;
 import org.sleuthkit.autopsy.mainui.datamodel.SearchResultsDTO;
 
 final class ResultViewerPersistence {
 
     private ResultViewerPersistence() {
+    }
+
+
+    /**
+     * Returns the column sort order.
+     * @param signature The signature to use when looking up keys in the properties.
+     * @param columns The columns for the search results to identify.
+     * @return The list of columns to be sorted in order of highest to lowest priority or empty.
+     */
+    static List<ColumnSort> getColumnSorting(String signature, Collection<String> columns) {
+        if (columns == null || signature == null) {
+            return Collections.emptyList();
+        }
+
+        final Preferences preferences = NbPreferences.forModule(DataResultViewerTable.class);
+        if (preferences == null) {
+            return Collections.emptyList();
+        }
+
+        return columns.stream()
+                .map(propName -> {
+                    int sortRank = preferences.getInt(ResultViewerPersistence.getColumnSortRankKey(signature, propName), -1);
+                    boolean ascending = preferences.getBoolean(ResultViewerPersistence.getColumnSortOrderKey(signature, propName), true);
+                    return (sortRank > 0)
+                            ? new ColumnSort(ascending, propName, sortRank)
+                            : null;
+                })
+                .filter(pair -> pair != null)
+                .sorted(Comparator.comparing(ColumnSort::getSortRank))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -45,11 +80,11 @@ final class ResultViewerPersistence {
      * @return A generated key for the preference file
      */
     static String getColumnPositionKey(TableFilterNode node, String propName) {
-        return getColumnKeyBase(node, propName) + ".column";
+        return getColumnKeyBase(node.getColumnOrderKey(), propName) + ".column";
     }
     
     static String getColumnPositionKey(SearchResultsDTO searchResult, String propName) {
-        return getColumnKeyBase(searchResult, propName) + ".column";
+        return getColumnKeyBase(searchResult.getSignature(), propName) + ".column";
     }
 
     /**
@@ -62,11 +97,27 @@ final class ResultViewerPersistence {
      * @return A generated key for the preference file
      */
     static String getColumnSortOrderKey(TableFilterNode node, String propName) {
-        return getColumnKeyBase(node, propName) + ".sortOrder";
+        return getColumnKeyBase(node.getColumnOrderKey(), propName) + ".sortOrder";
     }
     
+    /**
+     * Provides a properties key for the sort order of a property.
+     * @param searchResult The search result.
+     * @param propName The property name.
+     * @return The properties key for the sort order.
+     */
     static String getColumnSortOrderKey(SearchResultsDTO searchResult, String propName) {
-        return getColumnKeyBase(searchResult, propName) + ".sortOrder";
+        return getColumnSortOrderKey(searchResult.getSignature(), propName);
+    }
+
+    /**
+     * Provides a properties key for the sort order of a property.
+     * @param signature The search result signature.
+     * @param propName The property name.
+     * @return The properties key for the sort order.
+     */    
+    static String getColumnSortOrderKey(String signature, String propName) {
+        return getColumnKeyBase(signature, propName) + ".sortOrder";
     }
 
     /**
@@ -79,11 +130,27 @@ final class ResultViewerPersistence {
      * @return A generated key for the preference file
      */
     static String getColumnSortRankKey(TableFilterNode node, String propName) {
-        return getColumnKeyBase(node, propName) + ".sortRank";
+        return getColumnKeyBase(node.getColumnOrderKey(), propName) + ".sortRank";
     }
     
+    /**
+     * Provides a column sort rank key.
+     * @param searchResult The search result.
+     * @param propName The property name.
+     * @return The properties key to use.
+     */
     static String getColumnSortRankKey(SearchResultsDTO searchResult, String propName) {
-        return getColumnKeyBase(searchResult, propName) + ".sortRank";
+        return getColumnSortRankKey(searchResult.getSignature(), propName);
+    }
+    
+    /**
+     * Provides a column sort rank key.
+     * @param searchResult The search result.
+     * @param propName The property name.
+     * @return The properties key to use.
+     */
+    static String getColumnSortRankKey(String signature, String propName) {
+        return getColumnKeyBase(signature, propName) + ".sortRank";
     }
 
     /**
@@ -96,19 +163,15 @@ final class ResultViewerPersistence {
      * @return A generated key for the preference file
      */
     static String getColumnHiddenKey(TableFilterNode node, String propName) {
-        return getColumnKeyBase(node, propName) + ".hidden";
+        return getColumnKeyBase(node.getColumnOrderKey(), propName) + ".hidden";
     }
     
     static String getColumnHiddenKey(SearchResultsDTO searchResult, String propName) {
-        return getColumnKeyBase(searchResult, propName) + ".hidden";
-    }
-
-    private static String getColumnKeyBase(TableFilterNode node, String propName) {
-        return stripNonAlphanumeric(node.getColumnOrderKey()) + "." + stripNonAlphanumeric(propName);
+        return getColumnKeyBase(searchResult.getSignature(), propName) + ".hidden";
     }
     
-    private static String getColumnKeyBase(SearchResultsDTO searchResult, String propName) {
-        return stripNonAlphanumeric(searchResult.getSignature()) + "." + stripNonAlphanumeric(propName);
+    private static String getColumnKeyBase(String signature, String propName) {
+        return stripNonAlphanumeric(signature) + "." + stripNonAlphanumeric(propName);
     }
 
     private static String stripNonAlphanumeric(String str) {

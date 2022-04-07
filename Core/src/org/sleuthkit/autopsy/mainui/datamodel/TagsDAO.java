@@ -22,8 +22,6 @@ import org.sleuthkit.autopsy.mainui.datamodel.events.DAOEvent;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import java.beans.PropertyChangeEvent;
-import java.sql.SQLException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -35,7 +33,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
@@ -49,9 +46,9 @@ import org.sleuthkit.autopsy.casemodule.events.ContentTagAddedEvent;
 import org.sleuthkit.autopsy.casemodule.events.ContentTagDeletedEvent;
 import org.sleuthkit.autopsy.casemodule.services.TagsManager;
 import org.sleuthkit.autopsy.core.UserPreferences;
+import org.sleuthkit.autopsy.corecomponentinterfaces.ColumnSort;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.coreutils.TimeZoneUtils;
-import org.sleuthkit.autopsy.datamodel.Tags;
 import static org.sleuthkit.autopsy.mainui.datamodel.AbstractDAO.CACHE_DURATION;
 import static org.sleuthkit.autopsy.mainui.datamodel.AbstractDAO.CACHE_DURATION_UNITS;
 import static org.sleuthkit.autopsy.mainui.datamodel.AbstractDAO.CACHE_SIZE;
@@ -62,14 +59,10 @@ import org.sleuthkit.autopsy.mainui.datamodel.events.TagsEvent;
 import org.sleuthkit.autopsy.mainui.datamodel.events.TreeCounts;
 import org.sleuthkit.autopsy.mainui.datamodel.events.TreeEvent;
 import org.sleuthkit.autopsy.mainui.nodes.DAOFetcher;
-import org.sleuthkit.autopsy.tags.TagUtils;
 import org.sleuthkit.datamodel.AbstractFile;
-import org.sleuthkit.datamodel.Account;
 import org.sleuthkit.datamodel.BlackboardArtifactTag;
-import org.sleuthkit.datamodel.CaseDbAccessManager;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.ContentTag;
-import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.Tag;
 import org.sleuthkit.datamodel.TagName;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -634,8 +627,9 @@ public class TagsDAO extends AbstractDAO {
             return MainDAO.getInstance().getTagsDAO();
         }
 
+        // TODO integrate
         @Override
-        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException {
+        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, List<ColumnSort> sorting) throws ExecutionException {
             return getDAO().getTags(this.getParameters(), pageIdx * pageSize, (long) pageSize);
         }
 

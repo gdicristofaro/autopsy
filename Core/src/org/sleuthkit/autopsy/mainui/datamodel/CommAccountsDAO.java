@@ -40,6 +40,7 @@ import org.openide.util.NbBundle;
 import org.openide.util.NbBundle.Messages;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
+import org.sleuthkit.autopsy.corecomponentinterfaces.ColumnSort;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.ingest.IngestManager;
 import org.sleuthkit.autopsy.ingest.ModuleDataEvent;
@@ -370,13 +371,21 @@ public class CommAccountsDAO extends AbstractDAO {
         }
 
         @Override
-        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException {
-            return getDAO().getCommAcounts(this.getParameters(), pageIdx * pageSize, (long) pageSize);
+        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, List<ColumnSort> sortColumns) throws ExecutionException {
+            return getDAO().getCommAcounts(this.getParameters(), pageIdx * pageSize, (long) pageSize, sortColumns);
         }
 
         @Override
         public boolean isRefreshRequired(DAOEvent evt) {
             return getDAO().isCommAcctInvalidating(this.getParameters(), evt);
+        }
+
+        @Override
+        public String getSignature() {
+        }
+
+        @Override
+        public List<String> getColumnKeys() {
         }
     }
 }

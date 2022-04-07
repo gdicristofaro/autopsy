@@ -44,6 +44,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.openide.util.NbBundle.Messages;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
+import org.sleuthkit.autopsy.corecomponentinterfaces.ColumnSort;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.ingest.IngestManager;
 import org.sleuthkit.autopsy.ingest.ModuleDataEvent;
@@ -689,8 +690,9 @@ public class CreditCardDAO extends AbstractDAO {
             return MainDAO.getInstance().getCreditCardDAO();
         }
 
+        // TODO integrate
         @Override
-        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException {
+        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, List<ColumnSort> sorting) throws ExecutionException {
             return getDAO().getCreditCardByBin(this.getParameters(), pageIdx * pageSize, (long) pageSize);
         }
 
@@ -718,8 +720,9 @@ public class CreditCardDAO extends AbstractDAO {
             return MainDAO.getInstance().getCreditCardDAO();
         }
 
+        // TODO integrate
         @Override
-        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException {
+        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, List<ColumnSort> sorting) throws ExecutionException {
             return getDAO().getCreditCardByFile(this.getParameters(), pageIdx * pageSize, (long) pageSize);
         }
 

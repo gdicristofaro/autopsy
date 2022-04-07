@@ -18,8 +18,10 @@
  */
 package org.sleuthkit.autopsy.mainui.nodes;
 
-import java.beans.PropertyChangeEvent;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
+import org.sleuthkit.autopsy.corecomponentinterfaces.ColumnSort;
 import org.sleuthkit.autopsy.mainui.datamodel.events.DAOEvent;
 import org.sleuthkit.autopsy.mainui.datamodel.SearchResultsDTO;
 
@@ -53,14 +55,30 @@ public abstract class DAOFetcher<P> {
      * Fetches search results data based on paging settings.
      *
      *
-     * @param pageSize    The number of items per page.
-     * @param pageIdx     The page index.
+     * @param pageSize The number of items per page.
+     * @param pageIdx  The page index.
      *
      * @return The retrieved data.
      *
      * @throws ExecutionException
      */
-    public abstract SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException;
+    public abstract SearchResultsDTO getSearchResults(int pageSize, int pageIdx, List<ColumnSort> sortColumns) throws ExecutionException;
+
+    // TODO to be replaced with abstract method and implemented in all fetchers.
+    /**
+     * @return The signature of search results returned by this fetcher.
+     */
+    public String getSignature() {
+        return "";
+    }
+
+    // TODO to be replaced with abstract method and implemented in all fetchers.
+    /**
+     * @return The columns of search results returned by this fetcher.
+     */
+    public List<String> getColumnKeys() {
+        return Collections.emptyList();
+    }
 
     /**
      * Returns true if the ingest module event will require a refresh in the

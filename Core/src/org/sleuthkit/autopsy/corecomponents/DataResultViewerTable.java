@@ -130,7 +130,7 @@ public class DataResultViewerTable extends AbstractDataResultViewer {
     private final IconRendererTableListener iconRendererListener;
     private Node rootNode;
     private SearchResultsDTO searchResults;
-    private DataResultPanel.PagingControls pagingControls = null;
+    private DataResultPanel.PagingSortingControls pagingControls = null;
 
     /**
      * Constructs a tabular result viewer that displays the children of the
@@ -213,7 +213,7 @@ public class DataResultViewerTable extends AbstractDataResultViewer {
     }
 
     @Override
-    public void setPagingControls(DataResultPanel.PagingControls pagingControls) {
+    public void setPagingControls(DataResultPanel.PagingSortingControls pagingControls) {
         this.pagingControls = pagingControls;
     }
 

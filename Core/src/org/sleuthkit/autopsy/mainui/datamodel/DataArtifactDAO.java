@@ -42,6 +42,7 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.openide.util.NbBundle;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
+import org.sleuthkit.autopsy.corecomponentinterfaces.ColumnSort;
 import org.sleuthkit.autopsy.ingest.IngestManager;
 import org.sleuthkit.autopsy.ingest.ModuleDataEvent;
 import static org.sleuthkit.autopsy.mainui.datamodel.AbstractDAO.CACHE_DURATION;
@@ -294,8 +295,9 @@ public class DataArtifactDAO extends BlackboardArtifactDAO {
             return MainDAO.getInstance().getDataArtifactsDAO();
         }
 
+        // TODO integrate
         @Override
-        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException {
+        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, List<ColumnSort> sorting) throws ExecutionException {
             return getDAO().getDataArtifactsForTable(this.getParameters(), pageIdx * pageSize, (long) pageSize);
         }
 

@@ -37,6 +37,7 @@ import org.openide.util.NbBundle.Messages;
 import org.python.google.common.collect.ImmutableSet;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
+import org.sleuthkit.autopsy.corecomponentinterfaces.ColumnSort;
 import org.sleuthkit.autopsy.coreutils.TimeZoneUtils;
 import static org.sleuthkit.autopsy.mainui.datamodel.AbstractDAO.CACHE_DURATION;
 import static org.sleuthkit.autopsy.mainui.datamodel.AbstractDAO.CACHE_DURATION_UNITS;
@@ -222,8 +223,9 @@ public class OsAccountsDAO extends AbstractDAO {
             return MainDAO.getInstance().getOsAccountsDAO();
         }
 
+        // TODO integrate
         @Override
-        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException {
+        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, List<ColumnSort> sorting) throws ExecutionException {
             return getDAO().getAccounts(this.getParameters(), pageIdx * pageSize, (long) pageSize);
         }
 

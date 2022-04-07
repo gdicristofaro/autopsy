@@ -19,7 +19,11 @@
 package org.sleuthkit.autopsy.mainui.nodes;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
+import org.sleuthkit.autopsy.corecomponentinterfaces.ColumnSort;
 import org.sleuthkit.autopsy.mainui.datamodel.events.DAOEvent;
 import org.sleuthkit.autopsy.mainui.datamodel.SearchResultsDTO;
 
@@ -33,16 +37,19 @@ public class SearchManager {
 
     private SearchResultsDTO currentSearchResults = null;
     private int pageIdx = 0;
+    private List<ColumnSort> sortColumns = Collections.emptyList();
 
     /**
      * Main constructor.
      *
      * @param daoFetcher Means of fetching data from the DAO.
      * @param pageSize   The size of a page.
+     * @param initialSort The initial sort order.
      */
-    public SearchManager(DAOFetcher<?> daoFetcher, int pageSize) {
+    public SearchManager(DAOFetcher<?> daoFetcher, int pageSize, List<ColumnSort> initialSort) {
         this.daoFetcher = daoFetcher;
         this.pageSize = pageSize;
+        setColumnSort(initialSort);
     }
 
     /**
@@ -137,38 +144,6 @@ public class SearchManager {
     }
 
     /**
-     * Increments page index or throws an exception if not possible.
-     *
-     * @return The search results after incrementing.
-     *
-     * @throws IllegalArgumentException
-     * @throws ExecutionException
-     */
-    public synchronized SearchResultsDTO incrementPageIdx() throws IllegalArgumentException, ExecutionException {
-        if (this.currentSearchResults == null) {
-            throw new IllegalArgumentException("No current results");
-        }
-
-        return updatePageIdx(this.pageIdx + 1);
-    }
-
-    /**
-     * Decrements page index or throws an exception if not possible.
-     *
-     * @return The search results after decrementing.
-     *
-     * @throws IllegalArgumentException
-     * @throws ExecutionException
-     */
-    public synchronized SearchResultsDTO decrementPageIdx() throws IllegalArgumentException, ExecutionException {
-        if (this.daoFetcher == null) {
-            throw new IllegalArgumentException("No current page fetcher");
-        }
-
-        return updatePageIdx(this.pageIdx - 1);
-    }
-
-    /**
      * Determines if a refresh is required for the currently selected item.
      *
      * @param evt The event.
@@ -196,6 +171,31 @@ public class SearchManager {
     }
 
     /**
+     * Sets the columns to be sorted upon. List should be in order of highest
+     * priority to lowest priority.
+     *
+     * @param sortColumns The sort columns.
+     */
+    private synchronized void setColumnSort(List<ColumnSort> sortColumns) {
+        this.sortColumns = sortColumns == null
+                ? Collections.emptyList()
+                : new ArrayList<>(sortColumns);
+    }
+
+    /**
+     * Updates the columns to be sorted upon. List should be in order of highest
+     * priority to lowest priority.
+     *
+     * @param sortColumns The sort columns.
+     * 
+     * @return The updated results.
+     */    
+    public synchronized SearchResultsDTO updateColumnSort(List<ColumnSort> sortColumns) throws IllegalArgumentException, ExecutionException {
+        setColumnSort(sortColumns);
+        return getResults();
+    }
+
+    /**
      * Queries the dao cache for results storing the result in the current
      * search results.
      *
@@ -211,7 +211,7 @@ public class SearchManager {
     private synchronized SearchResultsDTO fetchResults(DAOFetcher<?> dataFetcher) throws ExecutionException {
         SearchResultsDTO newResults = null;
         if (dataFetcher != null) {
-            newResults = dataFetcher.getSearchResults(this.pageSize, this.pageIdx);
+            newResults = dataFetcher.getSearchResults(this.pageSize, this.pageIdx, this.sortColumns);
         }
 
         this.currentSearchResults = newResults;

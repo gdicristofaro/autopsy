@@ -49,6 +49,7 @@ import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
 import static org.sleuthkit.autopsy.core.UserPreferences.hideKnownFilesInViewsTree;
 import static org.sleuthkit.autopsy.core.UserPreferences.hideSlackFilesInViewsTree;
+import org.sleuthkit.autopsy.corecomponentinterfaces.ColumnSort;
 import static org.sleuthkit.autopsy.mainui.datamodel.AbstractDAO.CACHE_DURATION;
 import static org.sleuthkit.autopsy.mainui.datamodel.AbstractDAO.CACHE_DURATION_UNITS;
 import static org.sleuthkit.autopsy.mainui.datamodel.AbstractDAO.CACHE_SIZE;
@@ -1278,8 +1279,9 @@ public class ViewsDAO extends AbstractDAO {
             return MainDAO.getInstance().getViewsDAO();
         }
 
+        // TODO integrate
         @Override
-        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException {
+        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, List<ColumnSort> sorting) throws ExecutionException {
             return getDAO().getFilesByExtension(this.getParameters(), pageIdx * pageSize, (long) pageSize);
         }
 
@@ -1307,8 +1309,9 @@ public class ViewsDAO extends AbstractDAO {
             return MainDAO.getInstance().getViewsDAO();
         }
 
+        // TODO integrate
         @Override
-        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException {
+        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, List<ColumnSort> sorting) throws ExecutionException {
             return getDAO().getFilesByMime(this.getParameters(), pageIdx * pageSize, (long) pageSize);
         }
 
@@ -1336,8 +1339,9 @@ public class ViewsDAO extends AbstractDAO {
             return MainDAO.getInstance().getViewsDAO();
         }
 
+        // TODO integrate
         @Override
-        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException {
+        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, List<ColumnSort> sorting) throws ExecutionException {
             return getDAO().getFilesBySize(this.getParameters(), pageIdx * pageSize, (long) pageSize);
         }
 
@@ -1365,8 +1369,9 @@ public class ViewsDAO extends AbstractDAO {
             return MainDAO.getInstance().getViewsDAO();
         }
 
+        // TODO integrate
         @Override
-        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException {
+        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, List<ColumnSort> sorting) throws ExecutionException {
             return getDAO().getDeletedContent(this.getParameters(), pageIdx * pageSize, (long) pageSize);
         }
 

@@ -42,6 +42,7 @@ import org.sleuthkit.autopsy.casemodule.events.HostsAddedEvent;
 import org.sleuthkit.autopsy.casemodule.events.HostsAddedToPersonEvent;
 import org.sleuthkit.autopsy.casemodule.events.HostsRemovedFromPersonEvent;
 import org.sleuthkit.autopsy.casemodule.events.HostsUpdatedEvent;
+import org.sleuthkit.autopsy.corecomponentinterfaces.ColumnSort;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import static org.sleuthkit.autopsy.mainui.datamodel.AbstractDAO.CACHE_DURATION;
 import static org.sleuthkit.autopsy.mainui.datamodel.AbstractDAO.CACHE_DURATION_UNITS;
@@ -724,8 +725,9 @@ public class FileSystemDAO extends AbstractDAO {
             return MainDAO.getInstance().getFileSystemDAO();
         }
 
+        // TODO integrate
         @Override
-        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException {
+        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, List<ColumnSort> sorting) throws ExecutionException {
             return getDAO().getContentForTable(this.getParameters(), pageIdx * pageSize, (long) pageSize);
         }
 
@@ -750,8 +752,9 @@ public class FileSystemDAO extends AbstractDAO {
             return MainDAO.getInstance().getFileSystemDAO();
         }
 
+        // TODO integrate
         @Override
-        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException {
+        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, List<ColumnSort> sorting) throws ExecutionException {
             return getDAO().getContentForTable(this.getParameters(), pageIdx * pageSize, (long) pageSize);
         }
 

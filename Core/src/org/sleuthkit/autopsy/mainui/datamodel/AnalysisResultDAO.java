@@ -48,6 +48,7 @@ import org.openide.util.NbBundle.Messages;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
 import org.sleuthkit.autopsy.casemodule.events.TskDataModelObjectsDeletedEvent;
+import org.sleuthkit.autopsy.corecomponentinterfaces.ColumnSort;
 import org.sleuthkit.autopsy.mainui.datamodel.events.DeleteAnalysisResultEvent;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.ingest.IngestManager;
@@ -1274,8 +1275,9 @@ public class AnalysisResultDAO extends BlackboardArtifactDAO {
             return MainDAO.getInstance().getAnalysisResultDAO();
         }
 
+        // TODO integrate
         @Override
-        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException {
+        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, List<ColumnSort> sorting) throws ExecutionException {
             return getDAO().getAnalysisResultsForTable(this.getParameters(), pageIdx * pageSize, (long) pageSize);
         }
 
@@ -1303,8 +1305,9 @@ public class AnalysisResultDAO extends BlackboardArtifactDAO {
             return MainDAO.getInstance().getAnalysisResultDAO();
         }
 
+        // TODO integrate
         @Override
-        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException {
+        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, List<ColumnSort> sorting) throws ExecutionException {
             return getDAO().getAnalysisResultConfigResults(this.getParameters(), pageIdx * pageSize, (long) pageSize);
         }
 
@@ -1332,8 +1335,9 @@ public class AnalysisResultDAO extends BlackboardArtifactDAO {
             return MainDAO.getInstance().getAnalysisResultDAO();
         }
 
+        // TODO integrate
         @Override
-        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException {
+        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, List<ColumnSort> sorting) throws ExecutionException {
             return getDAO().getKeywordHitsForTable(this.getParameters(), pageIdx * pageSize, (long) pageSize);
         }
 

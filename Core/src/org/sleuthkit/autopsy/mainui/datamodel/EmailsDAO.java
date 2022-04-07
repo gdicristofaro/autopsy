@@ -42,6 +42,7 @@ import org.openide.util.NbBundle.Messages;
 import org.python.icu.text.MessageFormat;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
+import org.sleuthkit.autopsy.corecomponentinterfaces.ColumnSort;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.ingest.ModuleDataEvent;
 import static org.sleuthkit.autopsy.mainui.datamodel.AbstractDAO.CACHE_DURATION;
@@ -720,8 +721,9 @@ public class EmailsDAO extends AbstractDAO {
             return MainDAO.getInstance().getEmailsDAO();
         }
 
+        // TODO integrate
         @Override
-        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx) throws ExecutionException {
+        public SearchResultsDTO getSearchResults(int pageSize, int pageIdx, List<ColumnSort> sorting) throws ExecutionException {
             return getDAO().getEmailMessages(this.getParameters(), pageIdx * pageSize, (long) pageSize);
         }
 
