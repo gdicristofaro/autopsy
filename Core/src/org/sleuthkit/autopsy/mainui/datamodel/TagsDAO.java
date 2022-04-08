@@ -33,9 +33,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.openide.util.NbBundle;
 import org.openide.util.NbBundle.Messages;
 import org.sleuthkit.autopsy.casemodule.Case;
@@ -95,17 +97,29 @@ public class TagsDAO extends AbstractDAO {
 
     private static final String USER_NAME_PROPERTY = "user.name"; //NON-NLS
 
-    private static final List<Pair<ColumnKey, Function<FileTag, Object>> FILE_TAG_COLUMNS = Arrays.asList(
-            Pair.of(getFileColumnKey("Name", Bundle.TagsDAO_fileColumns_nameColLbl()), ft -> ft.),
-            getFileColumnKey("OriginalName", Bundle.TagsDAO_fileColumns_originalName()),
-            getFileColumnKey("FilePath", Bundle.TagsDAO_fileColumns_filePathColLbl()),
-            getFileColumnKey("Comment", Bundle.TagsDAO_fileColumns_commentColLbl()),
-            getFileColumnKey("ModifiedTime", Bundle.TagsDAO_fileColumns_modifiedTimeColLbl()),
-            getFileColumnKey("ChangeTime", Bundle.TagsDAO_fileColumns_changeTimeColLbl()),
-            getFileColumnKey("AccessTime", Bundle.TagsDAO_fileColumns_accessTimeColLbl()),
-            getFileColumnKey("CreatedTime", Bundle.TagsDAO_fileColumns_createdTimeColLbl()),
-            getFileColumnKey("Size", Bundle.TagsDAO_fileColumns_sizeColLbl()),
-            getFileColumnKey("MD5Hash", Bundle.TagsDAO_fileColumns_md5HashColLbl()),
+    private static Function<ContentTag, Object> getFileTime(Function<AbstractFile, Long> timeRetriever) {
+        return (tag) -> {
+            Content content = tag.getContent();
+            if (content instanceof AbstractFile) {
+                AbstractFile af = (AbstractFile) content;
+                Long time = timeRetriever.apply(af);
+                return TimeZoneUtils.getFormattedTime(time);
+            }
+            return "";
+        };
+    }
+    
+    private static final List<Pair<ColumnKey, Function<ContentTag, Object>> FILE_TAG_COLUMNS = Arrays.asList(
+            Pair.of(getFileColumnKey("Name", Bundle.TagsDAO_fileColumns_nameColLbl()), ct -> ct.getContent().getName()),
+            Pair.of(getFileColumnKey("OriginalName", Bundle.TagsDAO_fileColumns_originalName()), ct -> null),
+            Pair.of(getFileColumnKey("FilePath", Bundle.TagsDAO_fileColumns_filePathColLbl()), ct -> ct.getContent().getUniquePath()),
+            Pair.of(getFileColumnKey("Comment", Bundle.TagsDAO_fileColumns_commentColLbl()), ct -> ct.getComment()),
+            Pair.of(getFileColumnKey("ModifiedTime", Bundle.TagsDAO_fileColumns_modifiedTimeColLbl()), getFileTime(AbstractFile::getMtime)),
+            Pair.of(getFileColumnKey("ChangeTime", Bundle.TagsDAO_fileColumns_changeTimeColLbl()), getFileTime(AbstractFile::getCtime)),
+            Pair.of(getFileColumnKey("AccessTime", Bundle.TagsDAO_fileColumns_accessTimeColLbl()), getFileTime(AbstractFile::getAtime)),
+            Pair.of(getFileColumnKey("CreatedTime", Bundle.TagsDAO_fileColumns_createdTimeColLbl()), getFileTime(AbstractFile::getCrtime)),
+            Pair.of(getFileColumnKey("Size", Bundle.TagsDAO_fileColumns_sizeColLbl()), ct -> ct.getContent().getSize()),
+            Pair.of(getFileColumnKey("MD5Hash", Bundle.TagsDAO_fileColumns_md5HashColLbl()),
             getFileColumnKey("UserName", Bundle.TagsDAO_fileColumns_userNameColLbl()));
 
     private static final List<ColumnKey> RESULT_TAG_COLUMNS = Arrays.asList(
