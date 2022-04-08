@@ -95,26 +95,26 @@ public class TagsDAO extends AbstractDAO {
 
     private static final String USER_NAME_PROPERTY = "user.name"; //NON-NLS
 
-    private static final List<ColumnKey> FILE_TAG_COLUMNS = Arrays.asList(
-            getFileColumnKey(Bundle.TagsDAO_fileColumns_nameColLbl()),
-            getFileColumnKey(Bundle.TagsDAO_fileColumns_originalName()),
-            getFileColumnKey(Bundle.TagsDAO_fileColumns_filePathColLbl()),
-            getFileColumnKey(Bundle.TagsDAO_fileColumns_commentColLbl()),
-            getFileColumnKey(Bundle.TagsDAO_fileColumns_modifiedTimeColLbl()),
-            getFileColumnKey(Bundle.TagsDAO_fileColumns_changeTimeColLbl()),
-            getFileColumnKey(Bundle.TagsDAO_fileColumns_accessTimeColLbl()),
-            getFileColumnKey(Bundle.TagsDAO_fileColumns_createdTimeColLbl()),
-            getFileColumnKey(Bundle.TagsDAO_fileColumns_sizeColLbl()),
-            getFileColumnKey(Bundle.TagsDAO_fileColumns_md5HashColLbl()),
-            getFileColumnKey(Bundle.TagsDAO_fileColumns_userNameColLbl()));
+    private static final List<Pair<ColumnKey, Function<FileTag, Object>> FILE_TAG_COLUMNS = Arrays.asList(
+            Pair.of(getFileColumnKey("Name", Bundle.TagsDAO_fileColumns_nameColLbl()), ft -> ft.),
+            getFileColumnKey("OriginalName", Bundle.TagsDAO_fileColumns_originalName()),
+            getFileColumnKey("FilePath", Bundle.TagsDAO_fileColumns_filePathColLbl()),
+            getFileColumnKey("Comment", Bundle.TagsDAO_fileColumns_commentColLbl()),
+            getFileColumnKey("ModifiedTime", Bundle.TagsDAO_fileColumns_modifiedTimeColLbl()),
+            getFileColumnKey("ChangeTime", Bundle.TagsDAO_fileColumns_changeTimeColLbl()),
+            getFileColumnKey("AccessTime", Bundle.TagsDAO_fileColumns_accessTimeColLbl()),
+            getFileColumnKey("CreatedTime", Bundle.TagsDAO_fileColumns_createdTimeColLbl()),
+            getFileColumnKey("Size", Bundle.TagsDAO_fileColumns_sizeColLbl()),
+            getFileColumnKey("MD5Hash", Bundle.TagsDAO_fileColumns_md5HashColLbl()),
+            getFileColumnKey("UserName", Bundle.TagsDAO_fileColumns_userNameColLbl()));
 
     private static final List<ColumnKey> RESULT_TAG_COLUMNS = Arrays.asList(
-            getFileColumnKey(Bundle.TagsDAO_tagColumns_sourceNameColLbl()),
-            getFileColumnKey(Bundle.TagsDAO_tagColumns_origNameColLbl()),
-            getFileColumnKey(Bundle.TagsDAO_tagColumns_sourcePathColLbl()),
-            getFileColumnKey(Bundle.TagsDAO_tagColumns_typeColLbl()),
-            getFileColumnKey(Bundle.TagsDAO_tagColumns_commentColLbl()),
-            getFileColumnKey(Bundle.TagsDAO_tagColumns_userNameColLbl()));
+            getFileColumnKey("Name", Bundle.TagsDAO_tagColumns_sourceNameColLbl()),
+            getFileColumnKey("OriginalName", Bundle.TagsDAO_tagColumns_origNameColLbl()),
+            getFileColumnKey("FilePath", Bundle.TagsDAO_tagColumns_sourcePathColLbl()),
+            getFileColumnKey("Type", Bundle.TagsDAO_tagColumns_typeColLbl()),
+            getFileColumnKey("Comment", Bundle.TagsDAO_tagColumns_commentColLbl()),
+            getFileColumnKey("UserName", Bundle.TagsDAO_tagColumns_userNameColLbl()));
 
     private static TagsDAO instance = null;
 
@@ -126,8 +126,8 @@ public class TagsDAO extends AbstractDAO {
         return instance;
     }
 
-    private static ColumnKey getFileColumnKey(String name) {
-        return new ColumnKey(name, name, Bundle.TagsDAO_fileColumns_noDescription());
+    private static ColumnKey getFileColumnKey(String name, String displayName) {
+        return new ColumnKey(name, displayName, Bundle.TagsDAO_fileColumns_noDescription());
     }
 
     private final Cache<SearchParams<TagsSearchParams>, SearchResultsDTO> searchParamsCache

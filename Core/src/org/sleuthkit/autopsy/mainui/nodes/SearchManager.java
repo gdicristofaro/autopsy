@@ -184,13 +184,14 @@ public class SearchManager {
 
     /**
      * Updates the columns to be sorted upon. List should be in order of highest
-     * priority to lowest priority.
+     * priority to lowest priority.  Resets page idx to 0.
      *
      * @param sortColumns The sort columns.
      * 
      * @return The updated results.
      */    
     public synchronized SearchResultsDTO updateColumnSort(List<ColumnSort> sortColumns) throws IllegalArgumentException, ExecutionException {
+        setPageIdx(0);
         setColumnSort(sortColumns);
         return getResults();
     }

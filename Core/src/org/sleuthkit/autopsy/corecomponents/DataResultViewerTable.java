@@ -608,7 +608,9 @@ public class DataResultViewerTable extends AbstractDataResultViewer {
                     preferences.remove(columnSortRankKey);
                 }
             }
-        } 
+        }
+        
+        this.pagingControls.onSortingUpdated();
     }
 
     /**

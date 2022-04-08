@@ -904,18 +904,20 @@ public class DataResultPanel extends javax.swing.JPanel implements DataResult, C
             }
         }
         
-        public void onSortingUpdated(List<ColumnSort> columnSort) {
-            updateSorting(columnSort);
+        public void onSortingUpdated() {
+            updateSorting();
         }
     }
     
     
-    private void updateSorting(List<ColumnSort> columnSort) {
+    private void updateSorting() {
         try {
             // Switching a top level page. Reset the DataResultViewer paging so that 
             // we start at page 1.
             resultViewers.forEach((resultViewer) -> resultViewer.resetComponent());
             if (this.searchResultManager != null) {
+                String signature = this.searchResultManager.getDaoFetcher().getSignature();
+                List<ColumnSort> columnSort = ResultViewerPersistence.getColumnSorting(signature);
                 displaySearchResults(this.searchResultManager.updateColumnSort(columnSort), false);
             }
         } catch (IllegalArgumentException | ExecutionException ex) {
