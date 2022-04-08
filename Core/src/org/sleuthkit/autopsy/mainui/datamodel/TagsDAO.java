@@ -109,7 +109,7 @@ public class TagsDAO extends AbstractDAO {
         };
     }
     
-    private static final List<Pair<ColumnKey, Function<ContentTag, Object>> FILE_TAG_COLUMNS = Arrays.asList(
+    private static final List<Pair<ColumnKey, Function<ContentTag, Object>> FILE_TAG_COLUMNS_AND_EXTRACTORS = Arrays.asList(
             Pair.of(getFileColumnKey("Name", Bundle.TagsDAO_fileColumns_nameColLbl()), ct -> ct.getContent().getName()),
             Pair.of(getFileColumnKey("OriginalName", Bundle.TagsDAO_fileColumns_originalName()), ct -> null),
             Pair.of(getFileColumnKey("FilePath", Bundle.TagsDAO_fileColumns_filePathColLbl()), ct -> ct.getContent().getUniquePath()),
@@ -119,16 +119,22 @@ public class TagsDAO extends AbstractDAO {
             Pair.of(getFileColumnKey("AccessTime", Bundle.TagsDAO_fileColumns_accessTimeColLbl()), getFileTime(AbstractFile::getAtime)),
             Pair.of(getFileColumnKey("CreatedTime", Bundle.TagsDAO_fileColumns_createdTimeColLbl()), getFileTime(AbstractFile::getCrtime)),
             Pair.of(getFileColumnKey("Size", Bundle.TagsDAO_fileColumns_sizeColLbl()), ct -> ct.getContent().getSize()),
-            Pair.of(getFileColumnKey("MD5Hash", Bundle.TagsDAO_fileColumns_md5HashColLbl()),
-            getFileColumnKey("UserName", Bundle.TagsDAO_fileColumns_userNameColLbl()));
+            Pair.of(getFileColumnKey("MD5Hash", Bundle.TagsDAO_fileColumns_md5HashColLbl()), ct -> {
+                    return (ct.getContent() instanceof AbstractFile) 
+                            ? StringUtils.defaultString(((AbstractFile) ct.getContent()).getMd5Hash()) 
+                            : "";
+            }),
+            Pair.of(getFileColumnKey("UserName", Bundle.TagsDAO_fileColumns_userNameColLbl()), ct -> ct.getUserName())
+    );
 
-    private static final List<ColumnKey> RESULT_TAG_COLUMNS = Arrays.asList(
-            getFileColumnKey("Name", Bundle.TagsDAO_tagColumns_sourceNameColLbl()),
-            getFileColumnKey("OriginalName", Bundle.TagsDAO_tagColumns_origNameColLbl()),
-            getFileColumnKey("FilePath", Bundle.TagsDAO_tagColumns_sourcePathColLbl()),
-            getFileColumnKey("Type", Bundle.TagsDAO_tagColumns_typeColLbl()),
-            getFileColumnKey("Comment", Bundle.TagsDAO_tagColumns_commentColLbl()),
-            getFileColumnKey("UserName", Bundle.TagsDAO_tagColumns_userNameColLbl()));
+    private static final List<Pair<ColumnKey, Function<BlackboardArtifactTag, Object>>> RESULT_TAG_COLUMNS_AND_EXTRACTORS = Arrays.asList(
+            Pair.of(getFileColumnKey("Name", Bundle.TagsDAO_tagColumns_sourceNameColLbl()), bat -> bat.getContent().getName()),
+            Pair.of(getFileColumnKey("OriginalName", Bundle.TagsDAO_tagColumns_origNameColLbl()), bat -> null),
+            Pair.of(getFileColumnKey("FilePath", Bundle.TagsDAO_tagColumns_sourcePathColLbl()), bat -> bat.getContent() == null ? TBD : bat.getContent().getUniquePath()),
+            Pair.of(getFileColumnKey("Type", Bundle.TagsDAO_tagColumns_typeColLbl()), bat -> bat.getArtifact().getDisplayName()), 
+            Pair.of(getFileColumnKey("Comment", Bundle.TagsDAO_tagColumns_commentColLbl()), ct -> ct.getComment()),
+            Pair.of(getFileColumnKey("UserName", Bundle.TagsDAO_tagColumns_userNameColLbl()), bat -> bat.getUserName())
+    );
 
     private static TagsDAO instance = null;
 
