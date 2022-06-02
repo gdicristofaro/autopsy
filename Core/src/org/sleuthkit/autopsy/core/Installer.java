@@ -21,9 +21,13 @@ package org.sleuthkit.autopsy.core;
 import com.sun.jna.platform.win32.Kernel32;
 import java.awt.Cursor;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -31,6 +35,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.logging.Handler;
 import java.util.logging.Level;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
 import javax.imageio.ImageIO;
@@ -45,6 +51,7 @@ import org.openide.windows.WindowManager;
 import org.sleuthkit.autopsy.actions.IngestRunningCheck;
 import org.sleuthkit.autopsy.casemodule.Case;
 import static org.sleuthkit.autopsy.core.UserPreferences.SETTINGS_PROPERTIES;
+import org.sleuthkit.autopsy.core.configpath.SharedConfigPath;
 import org.sleuthkit.autopsy.corelibs.OpenCvLoader;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.coreutils.MessageNotifyUtil;
@@ -53,6 +60,7 @@ import org.sleuthkit.autopsy.coreutils.PlatformUtil;
 import org.sleuthkit.autopsy.modules.filetypeid.FileTypeDetector;
 import org.sleuthkit.autopsy.python.JythonModuleLoader;
 import org.sleuthkit.autopsy.texttranslation.TextTranslationService;
+import org.apache.commons.io.IOUtils;
 
 /**
  * Wrapper over Installers in packages in Core module. This is the main
@@ -61,7 +69,11 @@ import org.sleuthkit.autopsy.texttranslation.TextTranslationService;
 public class Installer extends ModuleInstall {
 
     private static final long serialVersionUID = 1L;
-
+    private static final String SHARED_DIR_PATH = SharedConfigPath.getInstance().getSharedConfigPath();
+    private static final String TEMP_SHARED_DIR_PATH = Paths.get(PlatformUtil.getUserDirectory().getAbsolutePath(), ".TempSharableConfig").toString();
+    private static final String SETTINGS_DROPBOX_PATH = Paths.get(PlatformUtil.getUserDirectory().getAbsolutePath(), "SettingsImportDropbox").toString();
+    
+    
     private final List<ModuleInstall> packageInstallers;
     private static final Logger logger = Logger.getLogger(Installer.class.getName());
     private static volatile boolean javaFxInit = false;
@@ -203,6 +215,9 @@ public class Installer extends ModuleInstall {
         System.setProperty("sun.java2d.dpiaware", "false");
         System.setProperty("prism.allowhidpi", "false");
 
+        // import settings from file before running other settings
+        importSettingsFromFile();
+        
         // Update existing configuration in case of unsupported settings
         UserPreferences.updateConfig();
         updateConfig();
@@ -233,6 +248,76 @@ public class Installer extends ModuleInstall {
             logger.log(Level.SEVERE, "Failed to load file type detector.", ex);
         }
     }
+    
+    
+    
+    /**
+     * Allows for importing settings from a special directory in the user config directory.
+     */
+    private void importSettingsFromFile() {
+        File settingsImportDir = new File(SETTINGS_DROPBOX_PATH);
+        if (settingsImportDir.exists() && settingsImportDir.isDirectory()) {
+            try {
+                File[] zipFiles = settingsImportDir.listFiles((dir, fileName) -> fileName.endsWith(".zip"));
+                // only allow one zip file in this directory, otherwise delete it.
+                if (zipFiles.length == 1) {
+                    importSettings(zipFiles[0]);
+                }
+            } catch (Exception ex) {
+                logger.log(Level.WARNING, "An exception occurred on settings import.", ex);
+            } finally {
+                try {
+                    FileUtils.delete(settingsImportDir);
+                } catch (Exception ex) {
+                    logger.log(Level.WARNING, "An exception occurred on settings cleanup.", ex);
+                }
+            }
+        }
+    }
+    
+    
+    /**
+     * Import zipped settings.
+     *
+     * @param zipPath The path to the zip file.
+     *
+     * @throws IOException
+     */
+    private void importSettings(File zipPath) throws IOException {
+        // extract relevant items
+        File tempOutput = new File(TEMP_SHARED_DIR_PATH);
+        tempOutput.mkdirs();
+        FileUtils.cleanDirectory(tempOutput);
+
+        File sharedDir = new File(SHARED_DIR_PATH);
+
+        try {
+            try (FileInputStream fileIn = new FileInputStream(zipPath);
+                    ZipInputStream zipIn = new ZipInputStream(fileIn)) {
+
+                ZipEntry entry;
+                while ((entry = zipIn.getNextEntry()) != null) {
+                    Path outputPath = Paths.get(TEMP_SHARED_DIR_PATH, entry.getName()).toAbsolutePath();
+                    File outputFile = outputPath.toFile();
+                    outputFile.getParentFile().mkdirs();
+                    try (FileOutputStream fileOut = new FileOutputStream(outputFile)) {
+                        IOUtils.copy(zipIn, fileOut);
+                    }
+                }
+
+            }
+
+            if (sharedDir.exists()) {
+                FileUtils.deleteDirectory(sharedDir);
+            }
+            Files.move(tempOutput.toPath(), sharedDir.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } finally {
+            if (tempOutput.exists()) {
+                FileUtils.deleteDirectory(sharedDir);
+            }
+        }
+    }
+    
 
     /**
      * If the mode in the configuration file is 'REVIEW' (2, now invalid), this
