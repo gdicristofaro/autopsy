@@ -191,7 +191,7 @@ public class StartupWindowProvider implements StartupWindowInterface {
 
         // if Multi-User settings are enabled and Solr8 server is not configured,
         // display an error message and a dialog
-        if (UserPreferences.getIsMultiUserModeEnabled() && UserPreferences.getIndexingServerHost().isEmpty()) {
+        if (UserPreferences.getIsMultiUserModeEnabled() && !UserPreferences.isExternalMessagingDisabled() && UserPreferences.getIndexingServerHost().isEmpty()) {
             // Solr 8 host name is not configured. This could be the first time user 
             // runs Autopsy with Solr 8. Display a message.
             MessageNotifyUtil.Notify.error(NbBundle.getMessage(CueBannerPanel.class, "SolrNotConfiguredDialog.title"),

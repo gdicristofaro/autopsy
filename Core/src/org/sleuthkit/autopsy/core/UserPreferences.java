@@ -159,7 +159,9 @@ public final class UserPreferences {
     private static final String DEFAULT_PORT_STRING = "61616";
     private static final int DEFAULT_PORT_INT = 61616;
     private static final String GEO_OSM_SERVER_ADDRESS = "GeolocationOsmServerAddress";
-
+    private static final String EXTERNAL_MESSAGING_DISABLED = "ExternalMessagingDisabled";
+    
+    
     // view preference keys used for moving from legacy files to new files
     private static final List<String> VIEW_PREFERENCE_KEYS = Arrays.asList(
             KEEP_PREFERRED_VIEWER,
@@ -531,6 +533,20 @@ public final class UserPreferences {
 
         return multiUserSupported;
     }
+    
+    /**
+     * @return In this special mode, postgres can be enabled but external active
+     *         mq, zookeeper, and solr will not be used.
+     *
+     * NOTE: This presents a potential issues where two instances of Autopsy can
+     * modify the same case simultaneously unaware that another instance is
+     * modifying the same case. This can lead to unexpected behavior and
+     * corrupted data. If this is true, care should be taken to make sure no two
+     * instances are modifying the same case concurrently.
+     */
+    public static boolean isExternalMessagingDisabled() {
+        return externalServicePreferences.getBoolean(EXTERNAL_MESSAGING_DISABLED, false);
+    }
 
     public static String getIndexingServerHost() {
         return externalServicePreferences.get(SOLR8_SERVER_HOST, "");
@@ -563,7 +579,7 @@ public final class UserPreferences {
     public static void setSolr4ServerPort(String port) {
         externalServicePreferences.put(SOLR4_SERVER_PORT, port);
     }
-
+    
     public static String getZkServerHost() {
         return externalServicePreferences.get(ZK_SERVER_HOST, "");
     }

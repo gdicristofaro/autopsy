@@ -46,6 +46,7 @@ public final class AutopsyEventPublisher {
     private RemoteEventPublisher remotePublisher;
     @GuardedBy("this")
     private String currentChannelName;
+    private Boolean isRemoteMessagingDisabled;
 
     /**
      * Constructs an object for publishing events to registered subscribers on
@@ -55,6 +56,15 @@ public final class AutopsyEventPublisher {
      */
     public AutopsyEventPublisher() {
         localPublisher = new LocalEventPublisher();
+    }
+    
+
+    private boolean isRemoteMessagingDisabled() {
+        if (isRemoteMessagingDisabled == null) {
+            isRemoteMessagingDisabled = UserPreferences.isExternalMessagingDisabled();
+        }
+        
+        return isRemoteMessagingDisabled;
     }
 
     /**
@@ -66,6 +76,10 @@ public final class AutopsyEventPublisher {
      * @throws AutopsyEventException if the channel was not opened.
      */
     public synchronized void openRemoteEventChannel(String channelName) throws AutopsyEventException {
+        if (isRemoteMessagingDisabled()) {
+            return;
+        }
+        
         currentChannelName = channelName;
         if (null != remotePublisher) {
             closeRemoteEventChannel();
@@ -88,6 +102,10 @@ public final class AutopsyEventPublisher {
      * events from other Autopsy nodes.
      */
     public synchronized void closeRemoteEventChannel() {
+        if (isRemoteMessagingDisabled()) {
+            return;
+        }
+                
         stopRemotePublisher();
         currentChannelName = null;
     }
@@ -139,7 +157,10 @@ public final class AutopsyEventPublisher {
      */
     public void publish(AutopsyEvent event) {
         publishLocally(event);
-        publishRemotely(event);
+        
+        if (!isRemoteMessagingDisabled()) {
+            publishRemotely(event);
+        }
     }
 
     /**
@@ -157,7 +178,7 @@ public final class AutopsyEventPublisher {
      * @param event The event to publish.
      */
     public synchronized void publishRemotely(AutopsyEvent event) {
-        if (null != currentChannelName) {
+        if (!isRemoteMessagingDisabled() && null != currentChannelName) {
             boolean published = false;
             int tryCount = 1;
 
@@ -182,7 +203,7 @@ public final class AutopsyEventPublisher {
      * name.
      */
     private synchronized void stopRemotePublisher() {
-        if (null != remotePublisher) {
+        if (!isRemoteMessagingDisabled() && null != remotePublisher) {
             try {
                 remotePublisher.stop();
             } catch (JMSException ex) {

@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.autopsy.core;
 
+import com.google.common.collect.ImmutableSet;
 import org.sleuthkit.autopsy.core.events.ServiceEvent;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.beans.PropertyChangeListener;
@@ -84,7 +85,11 @@ public class ServicesMonitor {
     private static final String PERIODIC_TASK_THREAD_NAME = "services-monitor-periodic-task-%d"; //NON-NLS
     private static final int NUMBER_OF_PERIODIC_TASK_THREADS = 1;
     private static final long CRASH_DETECTION_INTERVAL_MINUTES = 15;
-    private static final Set<String> coreServices = Stream.of(ServicesMonitor.Service.values()).map(Service::toString).collect(Collectors.toSet());
+    
+    private static final Set<String> coreServices = UserPreferences.isExternalMessagingDisabled() ? 
+            ImmutableSet.of(Service.REMOTE_CASE_DATABASE.toString()) :
+            Stream.of(ServicesMonitor.Service.values()).map(Service::toString).collect(Collectors.toSet());
+    
     private static ServicesMonitor servicesMonitor = new ServicesMonitor();
     private final ScheduledThreadPoolExecutor periodicTasksExecutor;
     private final ConcurrentHashMap<String, String> statusByService;
@@ -351,6 +356,10 @@ public class ServicesMonitor {
      * Performs a keyword search service availability status check.
      */
     private void checkKeywordSearchServerConnectionStatus() {
+        if (UserPreferences.isExternalMessagingDisabled()) {
+            return;
+        }
+        
         KeywordSearchService kwsService = Lookup.getDefault().lookup(KeywordSearchService.class);
         try {
             if (kwsService != null) {
@@ -389,6 +398,10 @@ public class ServicesMonitor {
      * Performs messaging service availability status check.
      */
     private void checkMessagingServerConnectionStatus() {
+        if (UserPreferences.isExternalMessagingDisabled()) {
+            return;
+        }
+        
         MessageServiceConnectionInfo info;
         try {
             info = UserPreferences.getMessageServiceConnectionInfo();

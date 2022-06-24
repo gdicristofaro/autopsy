@@ -20,6 +20,7 @@ package org.sleuthkit.autopsy.coordinationservice;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -201,6 +202,11 @@ public final class CoordinationService {
      *                                      lock acquisition.
      */
     public Lock tryGetExclusiveLock(CategoryNode category, String nodePath, int timeOut, TimeUnit timeUnit) throws CoordinationServiceException, InterruptedException {
+        TBD does this lock;
+        if (UserPreferences.isExternalMessagingDisabled()) {
+            return new Lock(nodePath, null);
+        }
+        
         String fullNodePath = "";
         try {
             // ensure node is present
@@ -237,6 +243,11 @@ public final class CoordinationService {
      *                                      acquisition.
      */
     public Lock tryGetExclusiveLock(CategoryNode category, String nodePath) throws CoordinationServiceException {
+        TBD does this lock;
+        if (UserPreferences.isExternalMessagingDisabled()) {
+            return new Lock(nodePath, null);
+        }
+        
         String fullNodePath = "";
         try {
             // ensure node is present
@@ -272,6 +283,11 @@ public final class CoordinationService {
      *                                      lock acquisition.
      */
     public Lock tryGetSharedLock(CategoryNode category, String nodePath, int timeOut, TimeUnit timeUnit) throws CoordinationServiceException, InterruptedException {
+        TBD does this lock;
+        if (UserPreferences.isExternalMessagingDisabled()) {
+            return new Lock(nodePath, null);
+        }
+        
         String fullNodePath = "";
         try {
             // ensure node is present
@@ -308,6 +324,11 @@ public final class CoordinationService {
      *                                      acquisition.
      */
     public Lock tryGetSharedLock(CategoryNode category, String nodePath) throws CoordinationServiceException {
+        TBD does this lock;
+        if (UserPreferences.isExternalMessagingDisabled()) {
+            return new Lock(nodePath, null);
+        }
+        
         String fullNodePath = "";
         try {
             // ensure node is present
@@ -337,6 +358,8 @@ public final class CoordinationService {
      *                                      setting of node data.
      */
     public byte[] getNodeData(CategoryNode category, String nodePath) throws CoordinationServiceException, InterruptedException {
+        TBD;
+                
         String fullNodePath = "";
         try {
             // ensure node is present
@@ -368,6 +391,8 @@ public final class CoordinationService {
      *                                      setting of node data.
      */
     public void setNodeData(CategoryNode category, String nodePath, byte[] data) throws CoordinationServiceException, InterruptedException {
+        TBD;
+        
         String fullNodePath = getFullyQualifiedNodePath(category, nodePath);
         try {
             curator.setData().forPath(fullNodePath, data);
@@ -393,6 +418,10 @@ public final class CoordinationService {
      *                                        to complete.
      */
     public void deleteNode(CategoryNode category, String nodePath) throws CoordinationServiceException, InterruptedException {
+        if (UserPreferences.isExternalMessagingDisabled()) {
+            return;
+        }
+        
         String fullNodePath = getFullyQualifiedNodePath(category, nodePath);
         try {
             curator.delete().forPath(fullNodePath);
@@ -419,6 +448,10 @@ public final class CoordinationService {
      *                                        to complete.
      */
     public List<String> getNodeList(CategoryNode category) throws CoordinationServiceException, InterruptedException {
+        if (UserPreferences.isExternalMessagingDisabled()) {
+            return Collections.emptyList();
+        }
+        
         try {
             List<String> list = curator.getChildren().forPath(categoryNodeToPath.get(category.getDisplayName()));
             return list;
@@ -489,7 +522,9 @@ public final class CoordinationService {
 
         public void release() throws CoordinationServiceException {
             try {
-                this.interProcessLock.release();
+                if (this.interProcessLock != null) {
+                    this.interProcessLock.release();    
+                }
             } catch (Exception ex) {
                 throw new CoordinationServiceException(String.format("Failed to release the lock on %s", nodePath), ex);
             }
