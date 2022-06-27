@@ -82,6 +82,7 @@ public final class MultiUserSettingsPanel extends javax.swing.JPanel {
     private static final long serialVersionUID = 1L;
     private final MultiUserSettingsPanelController controller;
     private final Collection<JTextField> textBoxes = new ArrayList<>();
+    private final Collection<JTextField> dbTextBoxes = new ArrayList<>();
     private final TextBoxChangedListener textBoxChangedListener;
     private static final Logger logger = Logger.getLogger(MultiUserSettingsPanel.class.getName());
     private final ImageIcon goodIcon;
@@ -141,6 +142,12 @@ public final class MultiUserSettingsPanel extends javax.swing.JPanel {
 
         /// Register for notifications when the text boxes get updated.
         textBoxChangedListener = new TextBoxChangedListener();
+        
+        dbTextBoxes.add(tbDbHostname);
+        dbTextBoxes.add(tbDbPort);
+        dbTextBoxes.add(tbDbUsername);
+        dbTextBoxes.add(tbDbPassword);
+        
         textBoxes.add(tbDbHostname);
         textBoxes.add(tbDbPort);
         textBoxes.add(tbDbUsername);
@@ -162,7 +169,7 @@ public final class MultiUserSettingsPanel extends javax.swing.JPanel {
         addDocumentListeners(textBoxes, textBoxChangedListener);
         goodIcon = new ImageIcon(ImageUtilities.loadImage("org/sleuthkit/autopsy/images/good.png", false));
         badIcon = new ImageIcon(ImageUtilities.loadImage("org/sleuthkit/autopsy/images/bad.png", false));
-        enableMultiUserComponents(textBoxes, cbEnableMultiUser.isSelected());
+        enableMultiUserComponents(UserPreferences.isExternalMessagingDisabled() ? dbTextBoxes : textBoxes, cbEnableMultiUser.isSelected());
         
         Case.addEventTypeSubscriber(EnumSet.of(Case.Events.CURRENT_CASE), (PropertyChangeEvent evt) -> {
             //disable when case is open, enable when case is closed
@@ -648,7 +655,7 @@ public final class MultiUserSettingsPanel extends javax.swing.JPanel {
             lbWarning.setText("");
             lbTestMessageWarning.setText("");
         }
-        enableMultiUserComponents(textBoxes, cbEnableMultiUser.isSelected());
+        enableMultiUserComponents(UserPreferences.isExternalMessagingDisabled() ? dbTextBoxes : textBoxes, cbEnableMultiUser.isSelected());
         controller.changed();
     }//GEN-LAST:event_cbEnableMultiUserItemStateChanged
 
@@ -862,7 +869,7 @@ public final class MultiUserSettingsPanel extends javax.swing.JPanel {
         // When a case is open, prevent the user from changing
         // multi-user settings.
         cbEnableMultiUser.setEnabled(UserPreferences.isMultiUserSupported() && !caseOpen);
-        enableMultiUserComponents(textBoxes, cbEnableMultiUser.isSelected() && !caseOpen);
+        enableMultiUserComponents(UserPreferences.isExternalMessagingDisabled() ? dbTextBoxes : textBoxes, cbEnableMultiUser.isSelected() && !caseOpen);
                
         this.valid(caseOpen); // trigger validation to enable buttons based on current settings
     }
@@ -1151,13 +1158,14 @@ public final class MultiUserSettingsPanel extends javax.swing.JPanel {
         bnTestDatabase.setEnabled(dbPopulated && !caseOpen);
 
         // Solr Indexing
-        bnTestSolr8.setEnabled(solr8Populated && !caseOpen);
-        bnTestSolr4.setEnabled(solr4Populated && !caseOpen);
-        bnTestZK.setEnabled(zkPopulated && !caseOpen);
+        bnTestSolr8.setEnabled(solr8Populated && !caseOpen && !UserPreferences.isExternalMessagingDisabled());
+        bnTestSolr4.setEnabled(solr4Populated && !caseOpen && !UserPreferences.isExternalMessagingDisabled());
+        bnTestZK.setEnabled(zkPopulated && !caseOpen && !UserPreferences.isExternalMessagingDisabled());
 
         // ActiveMQ Messaging
-        bnTestMessageService.setEnabled(messageServicePopulated && !caseOpen);
+        bnTestMessageService.setEnabled(messageServicePopulated && !caseOpen && !UserPreferences.isExternalMessagingDisabled());
 
+        // we need all external services regularly, but if external messaging services, then just database.
         if ((dbPopulated && messageServicePopulated && zkPopulated && (solr8Populated || solr4Populated)) || 
                 (UserPreferences.isExternalMessagingDisabled() && dbPopulated)) {
             result = true;

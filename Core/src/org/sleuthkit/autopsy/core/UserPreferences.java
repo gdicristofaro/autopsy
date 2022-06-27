@@ -526,8 +526,8 @@ public final class UserPreferences {
      */
     public static boolean isMultiUserSupported() {
         if (multiUserSupported == null) {
-            // looks for any SolrSearchService present in AutopsyService.
-            multiUserSupported = Lookup.getDefault().lookupAll(AutopsyService.class).stream()
+            // either external services are disabled or look for any SolrSearchService present in AutopsyService.
+            multiUserSupported = isExternalMessagingDisabled() || Lookup.getDefault().lookupAll(AutopsyService.class).stream()
                     .anyMatch(obj -> obj.getClass().getName().equalsIgnoreCase("org.sleuthkit.autopsy.keywordsearch.SolrSearchService"));
         }
 
