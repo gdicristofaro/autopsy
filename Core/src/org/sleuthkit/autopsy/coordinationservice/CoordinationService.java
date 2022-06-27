@@ -202,7 +202,6 @@ public final class CoordinationService {
      *                                      lock acquisition.
      */
     public Lock tryGetExclusiveLock(CategoryNode category, String nodePath, int timeOut, TimeUnit timeUnit) throws CoordinationServiceException, InterruptedException {
-        TBD does this lock;
         if (UserPreferences.isExternalMessagingDisabled()) {
             return new Lock(nodePath, null);
         }
@@ -243,7 +242,6 @@ public final class CoordinationService {
      *                                      acquisition.
      */
     public Lock tryGetExclusiveLock(CategoryNode category, String nodePath) throws CoordinationServiceException {
-        TBD does this lock;
         if (UserPreferences.isExternalMessagingDisabled()) {
             return new Lock(nodePath, null);
         }
@@ -283,7 +281,6 @@ public final class CoordinationService {
      *                                      lock acquisition.
      */
     public Lock tryGetSharedLock(CategoryNode category, String nodePath, int timeOut, TimeUnit timeUnit) throws CoordinationServiceException, InterruptedException {
-        TBD does this lock;
         if (UserPreferences.isExternalMessagingDisabled()) {
             return new Lock(nodePath, null);
         }
@@ -324,7 +321,6 @@ public final class CoordinationService {
      *                                      acquisition.
      */
     public Lock tryGetSharedLock(CategoryNode category, String nodePath) throws CoordinationServiceException {
-        TBD does this lock;
         if (UserPreferences.isExternalMessagingDisabled()) {
             return new Lock(nodePath, null);
         }
@@ -357,9 +353,7 @@ public final class CoordinationService {
      * @throws InterruptedException         If interrupted while blocked during
      *                                      setting of node data.
      */
-    public byte[] getNodeData(CategoryNode category, String nodePath) throws CoordinationServiceException, InterruptedException {
-        TBD;
-                
+    public byte[] getNodeData(CategoryNode category, String nodePath) throws CoordinationServiceException, InterruptedException {               
         String fullNodePath = "";
         try {
             // ensure node is present
@@ -391,8 +385,6 @@ public final class CoordinationService {
      *                                      setting of node data.
      */
     public void setNodeData(CategoryNode category, String nodePath, byte[] data) throws CoordinationServiceException, InterruptedException {
-        TBD;
-        
         String fullNodePath = getFullyQualifiedNodePath(category, nodePath);
         try {
             curator.setData().forPath(fullNodePath, data);

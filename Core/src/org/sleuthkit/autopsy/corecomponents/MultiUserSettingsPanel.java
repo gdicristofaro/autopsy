@@ -1158,7 +1158,8 @@ public final class MultiUserSettingsPanel extends javax.swing.JPanel {
         // ActiveMQ Messaging
         bnTestMessageService.setEnabled(messageServicePopulated && !caseOpen);
 
-        if (dbPopulated && messageServicePopulated && zkPopulated && (solr8Populated || solr4Populated)) {
+        if ((dbPopulated && messageServicePopulated && zkPopulated && (solr8Populated || solr4Populated)) || 
+                (UserPreferences.isExternalMessagingDisabled() && dbPopulated)) {
             result = true;
         } else {
             // We don't even have everything filled out
