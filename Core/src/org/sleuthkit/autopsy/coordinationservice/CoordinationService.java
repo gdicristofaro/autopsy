@@ -108,30 +108,33 @@ public final class CoordinationService {
      *                   more specific exceptions)
      */
     private CoordinationService(String rootNodeName) throws InterruptedException, IOException, KeeperException, CoordinationServiceException {
+        if (UserPreferences.isExternalMessagingDisabled()) {
+            curator = null;
+        } else {
+            // read ZK connection info
+            String hostName = UserPreferences.getZkServerHost();
+            String port = UserPreferences.getZkServerPort();
+            if (hostName.isEmpty() || port.isEmpty()) {
+                // use defaults for embedded ZK that runs on Solr server
+                hostName = UserPreferences.getIndexingServerHost();
+                int portInt = Integer.valueOf(UserPreferences.getIndexingServerPort()) + PORT_OFFSET;
+                port = Integer.toString(portInt);
+            }
+            if (false == CoordinationServiceUtils.isZooKeeperAccessible(hostName, port)) {
+                throw new CoordinationServiceException("Unable to access ZooKeeper");
+            }
 
-        // read ZK connection info
-        String hostName = UserPreferences.getZkServerHost();
-        String port = UserPreferences.getZkServerPort();
-        if (hostName.isEmpty() || port.isEmpty()) {
-            // use defaults for embedded ZK that runs on Solr server
-            hostName = UserPreferences.getIndexingServerHost();
-            int portInt = Integer.valueOf(UserPreferences.getIndexingServerPort()) + PORT_OFFSET;
-            port = Integer.toString(portInt);
-        }
-        if (false == CoordinationServiceUtils.isZooKeeperAccessible(hostName, port)) {
-            throw new CoordinationServiceException("Unable to access ZooKeeper");
+            // We are using ZK for all coordination/locking, so ZK connection info cannot be changed.
+            // A reboot is required in order to use a different ZK server for coordination services.
+            /*
+             * Connect to ZooKeeper via Curator.
+             */
+            RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
+            String connectString = hostName + ":" + port;
+            curator = CuratorFrameworkFactory.newClient(connectString, SESSION_TIMEOUT_MILLISECONDS, CONNECTION_TIMEOUT_MILLISECONDS, retryPolicy);
+            curator.start();
         }
         
-        // We are using ZK for all coordination/locking, so ZK connection info cannot be changed.
-        // A reboot is required in order to use a different ZK server for coordination services.
-        /*
-         * Connect to ZooKeeper via Curator.
-         */
-        RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
-        String connectString = hostName + ":" + port;
-        curator = CuratorFrameworkFactory.newClient(connectString, SESSION_TIMEOUT_MILLISECONDS, CONNECTION_TIMEOUT_MILLISECONDS, retryPolicy);
-        curator.start();
-
         /*
          * Create the top-level root and category nodes.
          */
@@ -143,14 +146,17 @@ public final class CoordinationService {
         categoryNodeToPath = new ConcurrentHashMap<>();
         for (CategoryNode node : CategoryNode.values()) {
             String nodePath = rootNode + "/" + node.getDisplayName();
-            try {
-                curator.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).withACL(ZooDefs.Ids.OPEN_ACL_UNSAFE).forPath(nodePath);
-            } catch (KeeperException ex) {
-                if (ex.code() != KeeperException.Code.NODEEXISTS) {
-                    throw ex;
+            
+            if (curator != null) {
+                try {
+                    curator.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).withACL(ZooDefs.Ids.OPEN_ACL_UNSAFE).forPath(nodePath);    
+                } catch (KeeperException ex) {
+                    if (ex.code() != KeeperException.Code.NODEEXISTS) {
+                        throw ex;
+                    }
+                } catch (Exception ex) {
+                    throw new CoordinationServiceException("Curator experienced an error", ex);
                 }
-            } catch (Exception ex) {
-                throw new CoordinationServiceException("Curator experienced an error", ex);
             }
             categoryNodeToPath.put(node.getDisplayName(), nodePath);
         }
@@ -174,7 +180,9 @@ public final class CoordinationService {
             
         try {
             // ensure leading path is present
-            ZKPaths.mkdirs(curator.getZookeeperClient().getZooKeeper(), fullNodePath);
+            if (curator != null) {
+                ZKPaths.mkdirs(curator.getZookeeperClient().getZooKeeper(), fullNodePath);    
+            }
             return fullNodePath;
         } catch (Exception ex) {
             throw new CoordinationServiceException("An error occurred while creating node path at: " + fullNodePath, ex);
@@ -202,9 +210,9 @@ public final class CoordinationService {
      *                                      lock acquisition.
      */
     public Lock tryGetExclusiveLock(CategoryNode category, String nodePath, int timeOut, TimeUnit timeUnit) throws CoordinationServiceException, InterruptedException {
-        if (UserPreferences.isExternalMessagingDisabled()) {
+        if (curator == null) {
             return new Lock(nodePath, null);
-        }
+        } 
         
         String fullNodePath = "";
         try {
@@ -242,7 +250,7 @@ public final class CoordinationService {
      *                                      acquisition.
      */
     public Lock tryGetExclusiveLock(CategoryNode category, String nodePath) throws CoordinationServiceException {
-        if (UserPreferences.isExternalMessagingDisabled()) {
+        if (curator == null) {
             return new Lock(nodePath, null);
         }
         
@@ -281,7 +289,7 @@ public final class CoordinationService {
      *                                      lock acquisition.
      */
     public Lock tryGetSharedLock(CategoryNode category, String nodePath, int timeOut, TimeUnit timeUnit) throws CoordinationServiceException, InterruptedException {
-        if (UserPreferences.isExternalMessagingDisabled()) {
+        if (curator == null) {
             return new Lock(nodePath, null);
         }
         
@@ -321,7 +329,7 @@ public final class CoordinationService {
      *                                      acquisition.
      */
     public Lock tryGetSharedLock(CategoryNode category, String nodePath) throws CoordinationServiceException {
-        if (UserPreferences.isExternalMessagingDisabled()) {
+        if (curator == null) {
             return new Lock(nodePath, null);
         }
         
@@ -354,6 +362,10 @@ public final class CoordinationService {
      *                                      setting of node data.
      */
     public byte[] getNodeData(CategoryNode category, String nodePath) throws CoordinationServiceException, InterruptedException {               
+        if (curator == null) {
+            return new byte[0];
+        }
+        
         String fullNodePath = "";
         try {
             // ensure node is present
@@ -385,6 +397,10 @@ public final class CoordinationService {
      *                                      setting of node data.
      */
     public void setNodeData(CategoryNode category, String nodePath, byte[] data) throws CoordinationServiceException, InterruptedException {
+        if (curator == null) {
+            return;
+        }
+        
         String fullNodePath = getFullyQualifiedNodePath(category, nodePath);
         try {
             curator.setData().forPath(fullNodePath, data);
@@ -410,7 +426,7 @@ public final class CoordinationService {
      *                                        to complete.
      */
     public void deleteNode(CategoryNode category, String nodePath) throws CoordinationServiceException, InterruptedException {
-        if (UserPreferences.isExternalMessagingDisabled()) {
+        if (curator == null) {
             return;
         }
         
@@ -440,7 +456,7 @@ public final class CoordinationService {
      *                                        to complete.
      */
     public List<String> getNodeList(CategoryNode category) throws CoordinationServiceException, InterruptedException {
-        if (UserPreferences.isExternalMessagingDisabled()) {
+        if (curator == null) {
             return Collections.emptyList();
         }
         

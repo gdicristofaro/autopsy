@@ -289,7 +289,7 @@ public final class KeywordSearchIngestModule implements FileIngestModule {
             throw new IngestModuleException(Bundle.KeywordSearchIngestModule_noOpenCase_errMsg(), ex);
         }
         if (refCounter.incrementAndGet(jobId) == 1) {
-            if (openCase.getCaseType() == Case.CaseType.MULTI_USER_CASE) {
+            if (openCase.getCaseType() == Case.CaseType.MULTI_USER_CASE && !org.sleuthkit.autopsy.core.UserPreferences.isExternalMessagingDisabled()) {
                 // for multi-user cases need to verify connection to remore SOLR server
                 KeywordSearchService kwsService = new SolrSearchService();
                 Server.IndexingServerProperties properties = Server.getMultiUserServerProperties(openCase.getCaseDirectory());

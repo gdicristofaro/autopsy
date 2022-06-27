@@ -614,7 +614,7 @@ public class Server {
     private void configureSolrConnection(Case theCase, Index index) throws KeywordSearchModuleException, SolrServerNoPortException {
         
         try {
-            if (theCase.getCaseType() == CaseType.SINGLE_USER_CASE) {
+            if (theCase.getCaseType() == CaseType.SINGLE_USER_CASE || org.sleuthkit.autopsy.core.UserPreferences.isExternalMessagingDisabled()) {
 
                 // makes sure the proper local Solr server is running
                 if (IndexFinder.getCurrentSolrVersion().equals(index.getSolrVersion())) {
@@ -1042,7 +1042,7 @@ public class Server {
     void deleteCollection(String coreName, CaseMetadata metadata) throws KeywordSearchServiceException, KeywordSearchModuleException {
         try {
             HttpSolrClient solrServer;
-            if (metadata.getCaseType() == CaseType.SINGLE_USER_CASE) {
+            if (metadata.getCaseType() == CaseType.SINGLE_USER_CASE || org.sleuthkit.autopsy.core.UserPreferences.isExternalMessagingDisabled()) {
                 solrServer = getSolrClient("http://localhost:" + localSolrServerPort + "/solr"); //NON-NLS
                 CoreAdminResponse response = CoreAdminRequest.getStatus(coreName, solrServer);
                 if (null != response.getCoreStatus(coreName).get("instanceDir")) {             //NON-NLS
@@ -1102,7 +1102,7 @@ public class Server {
             // connect to proper Solr server
             configureSolrConnection(theCase, index);
 
-            if (theCase.getCaseType() == CaseType.MULTI_USER_CASE) {
+            if (theCase.getCaseType() == CaseType.MULTI_USER_CASE && !org.sleuthkit.autopsy.core.UserPreferences.isExternalMessagingDisabled()) {
                 // select number of shards to use
                 numShardsToUse = getNumShardsToUse();
             }
@@ -1114,7 +1114,7 @@ public class Server {
         try {
             String collectionName = index.getIndexName();
             
-            if (theCase.getCaseType() == CaseType.MULTI_USER_CASE) {
+            if (theCase.getCaseType() == CaseType.MULTI_USER_CASE && !org.sleuthkit.autopsy.core.UserPreferences.isExternalMessagingDisabled()) {
                 if (!collectionExists(collectionName)) {
                     /*
                     * The collection does not exist. Make a request that will cause the colelction to be created.
@@ -1149,7 +1149,7 @@ public class Server {
                     
                     // In single user mode, if there is a core.properties file already,
                     // we've hit a solr bug. Compensate by deleting it.
-                    if (theCase.getCaseType() == CaseType.SINGLE_USER_CASE) {
+                    if (theCase.getCaseType() == CaseType.SINGLE_USER_CASE || org.sleuthkit.autopsy.core.UserPreferences.isExternalMessagingDisabled()) {
                         Path corePropertiesFile = Paths.get(localSolrFolder.toString(), SOLR, collectionName, CORE_PROPERTIES);
                         if (corePropertiesFile.toFile().exists()) {
                             try {
@@ -2058,7 +2058,7 @@ public class Server {
             this.textIndex = index;
             bufferLock = new Object();
             
-            if (caseType == CaseType.SINGLE_USER_CASE) {
+            if (caseType == CaseType.SINGLE_USER_CASE || org.sleuthkit.autopsy.core.UserPreferences.isExternalMessagingDisabled()) {
                 // get SolrJ client
                 queryClient = getSolrClient("http://localhost:" + localSolrServerPort + "/solr/" + name); // HttpClient
                 indexingClient = getSolrClient("http://localhost:" + localSolrServerPort + "/solr/" + name); // HttpClient
@@ -2416,7 +2416,7 @@ public class Server {
                 ThreadUtils.shutDownTaskExecutor(periodicTasksExecutor);
 
                 // We only unload cores for "single-user" cases.
-                if (this.caseType == CaseType.MULTI_USER_CASE) {
+                if (this.caseType == CaseType.MULTI_USER_CASE || org.sleuthkit.autopsy.core.UserPreferences.isExternalMessagingDisabled()) {
                     return;
                 }
                 

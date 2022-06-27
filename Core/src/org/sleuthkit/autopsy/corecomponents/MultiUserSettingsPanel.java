@@ -169,7 +169,7 @@ public final class MultiUserSettingsPanel extends javax.swing.JPanel {
         addDocumentListeners(textBoxes, textBoxChangedListener);
         goodIcon = new ImageIcon(ImageUtilities.loadImage("org/sleuthkit/autopsy/images/good.png", false));
         badIcon = new ImageIcon(ImageUtilities.loadImage("org/sleuthkit/autopsy/images/bad.png", false));
-        enableMultiUserComponents(UserPreferences.isExternalMessagingDisabled() ? dbTextBoxes : textBoxes, cbEnableMultiUser.isSelected());
+        enableMultiUserComponents(cbEnableMultiUser.isSelected());
         
         Case.addEventTypeSubscriber(EnumSet.of(Case.Events.CURRENT_CASE), (PropertyChangeEvent evt) -> {
             //disable when case is open, enable when case is closed
@@ -632,9 +632,10 @@ public final class MultiUserSettingsPanel extends javax.swing.JPanel {
      * @param textFields The text fields to enable/disable.
      * @param enabled    True means enable, false means disable.
      */
-    private static void enableMultiUserComponents(Collection<JTextField> textFields, boolean enabled) {
-        for (JTextField textField : textFields) {
-            textField.setEnabled(enabled);
+    private void enableMultiUserComponents(boolean enabled) {
+        for (JTextField textField : textBoxes) {
+            boolean compEnabled = enabled && (!UserPreferences.isExternalMessagingDisabled() || dbTextBoxes.contains(textField));
+            textField.setEnabled(compEnabled);
         }
     }
 
@@ -655,7 +656,7 @@ public final class MultiUserSettingsPanel extends javax.swing.JPanel {
             lbWarning.setText("");
             lbTestMessageWarning.setText("");
         }
-        enableMultiUserComponents(UserPreferences.isExternalMessagingDisabled() ? dbTextBoxes : textBoxes, cbEnableMultiUser.isSelected());
+        enableMultiUserComponents(cbEnableMultiUser.isSelected());
         controller.changed();
     }//GEN-LAST:event_cbEnableMultiUserItemStateChanged
 
@@ -869,7 +870,7 @@ public final class MultiUserSettingsPanel extends javax.swing.JPanel {
         // When a case is open, prevent the user from changing
         // multi-user settings.
         cbEnableMultiUser.setEnabled(UserPreferences.isMultiUserSupported() && !caseOpen);
-        enableMultiUserComponents(UserPreferences.isExternalMessagingDisabled() ? dbTextBoxes : textBoxes, cbEnableMultiUser.isSelected() && !caseOpen);
+        enableMultiUserComponents(cbEnableMultiUser.isSelected() && !caseOpen);
                
         this.valid(caseOpen); // trigger validation to enable buttons based on current settings
     }
@@ -1040,35 +1041,37 @@ public final class MultiUserSettingsPanel extends javax.swing.JPanel {
                 logger.log(Level.SEVERE, "Error saving case database connection info", ex); //NON-NLS
             }
 
-            int msgServicePort = 0;
-            try {
-                msgServicePort = Integer.parseInt(this.tbMsgPort.getText().trim());
-            } catch (NumberFormatException ex) {
-                logger.log(Level.SEVERE, "Could not parse messaging service port setting", ex);
+            if (!UserPreferences.isExternalMessagingDisabled()) {
+                int msgServicePort = 0;
+                try {
+                    msgServicePort = Integer.parseInt(this.tbMsgPort.getText().trim());
+                } catch (NumberFormatException ex) {
+                    logger.log(Level.SEVERE, "Could not parse messaging service port setting", ex);
+                }
+
+                MessageServiceConnectionInfo msgServiceInfo = new MessageServiceConnectionInfo(
+                        tbMsgHostname.getText().trim(),
+                        msgServicePort,
+                        tbMsgUsername.getText().trim(),
+                        new String(tbMsgPassword.getPassword()));
+
+                try {
+                    UserPreferences.setMessageServiceConnectionInfo(msgServiceInfo);
+                } catch (UserPreferencesException ex) {
+                    logger.log(Level.SEVERE, "Error saving messaging service connection info", ex); //NON-NLS
+                }
+
+                UserPreferences.setIndexingServerHost(tbSolr8Hostname.getText().trim());
+                String solr8port = tbSolr8Port.getText().trim();
+                if (!solr8port.isEmpty()) {
+                    UserPreferences.setIndexingServerPort(Integer.parseInt(solr8port));
+                }
+                UserPreferences.setSolr4ServerHost(tbSolr4Hostname.getText().trim());
+                UserPreferences.setSolr4ServerPort(tbSolr4Port.getText().trim());
+                UserPreferences.setZkServerHost(tbZkHostname.getText().trim());
+                UserPreferences.setZkServerPort(tbZkPort.getText().trim());
             }
-
-            MessageServiceConnectionInfo msgServiceInfo = new MessageServiceConnectionInfo(
-                    tbMsgHostname.getText().trim(),
-                    msgServicePort,
-                    tbMsgUsername.getText().trim(),
-                    new String(tbMsgPassword.getPassword()));
-
-            try {
-                UserPreferences.setMessageServiceConnectionInfo(msgServiceInfo);
-            } catch (UserPreferencesException ex) {
-                logger.log(Level.SEVERE, "Error saving messaging service connection info", ex); //NON-NLS
-            }
-
-            UserPreferences.setIndexingServerHost(tbSolr8Hostname.getText().trim());
-            String solr8port = tbSolr8Port.getText().trim();
-            if (!solr8port.isEmpty()) {
-                UserPreferences.setIndexingServerPort(Integer.parseInt(solr8port));
-            }
-            UserPreferences.setSolr4ServerHost(tbSolr4Hostname.getText().trim());
-            UserPreferences.setSolr4ServerPort(tbSolr4Port.getText().trim());
-            UserPreferences.setZkServerHost(tbZkHostname.getText().trim());
-            UserPreferences.setZkServerPort(tbZkPort.getText().trim());
-
+            
             if (needsRestart) {
                 SwingUtilities.invokeLater(() -> {
                     JOptionPane.showMessageDialog(this,
@@ -1130,10 +1133,15 @@ public final class MultiUserSettingsPanel extends javax.swing.JPanel {
         }
         
         if (cbEnableMultiUser.isSelected()) {
-            return checkFieldsAndEnableButtons(caseOpen)
+            if (UserPreferences.isExternalMessagingDisabled()) {
+                return checkFieldsAndEnableButtons(caseOpen)
+                    && databaseSettingsAreValid();                
+            } else {
+                return checkFieldsAndEnableButtons(caseOpen)
                     && databaseSettingsAreValid()
                     && indexingServerSettingsAreValid()
                     && messageServiceSettingsAreValid();
+            }
         } else {
             return true;
         }
