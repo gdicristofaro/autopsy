@@ -551,7 +551,7 @@ public class CommandLineIngestManager extends CommandLineManager {
                     if (settingsWarnings.isEmpty()) {
                         IngestJobStartResult ingestJobStartResult = IngestManager.getInstance().beginIngestJob(dataSource.getContent(), ingestJobSettings);
                         IngestJob ingestJob = ingestJobStartResult.getJob();
-                            if (null != ingestJob) {
+                        if (null != ingestJob) {
                             /*
                              * Block until notified by the ingest job event
                              * listener or until interrupted because auto ingest
