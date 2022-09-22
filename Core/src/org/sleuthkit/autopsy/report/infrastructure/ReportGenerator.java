@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 import javax.swing.JDialog;
 import org.openide.filesystems.FileUtil;
 import org.openide.util.NbBundle;
@@ -55,6 +56,7 @@ import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskData;
+import org.springframework.util.CollectionUtils;
 
 /**
  * A report generator that generates one or more reports by running
@@ -235,6 +237,11 @@ public class ReportGenerator {
                             logger.log(Level.SEVERE, Bundle.ReportGenerator_error_noTableReportSettings(moduleName)); 
                             progressIndicator.updateStatusLabel(Bundle.ReportGenerator_error_noTableReportSettings(moduleName));
                             continue;
+                        } 
+                        
+                        if (CollectionUtils.isEmpty(tableSettings.getSelectedDataSources())) {
+                            tableSettings.setSelectedDataSources(Case.getCurrentCaseThrows().getSleuthkitCase()
+                                    .getDataSources().stream().map(ds -> ds.getId()).collect(Collectors.toList()));
                         }
 
                         generateTableReport((TableReportModule) module, tableSettings); //NON-NLS
@@ -247,6 +254,11 @@ public class ReportGenerator {
                             logger.log(Level.SEVERE, Bundle.ReportGenerator_error_noFileReportSettings(moduleName));
                             progressIndicator.updateStatusLabel(Bundle.ReportGenerator_error_noFileReportSettings(moduleName));
                             continue;
+                        } 
+                        
+                        if (CollectionUtils.isEmpty(fileSettings.getSelectedDataSources())) {
+                            fileSettings.setSelectedDataSources(Case.getCurrentCaseThrows().getSleuthkitCase()
+                                    .getDataSources().stream().map(ds -> ds.getId()).collect(Collectors.toList()));
                         }
 
                         generateFileListReport((FileReportModule) module, fileSettings); //NON-NLS
@@ -267,7 +279,7 @@ public class ReportGenerator {
                         logger.log(Level.SEVERE, Bundle.ReportGenerator_error_unsupportedType(moduleName)); 
                         progressIndicator.updateStatusLabel(Bundle.ReportGenerator_error_unsupportedType(moduleName));
                     }
-                } catch (IOException e) {
+                } catch (NoCurrentCaseException | TskCoreException | IOException e) {
                     logger.log(Level.SEVERE, Bundle.ReportGenerator_error_exception(moduleName)); 
                     progressIndicator.updateStatusLabel(Bundle.ReportGenerator_error_exception(moduleName));
                 }
