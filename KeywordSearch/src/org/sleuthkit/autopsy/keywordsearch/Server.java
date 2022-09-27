@@ -733,7 +733,7 @@ public class Server {
             try {
                 if (version == SOLR_VERSION.SOLR8) {
                     logger.log(Level.INFO, "Starting Solr 8 server"); //NON-NLS
-                    curSolrProcess = runLocalSolr8ControlCommand(new ArrayList<>(Arrays.asList("start", "-p", //NON-NLS
+                    curSolrProcess = runLocalSolr8ControlCommand(new ArrayList<>(Arrays.asList("start", "-V", "-p", //NON-NLS
                         Integer.toString(localSolrServerPort)))); //NON-NLS
                 } else {
                     // solr4
