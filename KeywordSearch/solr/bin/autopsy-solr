@@ -78,8 +78,11 @@ SOLR_TIP=`cd "$SOLR_TIP"; pwd`
 DEFAULT_SERVER_DIR="$SOLR_TIP/server"
 
 # If an include wasn't specified in the environment, then search for one...
+echo "Checking SOLR_INCLUDES which are $SOLR_INCLUDE" >> ~/solroutput.log
 if [ -z "$SOLR_INCLUDE" ]; then
   # Locations (in order) to use when searching for an include file.
+  echo "Dirname 0 is `dirname "$0"`" >> ~/solroutput.log
+
   for include in "`dirname "$0"`/autopsy-solr.in.sh" \
                "$HOME/.autopsy-solr.in.sh" \
                /usr/share/solr/autopsy-solr.in.sh \
@@ -87,6 +90,7 @@ if [ -z "$SOLR_INCLUDE" ]; then
                /etc/default/autopsy-solr.in.sh \
                /opt/solr/autopsy-solr.in.sh; do
     if [ -r "$include" ]; then
+        echo "SOLR_INCLUDE being read in: $include" >> ~/solroutput.log
         SOLR_INCLUDE="$include"
         . "$include"
         break
