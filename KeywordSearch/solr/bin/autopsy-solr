@@ -78,6 +78,8 @@ SOLR_TIP=`cd "$SOLR_TIP"; pwd`
 DEFAULT_SERVER_DIR="$SOLR_TIP/server"
 
 # If an include wasn't specified in the environment, then search for one...
+echo "Shell:"
+ps -p $$
 echo "Env:" >> ~/solroutput.log
 printenv >> ~/solroutput.log
 echo "whoami: `whoami`" >> ~/solroutput.log
