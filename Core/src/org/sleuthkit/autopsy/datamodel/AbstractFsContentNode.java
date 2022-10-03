@@ -18,11 +18,8 @@
  */
 package org.sleuthkit.autopsy.datamodel;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
 import org.openide.nodes.Sheet;
 import org.openide.util.NbBundle;
-import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.datamodel.AbstractFile;
 
 /**
@@ -32,9 +29,7 @@ import org.sleuthkit.datamodel.AbstractFile;
  * @param <T> extends AbstractFile
  */
 public abstract class AbstractFsContentNode<T extends AbstractFile> extends AbstractAbstractFileNode<T> {
-
-    private static Logger logger = Logger.getLogger(AbstractFsContentNode.class.getName());
-
+    
     private boolean directoryBrowseMode;
     public static final String HIDE_PARENT = "hide_parent"; //NON-NLS
 
@@ -53,10 +48,10 @@ public abstract class AbstractFsContentNode<T extends AbstractFile> extends Abst
      */
     AbstractFsContentNode(T content, boolean directoryBrowseMode) {
         super(content);
-        this.setDisplayName(AbstractAbstractFileNode.getContentDisplayName(content));
+        this.setDisplayName(getContentDisplayName(content));
         this.directoryBrowseMode = directoryBrowseMode;
     }
-
+    
     public boolean getDirectoryBrowseMode() {
         return directoryBrowseMode;
     }
@@ -66,25 +61,9 @@ public abstract class AbstractFsContentNode<T extends AbstractFile> extends Abst
     protected Sheet createSheet() {
         Sheet sheet = super.createSheet();
         Sheet.Set sheetSet = sheet.get(Sheet.PROPERTIES);
-        if (sheetSet == null) {
-            sheetSet = Sheet.createPropertiesSet();
-            sheet.put(sheetSet);
-        }
-
-        Map<String, Object> map = new LinkedHashMap<>();
-        fillPropertyMap(map, getContent());
-
-        final String NO_DESCR = Bundle.AbstractFsContentNode_noDesc_text();
-        for (AbstractFilePropertyType propType : AbstractFilePropertyType.values()) {
-            final String propString = propType.toString();
-            sheetSet.put(new NodeProperty<>(propString, propString, NO_DESCR, map.get(propString)));
-        }
         if (directoryBrowseMode) {
             sheetSet.put(new NodeProperty<>(HIDE_PARENT, HIDE_PARENT, HIDE_PARENT, HIDE_PARENT));
         }
-
-        // add tags property to the sheet
-        addTagProperty(sheetSet);
 
         return sheet;
     }

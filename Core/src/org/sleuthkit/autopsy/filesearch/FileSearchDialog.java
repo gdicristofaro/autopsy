@@ -1,15 +1,15 @@
 /*
  * Autopsy Forensic Browser
- * 
- * Copyright 2011-2018 Basis Technology Corp.
+ *
+ * Copyright 2011-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,6 @@ package org.sleuthkit.autopsy.filesearch;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import javax.swing.JFrame;
 import org.openide.util.NbBundle;
 import org.openide.windows.WindowManager;
 
@@ -28,25 +27,50 @@ import org.openide.windows.WindowManager;
  * File search dialog
  */
 @SuppressWarnings("PMD.SingularField") // UI widgets cause lots of false positives
-class FileSearchDialog extends javax.swing.JDialog {
+final class FileSearchDialog extends javax.swing.JDialog {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * Creates new form FileSearchDialog
      */
-    public FileSearchDialog() {
-        super(new JFrame(NbBundle.getMessage(FileSearchDialog.class, "FileSearchDialog.frame.title")),
+    FileSearchDialog() {
+        super(WindowManager.getDefault().getMainWindow(),
                 NbBundle.getMessage(FileSearchDialog.class, "FileSearchDialog.frame.msg"), true);
         initComponents();
 
         setResizable(false);
         this.setLocationRelativeTo(WindowManager.getDefault().getMainWindow());
         fileSearchPanel1.addListenerToAll(new ActionListener() {
-
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                setVisible(false);
+            }
+        });
+        
+        fileSearchPanel1.addCloseListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 dispose();
             }
         });
+    }
+
+    /**
+     * Set the data source filter to select the specified data source initially.
+     *
+     * @param dataSourceId - The data source to select.
+     */
+    void setSelectedDataSourceFilter(long dataSourceId) {
+        fileSearchPanel1.setDataSourceFilter(dataSourceId);
+    }
+
+    /**
+     * Reset the filters which are populated with options based on the contents
+     * of the current case.
+     */
+    void resetCaseDependentFilters() {
+        fileSearchPanel1.resetCaseDependentFilters();
     }
 
     /**
@@ -80,4 +104,3 @@ class FileSearchDialog extends javax.swing.JDialog {
     private org.sleuthkit.autopsy.filesearch.FileSearchPanel fileSearchPanel1;
     // End of variables declaration//GEN-END:variables
 }
-

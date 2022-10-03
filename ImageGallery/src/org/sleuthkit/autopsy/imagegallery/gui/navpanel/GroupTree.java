@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2016 Basis Technology Corp.
+ * Copyright 2016-18 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,10 +27,13 @@ import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
+import javafx.scene.control.Label;
 import javafx.scene.control.SelectionModel;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.StackPane;
 import org.apache.commons.lang3.StringUtils;
 import org.openide.util.NbBundle;
 import org.sleuthkit.autopsy.coreutils.ThreadConfined;
@@ -38,6 +41,7 @@ import org.sleuthkit.autopsy.imagegallery.FXMLConstructor;
 import org.sleuthkit.autopsy.imagegallery.ImageGalleryController;
 import org.sleuthkit.autopsy.imagegallery.datamodel.DrawableAttribute;
 import org.sleuthkit.autopsy.imagegallery.datamodel.grouping.DrawableGroup;
+import org.sleuthkit.autopsy.imagegallery.datamodel.grouping.GroupViewState;
 
 /**
  * Shows path based groups as a tree and others kinds of groups as a flat list (
@@ -62,10 +66,14 @@ final public class GroupTree extends NavPanel<TreeItem<GroupTreeNode>> {
     @NbBundle.Messages({"GroupTree.displayName.allGroups=All Groups"})
     void initialize() {
         super.initialize();
+
         setText(Bundle.GroupTree_displayName_allGroups());
         setGraphic(new ImageView("org/sleuthkit/autopsy/imagegallery/images/Folder-icon.png")); //NON-NLS
 
-        getBorderPane().setCenter(groupTree);
+        Node placeholder = new Label(Bundle.NavPanel_placeHolder_text());
+        placeholder.visibleProperty().bind(Bindings.isEmpty(groupTreeRoot.getChildren()));
+
+        getBorderPane().setCenter(new StackPane(groupTree, placeholder));
 
         //only show sorting controls if not grouping by path
         BooleanBinding groupedByPath = Bindings.equal(getGroupManager().getGroupByProperty(), DrawableAttribute.PATH);
@@ -76,18 +84,24 @@ final public class GroupTree extends NavPanel<TreeItem<GroupTreeNode>> {
         groupTree.setCellFactory(groupCellFactory::getTreeCell);
         groupTree.setShowRoot(false);
 
-        getGroupManager().getAnalyzedGroups().addListener((ListChangeListener.Change<? extends DrawableGroup> change) -> {
+        getGroupManager().getAnalyzedGroupsForCurrentGroupBy().addListener((ListChangeListener.Change<? extends DrawableGroup> change) -> {
+            GroupViewState oldState = getController().getViewState();
+
             while (change.next()) {
                 change.getAddedSubList().stream().forEach(this::insertGroup);
                 change.getRemoved().stream().forEach(this::removeFromTree);
             }
-            sortGroups();
+            Platform.runLater(() -> {
+                GroupTree.this.sortGroups(false);
+                Optional.ofNullable(oldState)
+                        .flatMap(GroupViewState::getGroup)
+                        .ifPresent(this::setFocusedGroup);
+            });
         });
 
-        for (DrawableGroup g : getGroupManager().getAnalyzedGroups()) {
-            insertGroup(g);
-        }
-        sortGroups();
+        getGroupManager().getAnalyzedGroupsForCurrentGroupBy().forEach(this::insertGroup);
+
+        Platform.runLater(this::sortGroups);
     }
 
     /**
@@ -102,12 +116,10 @@ final public class GroupTree extends NavPanel<TreeItem<GroupTreeNode>> {
 
         if (treeItemForGroup != null) {
             groupTree.getSelectionModel().select(treeItemForGroup);
-            Platform.runLater(() -> {
-                int row = groupTree.getRow(treeItemForGroup);
-                if (row != -1) {
-                    groupTree.scrollTo(row - 2); //put newly selected row 3 from the top
-                }
-            });
+            int row = groupTree.getRow(treeItemForGroup);
+            if (row != -1) {
+                groupTree.scrollTo(row - 2); //put newly selected row 3 from the top
+            }
         }
     }
 
@@ -146,6 +158,11 @@ final public class GroupTree extends NavPanel<TreeItem<GroupTreeNode>> {
         String path = g.getGroupByValueDislpayName();
         if (g.getGroupByAttribute() == DrawableAttribute.PATH) {
             String[] cleanPathTokens = StringUtils.stripStart(path, "/").split("/");
+            
+            // Append obj id to the top level data source name to allow for duplicate data source names
+            if (g.getGroupKey().getDataSourceObjId() > 0) {
+                 cleanPathTokens[0] = cleanPathTokens[0].concat(String.format("(Id: %d)", g.getGroupKey().getDataSourceObjId()));
+            }
             return Arrays.asList(cleanPathTokens);
         } else {
             String stripStart = StringUtils.strip(path, "/");

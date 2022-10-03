@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011-2018 Basis Technology Corp.
+ * Copyright 2013-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,9 @@ import org.openide.windows.WindowManager;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
 import org.sleuthkit.autopsy.coreutils.Logger;
+import org.sleuthkit.autopsy.datamodel.BlackboardArtifactItem;
 import org.sleuthkit.datamodel.BlackboardArtifact;
+import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.TagName;
 import org.sleuthkit.datamodel.TskCoreException;
 
@@ -44,6 +46,8 @@ import org.sleuthkit.datamodel.TskCoreException;
     "AddBlackboardArtifactTagAction.taggingErr=Tagging Error"
 })
 public class AddBlackboardArtifactTagAction extends AddTagAction {
+
+    private static final long serialVersionUID = 1L;
 
     // This class is a singleton to support multi-selection of nodes, since 
     // org.openide.nodes.NodeOp.findActions(Node[] nodes) will only pick up an Action if every 
@@ -67,20 +71,35 @@ public class AddBlackboardArtifactTagAction extends AddTagAction {
                 "AddBlackboardArtifactTagAction.singularTagResult");
         String pluralTagResult = NbBundle.getMessage(this.getClass(),
                 "AddBlackboardArtifactTagAction.pluralTagResult");
-        return Utilities.actionsGlobalContext().lookupAll(BlackboardArtifact.class).size() > 1 ? pluralTagResult : singularTagResult;
+        return Utilities.actionsGlobalContext().lookupAll(BlackboardArtifactItem.class).size() > 1 ? pluralTagResult : singularTagResult;
     }
 
     @Override
     protected void addTag(TagName tagName, String comment) {
-        /*
-         * The documentation for Lookup.lookupAll() explicitly says that the
-         * collection it returns may contain duplicates. Within this invocation
-         * of addTag(), we don't want to tag the same BlackboardArtifact more
-         * than once, so we dedupe the BlackboardArtifacts by stuffing them into
-         * a HashSet.
-         */
-        final Collection<BlackboardArtifact> selectedArtifacts = new HashSet<>(Utilities.actionsGlobalContext().lookupAll(BlackboardArtifact.class));
-
+        final Collection<BlackboardArtifact> selectedArtifacts = new HashSet<>();
+        //If the contentToTag is empty look up the selected content
+        if (getContentToTag().isEmpty()) {
+            /*
+             * The documentation for Lookup.lookupAll() explicitly says that the
+             * collection it returns may contain duplicates. Within this
+             * invocation of addTag(), we don't want to tag the same
+             * BlackboardArtifact more than once, so we dedupe the
+             * BlackboardArtifacts by stuffing them into a HashSet.
+             *
+             * RC (9/8/21): The documentation does NOT say that lookupAll() can
+             * return duplicates. That would be very broken. What motivated this
+             * "de-duping" ?
+             */
+            for (BlackboardArtifactItem<?> item : Utilities.actionsGlobalContext().lookupAll(BlackboardArtifactItem.class)) {
+                selectedArtifacts.add(item.getTskContent());
+            }
+        } else {
+            for (Content content : getContentToTag()) {
+                if (content instanceof BlackboardArtifact) {
+                    selectedArtifacts.add((BlackboardArtifact) content);
+                }
+            }
+        }
         new Thread(() -> {
             for (BlackboardArtifact artifact : selectedArtifacts) {
                 try {
@@ -101,4 +120,10 @@ public class AddBlackboardArtifactTagAction extends AddTagAction {
             }
         }).start();
     }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+    
 }

@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,7 @@ package org.sleuthkit.autopsy.keywordsearch;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import org.sleuthkit.autopsy.coreutils.UNCPathUtilities;
+import org.apache.commons.lang.math.NumberUtils;
 
 /**
  * This class encapsulates KWS index data.
@@ -32,7 +32,6 @@ final class Index {
     private final String solrVersion;
     private final String indexName;
     private static final String DEFAULT_CORE_NAME = "text_index"; //NON-NLS
-    private final UNCPathUtilities uncPathUtilities = new UNCPathUtilities();
 
     /**
      * Constructs a representation of a text index.
@@ -46,9 +45,9 @@ final class Index {
      *                      need to be generated.
      */
     Index(String indexPath, String solrVersion, String schemaVersion, String coreName, String caseName) {
-        this.indexPath = uncPathUtilities.convertPathToUNC(indexPath);
+        this.indexPath = indexPath;
         this.solrVersion = solrVersion;
-        this.schemaVersion = schemaVersion;
+        this.schemaVersion = schemaVersion; 
         if (coreName == null || coreName.isEmpty()) {
             // come up with a new core name
             coreName = createCoreName(caseName);
@@ -132,5 +131,21 @@ final class Index {
      */
     String getIndexName() {
         return indexName;
+    }
+
+    /**
+     * Is the current Index instance compatible with the given version number
+     *
+     * @param version The version number to compare the current Index against
+     *
+     * @return true if the current major version number is equal to the given
+     *         major version number, otherwise false
+     */
+    boolean isCompatible(String version) {
+        // Versions are compatible if they have the same major version no
+        int currentMajorVersion = NumberUtils.toInt(schemaVersion.substring(0, schemaVersion.indexOf('.')));
+        int givenMajorVersion = NumberUtils.toInt(version.substring(0, version.indexOf('.')));
+
+        return currentMajorVersion == givenMajorVersion;
     }
 }

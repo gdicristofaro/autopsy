@@ -2,8 +2,7 @@
  *
  * Autopsy Forensic Browser
  *
- * Copyright 2011-2018 Basis Technology Corp.
- *
+ * Copyright 2012-2021 Basis Technology Corp.
  * Copyright 2012 42six Solutions.
  * Contact: aebadirad <at> 42six <dot> com
  * Project Contact/Architect: carrier <at> sleuthkit <dot> org
@@ -19,6 +18,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * TODO (AUT-2158): This class should not extend Closeable.
  */
 package org.sleuthkit.autopsy.casemodule.services;
 
@@ -35,6 +36,7 @@ import org.sleuthkit.autopsy.ingest.ModuleContentEvent;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.DerivedFile;
+import org.sleuthkit.datamodel.Host;
 import org.sleuthkit.datamodel.LayoutFile;
 import org.sleuthkit.datamodel.LocalDirectory;
 import org.sleuthkit.datamodel.SleuthkitCase;
@@ -58,7 +60,7 @@ import org.sleuthkit.datamodel.TskData;
 public class FileManager implements Closeable {
 
     private static final Logger LOGGER = Logger.getLogger(FileManager.class.getName());
-    private SleuthkitCase caseDb;
+    private final SleuthkitCase caseDb;
 
     /**
      * Constructs a manager that provides methods for retrieving files from the
@@ -81,31 +83,26 @@ public class FileManager implements Closeable {
      * @throws TskCoreException If there is a problem querying the case
      *                          database.
      */
-    public synchronized List<AbstractFile> findFilesByMimeType(Collection<String> mimeTypes) throws TskCoreException {
-        if (null == caseDb) {
-            throw new TskCoreException("File manager has been closed");
-        }
+    public List<AbstractFile> findFilesByMimeType(Collection<String> mimeTypes) throws TskCoreException {
         return caseDb.findAllFilesWhere(createFileTypeInCondition(mimeTypes));
     }
-   
+
     /**
-     * Finds all parent_paths that match the specified parentPath and are in the specified data source.
-     * 
+     * Finds all parent_paths that match the specified parentPath and are in the
+     * specified data source.
+     *
      * @param dataSourceObjectID - the id of the data source to get files from
-     * @param parentPath - the parent path that all files should be like
-     * 
+     * @param parentPath         - the parent path that all files should be like
+     *
      * @return The list of files
-     * 
-     * @throws TskCoreException  If there is a problem querying the case
+     *
+     * @throws TskCoreException If there is a problem querying the case
      *                          database.
      */
-    public synchronized List<AbstractFile> findFilesByParentPath(long dataSourceObjectID, String parentPath) throws TskCoreException {
-        if (null == caseDb) {
-            throw new TskCoreException("File manager has been closed");
-        }
-        return caseDb.findAllFilesWhere(createParentPathCondition(dataSourceObjectID,parentPath));
+    public List<AbstractFile> findFilesByParentPath(long dataSourceObjectID, String parentPath) throws TskCoreException {
+        return caseDb.findAllFilesWhere(createParentPathCondition(dataSourceObjectID, parentPath));
     }
-  
+
     /**
      * Finds all files in a given data source (image, local/logical files set,
      * etc.) with types that match one of a collection of MIME types.
@@ -118,11 +115,22 @@ public class FileManager implements Closeable {
      * @throws TskCoreException If there is a problem querying the case
      *                          database.
      */
-    public synchronized List<AbstractFile> findFilesByMimeType(Content dataSource, Collection<String> mimeTypes) throws TskCoreException {
-        if (null == caseDb) {
-            throw new TskCoreException("File manager has been closed");
-        }
+    public List<AbstractFile> findFilesByMimeType(Content dataSource, Collection<String> mimeTypes) throws TskCoreException {
         return caseDb.findAllFilesWhere("data_source_obj_id = " + dataSource.getId() + " AND " + createFileTypeInCondition(mimeTypes));
+    }
+    
+    /**
+     * Find all files with the exact given name and parentId.
+     * 
+     * @param parentId Id of the parent folder to search.
+     * @param name Exact file name to match.
+     * 
+     * @return A list of matching files.
+     * 
+     * @throws TskCoreException 
+     */
+    public List<AbstractFile> findFilesExactName(long parentId, String name) throws TskCoreException{
+        return caseDb.getFileManager().findFilesExactName(parentId, name);
     }
 
     /**
@@ -138,18 +146,18 @@ public class FileManager implements Closeable {
     }
 
     /**
-     * Converts a data source object id and a parent path into SQL 
+     * Converts a data source object id and a parent path into SQL
      * data_source_obj_id = ? AND parent_path LIKE ?%
-     * 
+     *
      * @param dataSourceObjectID
      * @param parentPath
-     * @return 
+     *
+     * @return
      */
-    private static String createParentPathCondition(long dataSourceObjectID, String parentPath){
-        return "data_source_obj_id = " + dataSourceObjectID +" AND parent_path LIKE '" + parentPath +"%'";
+    private static String createParentPathCondition(long dataSourceObjectID, String parentPath) {
+        return "data_source_obj_id = " + dataSourceObjectID + " AND parent_path LIKE '" + parentPath + "%'";
     }
-    
-    
+
     /**
      * Finds all files and directories with a given file name. The name search
      * is for full or partial matches and is case insensitive (a case
@@ -162,10 +170,7 @@ public class FileManager implements Closeable {
      * @throws TskCoreException if there is a problem querying the case
      *                          database.
      */
-    public synchronized List<AbstractFile> findFiles(String fileName) throws TskCoreException {
-        if (null == caseDb) {
-            throw new TskCoreException("File manager has been closed");
-        }
+    public List<AbstractFile> findFiles(String fileName) throws TskCoreException {
         List<AbstractFile> result = new ArrayList<>();
         List<Content> dataSources = caseDb.getRootObjects();
         for (Content dataSource : dataSources) {
@@ -180,18 +185,17 @@ public class FileManager implements Closeable {
      * case insensitive (a case insensitive SQL LIKE clause is used to query the
      * case database).
      *
-     * @param fileName The full name or a pattern to match on part of the name
-     * @param parentSubString Substring that must exist in parent path.  Will be surrounded by % in LIKE query. 
+     * @param fileName        The full name or a pattern to match on part of the
+     *                        name
+     * @param parentSubString Substring that must exist in parent path. Will be
+     *                        surrounded by % in LIKE query.
      *
      * @return The matching files and directories.
      *
      * @throws TskCoreException if there is a problem querying the case
      *                          database.
      */
-    public synchronized List<AbstractFile> findFiles(String fileName, String parentSubString) throws TskCoreException {
-        if (null == caseDb) {
-            throw new TskCoreException("File manager has been closed");
-        }
+    public List<AbstractFile> findFiles(String fileName, String parentSubString) throws TskCoreException {
         List<AbstractFile> result = new ArrayList<>();
         List<Content> dataSources = caseDb.getRootObjects();
         for (Content dataSource : dataSources) {
@@ -214,16 +218,8 @@ public class FileManager implements Closeable {
      * @throws TskCoreException if there is a problem querying the case
      *                          database.
      */
-    public synchronized List<AbstractFile> findFiles(String fileName, AbstractFile parent) throws TskCoreException {
-        if (null == caseDb) {
-            throw new TskCoreException("File manager has been closed");
-        }
-        List<AbstractFile> result = new ArrayList<>();
-        List<Content> dataSources = caseDb.getRootObjects();
-        for (Content dataSource : dataSources) {
-            result.addAll(findFiles(dataSource, fileName, parent));
-        }
-        return result;
+    public List<AbstractFile> findFiles(String fileName, AbstractFile parent) throws TskCoreException {
+        return caseDb.findFilesInFolder(fileName, parent);
     }
 
     /**
@@ -233,17 +229,14 @@ public class FileManager implements Closeable {
      * LIKE clause is used to query the case database).
      *
      * @param dataSource The data source.
-     * @param fileName The full name or a pattern to match on part of the name
+     * @param fileName   The full name or a pattern to match on part of the name
      *
      * @return The matching files and directories.
      *
      * @throws TskCoreException if there is a problem querying the case
      *                          database.
      */
-    public synchronized List<AbstractFile> findFiles(Content dataSource, String fileName) throws TskCoreException {
-        if (null == caseDb) {
-            throw new TskCoreException("File manager has been closed");
-        }
+    public List<AbstractFile> findFiles(Content dataSource, String fileName) throws TskCoreException {
         return caseDb.findFiles(dataSource, fileName);
     }
 
@@ -254,44 +247,21 @@ public class FileManager implements Closeable {
      * insensitive (a case insensitive SQL LIKE clause is used to query the case
      * database).
      *
-     * @param dataSource The data source.
-     * @param fileName The full name or a pattern to match on part of the name
-     * @param parentSubString Substring that must exist in parent path.  Will be surrounded by % in LIKE query. 
+     * @param dataSource      The data source.
+     * @param fileName        The full name or a pattern to match on part of the
+     *                        name
+     * @param parentSubString Substring that must exist in parent path. Will be
+     *                        surrounded by % in LIKE query.
      *
      * @return The matching files and directories.
      *
      * @throws TskCoreException if there is a problem querying the case
      *                          database.
      */
-    public synchronized List<AbstractFile> findFiles(Content dataSource, String fileName, String parentSubString) throws TskCoreException {
-        if (null == caseDb) {
-            throw new TskCoreException("File manager has been closed");
-        }
+    public List<AbstractFile> findFiles(Content dataSource, String fileName, String parentSubString) throws TskCoreException {
         return caseDb.findFiles(dataSource, fileName, parentSubString);
     }
 
-    /**
-     * Finds all files and directories with a given file name and given parent
-     * file or directory in a given data source (image, local/logical files set,
-     * etc.). The name search is for full or partial matches and is case
-     * insensitive (a case insensitive SQL LIKE clause is used to query the case
-     * database).
-     *
-     * @param dataSource The data source.
-     * @param fileName The full name or a pattern to match on part of the name
-     * @param parent     The parent file or directory.
-     *
-     * @return The matching files and directories.
-     *
-     * @throws TskCoreException if there is a problem querying the case
-     *                          database.
-     */
-    public synchronized List<AbstractFile> findFiles(Content dataSource, String fileName, AbstractFile parent) throws TskCoreException {
-        if (null == caseDb) {
-            throw new TskCoreException("File manager has been closed");
-        }
-        return findFiles(dataSource, fileName, parent.getName());
-    }
 
     /**
      * Finds all files and directories with a given file name and path in a
@@ -309,10 +279,7 @@ public class FileManager implements Closeable {
      * @throws TskCoreException if there is a problem querying the case
      *                          database.
      */
-    public synchronized List<AbstractFile> openFiles(Content dataSource, String filePath) throws TskCoreException {
-        if (null == caseDb) {
-            throw new TskCoreException("File manager has been closed");
-        }
+    public List<AbstractFile> openFiles(Content dataSource, String filePath) throws TskCoreException {
         return caseDb.openFiles(dataSource, filePath);
     }
 
@@ -345,7 +312,7 @@ public class FileManager implements Closeable {
      * @throws TskCoreException if there is a problem adding the file to the
      *                          case database.
      */
-    public synchronized DerivedFile addDerivedFile(String fileName,
+    public DerivedFile addDerivedFile(String fileName,
             String localPath,
             long size,
             long ctime, long crtime, long atime, long mtime,
@@ -353,13 +320,11 @@ public class FileManager implements Closeable {
             Content parentObj,
             String rederiveDetails, String toolName, String toolVersion, String otherDetails,
             TskData.EncodingType encodingType) throws TskCoreException {
-        if (null == caseDb) {
-            throw new TskCoreException("File manager has been closed");
-        }
         return caseDb.addDerivedFile(fileName, localPath, size,
                 ctime, crtime, atime, mtime,
                 isFile, parentObj, rederiveDetails, toolName, toolVersion, otherDetails, encodingType);
     }
+
     /**
      * Update a derived file which already exists in the the case.
      *
@@ -370,7 +335,7 @@ public class FileManager implements Closeable {
      * @param ctime           The change time of the file.
      * @param crtime          The create time of the file
      * @param atime           The accessed time of the file.
-     * @param mimeType	      The MIME type the updated file should have, null
+     * @param mimeType	       The MIME type the updated file should have, null
      *                        to unset it
      * @param mtime           The modified time of the file.
      * @param isFile          True if a file, false if a directory.
@@ -390,15 +355,12 @@ public class FileManager implements Closeable {
      * @throws TskCoreException if there is a problem adding the file to the
      *                          case database.
      */
-    public synchronized DerivedFile updateDerivedFile(DerivedFile derivedFile, String localPath,
+    public DerivedFile updateDerivedFile(DerivedFile derivedFile, String localPath,
             long size,
             long ctime, long crtime, long atime, long mtime,
             boolean isFile, String mimeType,
             String rederiveDetails, String toolName, String toolVersion, String otherDetails,
             TskData.EncodingType encodingType) throws TskCoreException {
-        if (null == caseDb) {
-            throw new TskCoreException("File manager has been closed");
-        }
         return caseDb.updateDerivedFile(derivedFile, localPath, size,
                 ctime, crtime, atime, mtime,
                 isFile, mimeType, rederiveDetails, toolName, toolVersion, otherDetails, encodingType);
@@ -415,10 +377,7 @@ public class FileManager implements Closeable {
      * @throws TskCoreException If there is a problem completing a case database
      *                          operation.
      */
-    public synchronized List<LayoutFile> addCarvedFiles(CarvingResult carvingResult) throws TskCoreException {
-        if (null == caseDb) {
-            throw new TskCoreException("File manager has been closed");
-        }
+    public List<LayoutFile> addCarvedFiles(CarvingResult carvingResult) throws TskCoreException {
         return caseDb.addCarvedFiles(carvingResult);
     }
 
@@ -464,10 +423,41 @@ public class FileManager implements Closeable {
      * @throws TskDataException if any of the local file paths is for a file or
      *                          directory that does not exist or cannot be read.
      */
-    public synchronized LocalFilesDataSource addLocalFilesDataSource(String deviceId, String rootVirtualDirectoryName, String timeZone, List<String> localFilePaths, FileAddProgressUpdater progressUpdater) throws TskCoreException, TskDataException {
-        if (null == caseDb) {
-            throw new TskCoreException("File manager has been closed");
-        }
+    public LocalFilesDataSource addLocalFilesDataSource(String deviceId, String rootVirtualDirectoryName, String timeZone, List<String> localFilePaths, FileAddProgressUpdater progressUpdater) throws TskCoreException, TskDataException {
+        return addLocalFilesDataSource(deviceId, rootVirtualDirectoryName, timeZone, null, localFilePaths, progressUpdater);
+    }
+    
+    /**
+     * Adds a set of local/logical files and/or directories to the case database
+     * as data source.
+     *
+     * @param deviceId                 An ASCII-printable identifier for the
+     *                                 device associated with the data source
+     *                                 that is intended to be unique across
+     *                                 multiple cases (e.g., a UUID).
+     * @param rootVirtualDirectoryName The name to give to the virtual directory
+     *                                 that will serve as the root for the
+     *                                 local/logical files and/or directories
+     *                                 that compose the data source. Pass the
+     *                                 empty string to get a default name of the
+     *                                 form: LogicalFileSet[N]
+     * @param timeZone                 The time zone used to process the data
+     *                                 source, may be the empty string.
+     * @param host                     The host for this data source (may be null).
+     * @param localFilePaths           A list of local/logical file and/or
+     *                                 directory localFilePaths.
+     * @param progressUpdater          Called after each file/directory is added
+     *                                 to the case database.
+     *
+     * @return A local files data source object.
+     *
+     * @throws TskCoreException If there is a problem completing a database
+     *                          operation.
+     * @throws TskDataException if any of the local file paths is for a file or
+     *                          directory that does not exist or cannot be read.
+     */
+    public LocalFilesDataSource addLocalFilesDataSource(String deviceId, String rootVirtualDirectoryName, String timeZone, Host host,
+            List<String> localFilePaths, FileAddProgressUpdater progressUpdater) throws TskCoreException, TskDataException {
         List<java.io.File> localFiles = getFilesAndDirectories(localFilePaths);
         CaseDbTransaction trans = null;
         try {
@@ -481,7 +471,7 @@ public class FileManager implements Closeable {
              * children to the case database.
              */
             trans = caseDb.beginTransaction();
-            LocalFilesDataSource dataSource = caseDb.addLocalFilesDataSource(deviceId, rootDirectoryName, timeZone, trans);
+            LocalFilesDataSource dataSource = caseDb.addLocalFilesDataSource(deviceId, rootDirectoryName, timeZone, host, trans);
             List<AbstractFile> filesAdded = new ArrayList<>();
             for (java.io.File localFile : localFiles) {
                 AbstractFile fileAdded = addLocalFile(trans, dataSource, localFile, TskData.EncodingType.NONE, progressUpdater);
@@ -492,6 +482,7 @@ public class FileManager implements Closeable {
                 }
             }
             trans.commit();
+            trans = null;
 
             /*
              * Publish content added events for the added files and directories.
@@ -502,15 +493,14 @@ public class FileManager implements Closeable {
 
             return dataSource;
 
-        } catch (TskCoreException ex) {
+        } finally {
             if (null != trans) {
                 try {
                     trans.rollback();
-                } catch (TskCoreException ex2) {
-                    LOGGER.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+                } catch (TskCoreException ex) {
+                    LOGGER.log(Level.SEVERE, "Failed to rollback transaction after exception", ex);
                 }
             }
-            throw ex;
         }
     }
 
@@ -527,7 +517,7 @@ public class FileManager implements Closeable {
      * @throws TskCoreException If there is a problem querying the case
      *                          database.
      */
-    private static synchronized String generateFilesDataSourceName(SleuthkitCase caseDb) throws TskCoreException {
+    private static String generateFilesDataSourceName(SleuthkitCase caseDb) throws TskCoreException {
         int localFileDataSourcesCounter = 0;
         try {
             List<VirtualDirectory> localFileDataSources = caseDb.getVirtualDirectoryRoots();
@@ -614,12 +604,17 @@ public class FileManager implements Closeable {
      * Closes the file manager.
      *
      * @throws IOException If there is a problem closing the file manager.
+     * @deprecated Do not use.
      */
+    @Deprecated
     @Override
-    public synchronized void close() throws IOException {
-        caseDb = null;
-    }
-
+    public void close() throws IOException {
+        /*
+         * No-op maintained for backwards compatibility. Clients should not
+         * attempt to close case services.
+         */
+    }    
+    
     /**
      * Adds a set of local/logical files and/or directories to the case database
      * as data source.
@@ -639,10 +634,7 @@ public class FileManager implements Closeable {
      * @deprecated Use addLocalFilesDataSource instead.
      */
     @Deprecated
-    public synchronized VirtualDirectory addLocalFilesDirs(List<String> localFilePaths, FileAddProgressUpdater progressUpdater) throws TskCoreException {
-        if (null == caseDb) {
-            throw new TskCoreException("File manager has been closed");
-        }
+    public VirtualDirectory addLocalFilesDirs(List<String> localFilePaths, FileAddProgressUpdater progressUpdater) throws TskCoreException {
         try {
             return addLocalFilesDataSource("", "", "", localFilePaths, progressUpdater).getRootDirectory();
         } catch (TskDataException ex) {
@@ -669,10 +661,7 @@ public class FileManager implements Closeable {
      * carvingResult instead.
      */
     @Deprecated
-    public synchronized LayoutFile addCarvedFile(String fileName, long fileSize, long parentObjId, List<TskFileRange> layout) throws TskCoreException {
-        if (null == caseDb) {
-            throw new TskCoreException("File manager has been closed");
-        }
+    public LayoutFile addCarvedFile(String fileName, long fileSize, long parentObjId, List<TskFileRange> layout) throws TskCoreException {
         Content parent = caseDb.getContentById(parentObjId);
         List<CarvingResult.CarvedFile> carvedFiles = new ArrayList<>();
         carvedFiles.add(new CarvingResult.CarvedFile(fileName, fileSize, layout));
@@ -696,10 +685,7 @@ public class FileManager implements Closeable {
      * carvingResult instead.
      */
     @Deprecated
-    public synchronized List<LayoutFile> addCarvedFiles(List<org.sleuthkit.datamodel.CarvedFileContainer> filesToAdd) throws TskCoreException {
-        if (null == caseDb) {
-            throw new TskCoreException("File manager has been closed");
-        }
+    public List<LayoutFile> addCarvedFiles(List<org.sleuthkit.datamodel.CarvedFileContainer> filesToAdd) throws TskCoreException {
         return caseDb.addCarvedFiles(filesToAdd);
     }
 
@@ -734,7 +720,7 @@ public class FileManager implements Closeable {
      * @deprecated Use the version with explicit EncodingType instead
      */
     @Deprecated
-    public synchronized DerivedFile addDerivedFile(String fileName,
+    public DerivedFile addDerivedFile(String fileName,
             String localPath,
             long size,
             long ctime, long crtime, long atime, long mtime,
@@ -754,9 +740,8 @@ public class FileManager implements Closeable {
      *                        the parent local directory.
      * @param localFile       The local/logical file or directory.
      * @param progressUpdater notifier to receive progress notifications on
-     *                        folders added, or null if not used
-     * @param progressUpdater Called after each file/directory is added to the
-     *                        case database.
+     *                        folders added, or null if not used. Called after
+     *                        each file/directory is added to the case database.
      *
      * @return An AbstractFile representation of the local/logical file.
      *
@@ -769,5 +754,28 @@ public class FileManager implements Closeable {
     private AbstractFile addLocalFile(CaseDbTransaction trans, SpecialDirectory parentDirectory, java.io.File localFile, FileAddProgressUpdater progressUpdater) throws TskCoreException {
         return addLocalFile(trans, parentDirectory, localFile, TskData.EncodingType.NONE, progressUpdater);
     }
+    
+    /**
+     * Finds all files and directories with a given file name and given parent
+     * file or directory in a given data source (image, local/logical files set,
+     * etc.). The name search is for full or partial matches and is case
+     * insensitive (a case insensitive SQL LIKE clause is used to query the case
+     * database).
+     *
+     * @param dataSource The data source.
+     * @param fileName   The full name or a pattern to match on part of the name
+     * @param parent     The parent file or directory.
+     *
+     * @return The matching files and directories.
+     *
+     * @throws TskCoreException if there is a problem querying the case
+     *                          database.
+     * 
+     * @deprecated Use version without the unnecessary dataSource argument
+     */
+    @Deprecated
+    public List<AbstractFile> findFiles(Content dataSource, String fileName, AbstractFile parent) throws TskCoreException {
+        return findFiles(fileName, parent);
+    }    
 
 }

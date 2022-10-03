@@ -20,6 +20,8 @@ package org.sleuthkit.autopsy.casemodule;
 
 import java.awt.Window;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -109,10 +111,8 @@ final class LocalDiskSelectionDialog extends JDialog {
         setAlwaysOnTop(true);
         setResizable(false);
 
-        selectLocalDiskLabel.setFont(selectLocalDiskLabel.getFont().deriveFont(selectLocalDiskLabel.getFont().getStyle() & ~java.awt.Font.BOLD, 11));
         org.openide.awt.Mnemonics.setLocalizedText(selectLocalDiskLabel, org.openide.util.NbBundle.getMessage(LocalDiskSelectionDialog.class, "LocalDiskSelectionDialog.selectLocalDiskLabel.text")); // NOI18N
 
-        errorLabel.setFont(errorLabel.getFont().deriveFont(errorLabel.getFont().getStyle() & ~java.awt.Font.BOLD, 11));
         errorLabel.setForeground(new java.awt.Color(255, 0, 0));
         org.openide.awt.Mnemonics.setLocalizedText(errorLabel, org.openide.util.NbBundle.getMessage(LocalDiskSelectionDialog.class, "LocalDiskSelectionDialog.errorLabel.text")); // NOI18N
 
@@ -423,6 +423,22 @@ final class LocalDiskSelectionDialog extends JDialog {
                         if (disks.size() > 0) {
                             localDiskTable.setEnabled(true);
                             localDiskTable.clearSelection();
+                            
+                            // Remove the partition the application is running on.
+                            String userConfigPath = PlatformUtil.getUserConfigDirectory();
+                            for (Iterator<LocalDisk> iterator = disks.iterator(); iterator.hasNext();) {
+                                LocalDisk disk = iterator.next();
+                                String diskPath = disk.getPath();
+                                if (diskPath.startsWith("\\\\.\\")) {
+                                    // Strip out UNC prefix to get the drive letter.
+                                    diskPath = diskPath.substring(4);
+                                }
+                                if (userConfigPath.startsWith(diskPath)) {
+                                    iterator.remove();
+                                }
+                            }
+                            
+                            Collections.sort(disks, (LocalDisk disk1, LocalDisk disk2) -> disk1.getName().compareToIgnoreCase(disk2.getName()));
                         }
                         fireUpdateEvent();
                         ready = true;

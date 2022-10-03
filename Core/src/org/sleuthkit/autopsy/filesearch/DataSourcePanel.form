@@ -65,7 +65,7 @@
         <Component class="javax.swing.JList" name="dataSourceList">
           <Properties>
             <Property name="model" type="javax.swing.ListModel" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-              <Connection code="new javax.swing.AbstractListModel&lt;String&gt;() {&#xa;    List&lt;String&gt; strings  = getDataSourceArray();&#xa;    public int getSize() { return strings.size(); }&#xa;    public String getElementAt(int idx) { return strings.get(idx); }&#xa;}" type="code"/>
+              <Connection code="new DefaultListModel&lt;String&gt;()" type="code"/>
             </Property>
             <Property name="enabled" type="boolean" value="false"/>
             <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
@@ -94,8 +94,10 @@
     </Component>
     <Component class="javax.swing.JLabel" name="dataSourceNoteLabel">
       <Properties>
-        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-          <Font name="Tahoma" size="10" style="0"/>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.modules.form.editors2.FontEditor">
+          <FontInfo relative="true">
+            <Font component="dataSourceNoteLabel" property="font" relativeSize="true" size="-1"/>
+          </FontInfo>
         </Property>
         <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
           <ResourceString bundle="org/sleuthkit/autopsy/filesearch/Bundle.properties" key="DataSourcePanel.dataSourceNoteLabel.text" replaceFormat="org.openide.util.NbBundle.getMessage({sourceFileName}.class, &quot;{key}&quot;)"/>

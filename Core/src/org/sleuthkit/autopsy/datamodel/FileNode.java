@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011-2018 Basis Technology Corp.
+ * Copyright 2011-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,7 +32,9 @@ import org.sleuthkit.autopsy.actions.AddContentTagAction;
 import org.sleuthkit.autopsy.actions.DeleteFileContentTagAction;
 import org.sleuthkit.autopsy.coreutils.ContextMenuExtensionPoint;
 import org.sleuthkit.autopsy.coreutils.Logger;
+import org.sleuthkit.autopsy.directorytree.ExportCSVAction;
 import org.sleuthkit.autopsy.directorytree.ExternalViewerAction;
+import org.sleuthkit.autopsy.directorytree.ExternalViewerShortcutAction;
 import org.sleuthkit.autopsy.directorytree.ExtractAction;
 import org.sleuthkit.autopsy.directorytree.NewWindowViewAction;
 import org.sleuthkit.autopsy.directorytree.ViewContextAction;
@@ -49,9 +51,9 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
  * children.
  */
 public class FileNode extends AbstractFsContentNode<AbstractFile> {
-    
+
     private static final Logger logger = Logger.getLogger(FileNode.class.getName());
-    
+
     /**
      * Gets the path to the icon file that should be used to visually represent
      * an AbstractFile, using the file name extension to select the icon.
@@ -126,7 +128,7 @@ public class FileNode extends AbstractFsContentNode<AbstractFile> {
     private void setIcon(AbstractFile file) {
         if (file.isDirNameFlagSet(TSK_FS_NAME_FLAG_ENUM.UNALLOC)) {
             if (file.getType().equals(TSK_DB_FILES_TYPE_ENUM.CARVED)) {
-                this.setIconBaseWithExtension("org/sleuthkit/autopsy/images/carved-file-icon-16.png"); //NON-NLS
+                this.setIconBaseWithExtension("org/sleuthkit/autopsy/images/carved-file-x-icon-16.png"); //NON-NLS
             } else {
                 this.setIconBaseWithExtension("org/sleuthkit/autopsy/images/file-icon-deleted.png"); //NON-NLS
             }
@@ -147,33 +149,40 @@ public class FileNode extends AbstractFsContentNode<AbstractFile> {
     @Override
     @NbBundle.Messages({
         "FileNode.getActions.viewFileInDir.text=View File in Directory",
-        "FileNode.getActions.viewInNewWin.text=View in New Window",
-        "FileNode.getActions.openInExtViewer.text=Open in External Viewer",
+        "FileNode.getActions.viewInNewWin.text=View Item in New Window",
+        "FileNode.getActions.openInExtViewer.text=Open in External Viewer  Ctrl+E",
         "FileNode.getActions.searchFilesSameMD5.text=Search for files with the same MD5 hash"})
     public Action[] getActions(boolean context) {
         List<Action> actionsList = new ArrayList<>();
-        actionsList.addAll(Arrays.asList(super.getActions(true)));
 
         if (!this.getDirectoryBrowseMode()) {
-            actionsList.add(new ViewContextAction(Bundle.FileNode_getActions_viewFileInDir_text(), this));
-            actionsList.add(null); // Creates an item separator
+            actionsList.add(new ViewContextAction(Bundle.FileNode_getActions_viewFileInDir_text(), this));   
         }
-
-        actionsList.add(new NewWindowViewAction(Bundle.FileNode_getActions_viewInNewWin_text(), this));
-        actionsList.add(new ExternalViewerAction(Bundle.FileNode_getActions_openInExtViewer_text(), this));
         actionsList.add(ViewFileInTimelineAction.createViewFileAction(getContent()));
         actionsList.add(null); // Creates an item separator
 
+        actionsList.add(new NewWindowViewAction(Bundle.FileNode_getActions_viewInNewWin_text(), this));
+        final Collection<AbstractFile> selectedFilesList
+                = new HashSet<>(Utilities.actionsGlobalContext().lookupAll(AbstractFile.class));
+        if (selectedFilesList.size() == 1) {
+            actionsList.add(new ExternalViewerAction(
+                    Bundle.FileNode_getActions_openInExtViewer_text(), this));
+        } else {
+            actionsList.add(ExternalViewerShortcutAction.getInstance());
+        }
+        
+        actionsList.add(null); // Creates an item separator
+
         actionsList.add(ExtractAction.getInstance());
+        actionsList.add(ExportCSVAction.getInstance());
         actionsList.add(null); // Creates an item separator
 
         actionsList.add(AddContentTagAction.getInstance());
-        final Collection<AbstractFile> selectedFilesList = new HashSet<>(Utilities.actionsGlobalContext().lookupAll(AbstractFile.class));
         if (1 == selectedFilesList.size()) {
             actionsList.add(DeleteFileContentTagAction.getInstance());
         }
         actionsList.addAll(ContextMenuExtensionPoint.getActions());
-        if (FileTypeExtensions.getArchiveExtensions().contains("." + this.content.getNameExtension().toLowerCase())) { 
+        if (FileTypeExtensions.getArchiveExtensions().contains("." + this.content.getNameExtension().toLowerCase())) {
             try {
                 if (this.content.getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED).size() > 0) {
                     actionsList.add(new ExtractArchiveWithPasswordAction(this.getContent()));
@@ -182,6 +191,10 @@ public class FileNode extends AbstractFsContentNode<AbstractFile> {
                 logger.log(Level.WARNING, "Unable to add unzip with password action to context menus", ex);
             }
         }
+        
+        actionsList.add(null);
+        actionsList.addAll(Arrays.asList(super.getActions(true)));
+        
         return actionsList.toArray(new Action[actionsList.size()]);
     }
 

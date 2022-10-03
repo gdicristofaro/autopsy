@@ -1,7 +1,7 @@
 """
 Autopsy Forensic Browser
 
-Copyright 2016-17 Basis Technology Corp.
+Copyright 2016-2021 Basis Technology Corp.
 Contact: carrier <at> sleuthkit <dot> org
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,123 +29,119 @@ from java.sql import SQLException
 from java.sql import Statement
 from java.util.logging import Level
 from java.util import ArrayList
+from java.util import UUID
 from org.sleuthkit.autopsy.casemodule import Case
-from org.sleuthkit.autopsy.casemodule.services import Blackboard
+from org.sleuthkit.autopsy.casemodule import NoCurrentCaseException
 from org.sleuthkit.autopsy.casemodule.services import FileManager
 from org.sleuthkit.autopsy.coreutils import Logger
 from org.sleuthkit.autopsy.coreutils import MessageNotifyUtil
 from org.sleuthkit.autopsy.datamodel import ContentUtils
+from org.sleuthkit.autopsy.coreutils import AppSQLiteDB
 from org.sleuthkit.autopsy.ingest import IngestJobContext
 from org.sleuthkit.autopsy.ingest import IngestServices
 from org.sleuthkit.autopsy.ingest import ModuleDataEvent
 from org.sleuthkit.datamodel import AbstractFile
+from org.sleuthkit.datamodel import Blackboard
 from org.sleuthkit.datamodel import BlackboardArtifact
 from org.sleuthkit.datamodel import BlackboardAttribute
 from org.sleuthkit.datamodel import Content
 from org.sleuthkit.datamodel import TskCoreException
+from org.sleuthkit.datamodel.Blackboard import BlackboardException
 from org.sleuthkit.datamodel import Account
-from org.sleuthkit.datamodel import Relationship
+from org.sleuthkit.datamodel.blackboardutils.attributes import MessageAttachments
+from org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments import FileAttachment
+from org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments import URLAttachment
+from org.sleuthkit.datamodel.blackboardutils import CommunicationArtifactsHelper
+from org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper import MessageReadStatus
+from org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper import CommunicationDirection
 
 import traceback
 import general
 
-
-"""
-Finds database with SMS/MMS messages and adds them to blackboard.
-"""
 class TextMessageAnalyzer(general.AndroidComponentAnalyzer):
+    """
+        Finds and parsers Android SMS/MMS database, and populates the blackboard with messages.
+    """
 
     def __init__(self):
         self._logger = Logger.getLogger(self.__class__.__name__)
+        self._PACKAGE_NAME = "com.android.providers.telephony"
+        self._PARSER_NAME = "Android Message Parser"
+        self._MESSAGE_TYPE = "Android Message"
+
 
     def analyze(self, dataSource, fileManager, context):
-        try:
-            absFiles = fileManager.findFiles(dataSource, "mmssms.db")
-            for abstractFile in absFiles:
-                try:
-                    jFile = File(Case.getCurrentCase().getTempDirectory(), str(abstractFile.getId()) + abstractFile.getName())
-                    ContentUtils.writeToFile(abstractFile, jFile, context.dataSourceIngestIsCancelled)
-                    self.__findTextsInDB(jFile.toString(), abstractFile, dataSource)
-                except Exception as ex:
-                    self._logger.log(Level.SEVERE, "Error parsing text messages", ex)
-                    self._logger.log(Level.SEVERE, traceback.format_exc())
-        except TskCoreException as ex:
-            self._logger.log(Level.SEVERE, "Error finding text messages", ex)
-            self._logger.log(Level.SEVERE, traceback.format_exc())
-
-    def __findTextsInDB(self, databasePath, abstractFile, dataSource):
-        if not databasePath:
-            return
-
-        bbartifacts = list()
-        try:
-            Class.forName("org.sqlite.JDBC") # load JDBC driver
-            connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath)
-            statement = connection.createStatement()
-        except (ClassNotFoundException, SQLException) as ex:
-            self._logger.log(Level.SEVERE, "Error opening database", ex)
-            self._logger.log(Level.SEVERE, traceback.format_exc())
-            return
-
-	# Create a 'Device' account using the data source device id
-        datasourceObjId = dataSource.getDataSource().getId()
-        ds = Case.getCurrentCase().getSleuthkitCase().getDataSource(datasourceObjId)
-        deviceID = ds.getDeviceId()
-        deviceAccountInstance = Case.getCurrentCase().getSleuthkitCase().getCommunicationsManager().createAccountFileInstance(Account.Type.DEVICE, deviceID, general.MODULE_NAME, abstractFile)
-
-        try:
-            resultSet = statement.executeQuery(
-                "SELECT address, date, read, type, subject, body FROM sms;")
-            while resultSet.next():
-                address = resultSet.getString("address") # may be phone number, or other addresses
-                date = Long.valueOf(resultSet.getString("date")) / 1000
-                read = resultSet.getInt("read") # may be unread = 0, read = 1
-                subject = resultSet.getString("subject") # message subject
-                body = resultSet.getString("body") # message body
-                attributes = ArrayList()
-                artifact = abstractFile.newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE); #create Message artifact and then add attributes from result set.
-                if resultSet.getString("type") == "1":
-                    attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DIRECTION, general.MODULE_NAME, "Incoming"))
-                    attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM, general.MODULE_NAME, address))
-                else:
-                    attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DIRECTION, general.MODULE_NAME, "Outgoing"))
-                    attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO, general.MODULE_NAME, address))
-                attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, general.MODULE_NAME, date))
-                attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_READ_STATUS, general.MODULE_NAME, Integer(read)))
-                attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SUBJECT, general.MODULE_NAME, subject))
-                attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TEXT, general.MODULE_NAME, body))
-                attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_MESSAGE_TYPE, general.MODULE_NAME, "SMS Message"))
-
-                artifact.addAttributes(attributes)
-
-                # Create an account
-                msgAccountInstance = Case.getCurrentCase().getSleuthkitCase().getCommunicationsManager().createAccountFileInstance(Account.Type.PHONE, address, general.MODULE_NAME, abstractFile);
-
-                # create relationship between accounts
-                Case.getCurrentCase().getSleuthkitCase().getCommunicationsManager().addRelationships(deviceAccountInstance, [msgAccountInstance], artifact,Relationship.Type.MESSAGE, date);
-
-                bbartifacts.append(artifact)
-                try:
-                    # index the artifact for keyword search
-                    blackboard = Case.getCurrentCase().getServices().getBlackboard()
-                    blackboard.indexArtifact(artifact)
-                except Blackboard.BlackboardException as ex:
-                    self._logger.log(Level.SEVERE, "Unable to index blackboard artifact " + str(artifact.getArtifactID()), ex)
-                    self._logger.log(Level.SEVERE, traceback.format_exc())
-                    MessageNotifyUtil.Notify.error("Failed to index text message artifact for keyword search.", artifact.getDisplayName())
-
-        except Exception as ex:
-            self._logger.log(Level.SEVERE, "Error parsing text messages to blackboard", ex)
-            self._logger.log(Level.SEVERE, traceback.format_exc())
-        finally:
-            if bbartifacts:
-                IngestServices.getInstance().fireModuleDataEvent(ModuleDataEvent(general.MODULE_NAME, BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE, bbartifacts))
-
+        selfAccountId = None
+        messageDbs = AppSQLiteDB.findAppDatabases(dataSource, "mmssms.db", True, self._PACKAGE_NAME)
+        for messageDb in messageDbs:
             try:
-                if resultSet is not None:
-                    resultSet.close()
-                statement.close()
-                connection.close()
-            except Exception as ex:
-                self._logger.log(Level.SEVERE, "Error closing database", ex)
+                current_case = Case.getCurrentCaseThrows()
+                if selfAccountId is not None:
+                    messageDbHelper = CommunicationArtifactsHelper(current_case.getSleuthkitCase(),
+                                                    self._PARSER_NAME,
+                                                    messageDb.getDBFile(),
+                                                    Account.Type.PHONE, Account.Type.IMO, selfAccountId, context.getJobId())
+                else:
+                    messageDbHelper = CommunicationArtifactsHelper(current_case.getSleuthkitCase(),
+                                                    self._PARSER_NAME,
+                                                    messageDb.getDBFile(),
+                                                    Account.Type.PHONE, context.getJobId()) 
+
+                uuid = UUID.randomUUID().toString()
+                messagesResultSet = messageDb.runQuery("SELECT address, date, read, type, subject, body, thread_id FROM sms;")
+                if messagesResultSet is not None:
+                    while messagesResultSet.next():
+                        direction = ""
+                        address = None
+                        fromId = None
+                        toId = None
+                        
+                        address = messagesResultSet.getString("address") # may be phone number, or other addresses
+                        timeStamp = Long.valueOf(messagesResultSet.getString("date")) / 1000
+                        read = messagesResultSet.getInt("read") # may be unread = 0, read = 1
+                        subject = messagesResultSet.getString("subject") # message subject
+                        msgBody = messagesResultSet.getString("body") # message body
+                        thread_id = "{0}-{1}".format(uuid, messagesResultSet.getInt("thread_id"))
+                        if messagesResultSet.getString("type") == "1":
+                            direction = CommunicationDirection.INCOMING
+                            fromId = address
+                        else:
+                            direction = CommunicationDirection.OUTGOING
+                            toId = address
+
+                        message_read = messagesResultSet.getInt("read") # may be unread = 0, read = 1
+                        if (message_read == 1):
+                            msgReadStatus = MessageReadStatus.READ
+                        elif (message_read == 0):
+                            msgReadStatus = MessageReadStatus.UNREAD
+                        else:
+                            msgReadStatus = MessageReadStatus.UNKNOWN
+
+                        ## add a message
+                        if address is not None:
+                            messageArtifact = messageDbHelper.addMessage( 
+                                                            self._MESSAGE_TYPE,
+                                                            direction,
+                                                            fromId,
+                                                            toId,
+                                                            timeStamp,
+                                                            msgReadStatus,
+                                                            subject,     # subject
+                                                            msgBody,
+                                                            thread_id)
+
+                        
+            except SQLException as ex:
+                self._logger.log(Level.WARNING, "Error processing query result for Android messages.", ex)
+                self._logger.log(Level.WARNING, traceback.format_exc())
+            except TskCoreException as ex:
+                self._logger.log(Level.SEVERE, "Failed to add Android message artifacts.", ex)
                 self._logger.log(Level.SEVERE, traceback.format_exc())
+            except BlackboardException as ex:
+                self._logger.log(Level.WARNING, "Failed to post artifacts.", ex)
+                self._logger.log(Level.WARNING, traceback.format_exc())
+            except NoCurrentCaseException as ex:
+                self._logger.log(Level.WARNING, "No case currently open.", ex)
+                self._logger.log(Level.WARNING, traceback.format_exc())
+            finally:
+                messageDb.close()           

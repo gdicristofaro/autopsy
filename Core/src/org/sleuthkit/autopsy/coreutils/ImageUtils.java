@@ -22,13 +22,13 @@
 package org.sleuthkit.autopsy.coreutils;
 
 import com.google.common.collect.ImmutableSortedSet;
-import com.google.common.io.Files;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import static java.util.Objects.nonNull;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -46,6 +47,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
 import javax.annotation.Nonnull;
@@ -56,7 +59,6 @@ import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.event.IIOReadProgressListener;
 import javax.imageio.stream.ImageInputStream;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.openide.util.NbBundle;
@@ -107,7 +109,7 @@ public class ImageUtils {
      * NOTE: Must be cleared when the case is changed.
      */
     @Messages({"ImageUtils.ffmpegLoadedError.title=OpenCV FFMpeg",
-               "ImageUtils.ffmpegLoadedError.msg=OpenCV FFMpeg library failed to load, see log for more details"})
+        "ImageUtils.ffmpegLoadedError.msg=OpenCV FFMpeg library failed to load, see log for more details"})
     private static final ConcurrentHashMap<Long, File> cacheFileMap = new ConcurrentHashMap<>();
 
     static {
@@ -121,7 +123,7 @@ public class ImageUtils {
         }
         DEFAULT_THUMBNAIL = tempImage;
         boolean tempFfmpegLoaded = false;
-        if (OpenCvLoader.isOpenCvLoaded()) {
+        if (OpenCvLoader.openCvIsLoaded()) {
             try {
                 if (System.getProperty("os.arch").equals("amd64") || System.getProperty("os.arch").equals("x86_64")) { //NON-NLS
                     System.loadLibrary("opencv_ffmpeg248_64"); //NON-NLS
@@ -137,11 +139,25 @@ public class ImageUtils {
         }
         FFMPEG_LOADED = tempFfmpegLoaded;
 
-        SUPPORTED_IMAGE_EXTENSIONS.addAll(Arrays.asList(ImageIO.getReaderFileSuffixes()));
+        // remove any empty extension types provided by ImageIO.getReaderFileSuffixes()
+        // This prevents extensions added by SPI implementations from causing errors 
+        // (i.e. 'jai-imageio' utilized with IcePDF)
+        List<String> imageSuffixList = Arrays.stream(ImageIO.getReaderFileSuffixes())
+            .filter((extension) -> StringUtils.isNotBlank(extension))
+            .collect(Collectors.toList());
+        
+        SUPPORTED_IMAGE_EXTENSIONS.addAll(imageSuffixList);
         SUPPORTED_IMAGE_EXTENSIONS.add("tec"); // Add JFIF .tec files
         SUPPORTED_IMAGE_EXTENSIONS.removeIf("db"::equals); // remove db files
 
-        SUPPORTED_IMAGE_MIME_TYPES = new TreeSet<>(Arrays.asList(ImageIO.getReaderMIMETypes()));
+        List<String> mimeTypeList = Stream.of(ImageIO.getReaderMIMETypes())
+                // remove any empty mime types provided by ImageIO.getReaderMIMETypes()
+                // This prevents mime types added by SPI implementations from causing errors 
+                // (i.e. 'jai-imageio' utilized with IcePDF)
+                .filter((mimeType) -> StringUtils.isNotBlank(mimeType))
+                .collect(Collectors.toList());
+        
+        SUPPORTED_IMAGE_MIME_TYPES = new TreeSet<>(mimeTypeList);
         /*
          * special cases and variants that we support, but don't get registered
          * with ImageIO automatically
@@ -151,6 +167,7 @@ public class ImageUtils {
                 "image/x-ms-bmp", //NON-NLS
                 "image/x-portable-graymap", //NON-NLS
                 "image/x-portable-bitmap", //NON-NLS
+                "image/webp", //NON-NLS
                 "application/x-123")); //TODO: is this correct? -jm //NON-NLS
         SUPPORTED_IMAGE_MIME_TYPES.removeIf("application/octet-stream"::equals); //NON-NLS
 
@@ -177,7 +194,7 @@ public class ImageUtils {
     public static SortedSet<String> getSupportedImageMimeTypes() {
         return Collections.unmodifiableSortedSet(SUPPORTED_IMAGE_MIME_TYPES);
     }
-
+    
     /**
      * Get the default thumbnail, which is the icon for a file. Used when we can
      * not generate a content based thumbnail.
@@ -205,8 +222,20 @@ public class ImageUtils {
         }
         AbstractFile file = (AbstractFile) content;
 
+        /**
+         * Before taking on the potentially costly task of calculating the MIME
+         * type that can happen in isMediaThumbnailSupported() below, let's
+         * first see if the file extension is in the set of supported media file
+         * extensions.
+         */
+        List<String> supportedExtensions = new ArrayList<>(SUPPORTED_IMAGE_EXTENSIONS);
+        supportedExtensions.addAll(VideoUtils.getSupportedVideoExtensions());
+        if (isSupportedMediaExtension(file, supportedExtensions)) {
+            return true;
+        }
+
         return VideoUtils.isVideoThumbnailSupported(file)
-                || isImageThumbnailSupported(file);
+               || isImageThumbnailSupported(file);
     }
 
     /**
@@ -258,9 +287,7 @@ public class ImageUtils {
             return false;
         }
 
-        String extension = file.getNameExtension();
-
-        if (StringUtils.isNotBlank(extension) && supportedExtension.contains(extension)) {
+        if (isSupportedMediaExtension(file, supportedExtension)) {
             return true;
         } else {
             try {
@@ -274,6 +301,21 @@ public class ImageUtils {
                 return false;
             }
         }
+    }
+
+    /**
+     * Does the given file have an extension in the given list of supported
+     * extensions.
+     *
+     * @param file
+     * @param supportedExtensions
+     *
+     * @return
+     */
+    static boolean isSupportedMediaExtension(final AbstractFile file, final List<String> supportedExtensions) {
+        String extension = file.getNameExtension();
+
+        return (StringUtils.isNotBlank(extension) && supportedExtensions.contains(extension));
     }
 
     /**
@@ -388,7 +430,7 @@ public class ImageUtils {
                 String cacheDirectory = Case.getCurrentCaseThrows().getCacheDirectory();
                 return Paths.get(cacheDirectory, "thumbnails", fileID + ".png").toFile(); //NON-NLS
             } catch (NoCurrentCaseException e) {
-                LOGGER.log(Level.WARNING, "Could not get cached thumbnail location.  No case is open."); //NON-NLS
+                LOGGER.log(Level.INFO, "Could not get cached thumbnail location.  No case is open."); //NON-NLS
                 return null;
             }
         });
@@ -773,7 +815,12 @@ public class ImageUtils {
             imageSaver.execute(() -> {
                 try {
                     synchronized (cacheFile) {
-                        Files.createParentDirs(cacheFile);
+                        Path path = Paths.get(cacheFile.getParent()); 
+                        File thumbsDir = Paths.get(cacheFile.getParent()).toFile();
+                        if (!thumbsDir.exists()) {
+                            thumbsDir.mkdirs();
+                        }
+        
                         if (cacheFile.exists()) {
                             cacheFile.delete();
                         }
@@ -915,7 +962,7 @@ public class ImageUtils {
                     LOGGER.log(Level.WARNING, IMAGEIO_COULD_NOT_READ_UNSUPPORTED_OR_CORRUPT, ImageUtils.getContentPathSafe(file));
                 } else if (fxImage.isError()) {
                     //if there was somekind of error, log it
-                    LOGGER.log(Level.WARNING, IMAGEIO_COULD_NOT_READ_UNSUPPORTED_OR_CORRUPT + ": " + ObjectUtils.toString(fxImage.getException()), ImageUtils.getContentPathSafe(file));
+                    LOGGER.log(Level.WARNING, IMAGEIO_COULD_NOT_READ_UNSUPPORTED_OR_CORRUPT + ": " + Objects.toString(fxImage.getException()), ImageUtils.getContentPathSafe(file));
                 }
             } catch (InterruptedException | ExecutionException ex) {
                 failed();
@@ -925,7 +972,7 @@ public class ImageUtils {
         @Override
         protected void failed() {
             super.failed();
-            LOGGER.log(Level.WARNING, IMAGEIO_COULD_NOT_READ_UNSUPPORTED_OR_CORRUPT + ": " + ObjectUtils.toString(getException()), ImageUtils.getContentPathSafe(file));
+            LOGGER.log(Level.WARNING, IMAGEIO_COULD_NOT_READ_UNSUPPORTED_OR_CORRUPT + ": " + Objects.toString(getException()), ImageUtils.getContentPathSafe(file));
         }
 
         @Override

@@ -20,6 +20,8 @@ package org.sleuthkit.autopsy.communications;
 
 import com.google.common.eventbus.Subscribe;
 import java.awt.Component;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import javax.swing.JPanel;
 import javax.swing.ListSelectionModel;
@@ -31,11 +33,16 @@ import org.openide.explorer.ExplorerManager;
 import org.openide.explorer.ExplorerUtils;
 import org.openide.nodes.AbstractNode;
 import org.openide.nodes.Children;
+import org.openide.nodes.Node;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.ProxyLookup;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
+import org.sleuthkit.autopsy.communications.relationships.RelationshipBrowser;
+import org.sleuthkit.autopsy.communications.relationships.SelectionInfo;
 import org.sleuthkit.autopsy.coreutils.Logger;
+import org.sleuthkit.datamodel.AccountDeviceInstance;
+import org.sleuthkit.datamodel.CommunicationsFilter;
 import org.sleuthkit.datamodel.CommunicationsManager;
 import org.sleuthkit.datamodel.TskCoreException;
 
@@ -56,7 +63,6 @@ public final class AccountsBrowser extends JPanel implements ExplorerManager.Pro
 
     private final Outline outline;
 
-    private final ExplorerManager messageBrowserEM = new ExplorerManager();
     private final ExplorerManager accountsTableEM = new ExplorerManager();
 
     /*
@@ -65,8 +71,9 @@ public final class AccountsBrowser extends JPanel implements ExplorerManager.Pro
      */
     private final ProxyLookup proxyLookup;
 
-    public AccountsBrowser() {
+    public AccountsBrowser(RelationshipBrowser relationshipBrowser) {
         initComponents();
+        
         outline = outlineView.getOutline();
         outlineView.setPropertyColumns(
                 "device", Bundle.AccountNode_device(),
@@ -84,15 +91,21 @@ public final class AccountsBrowser extends JPanel implements ExplorerManager.Pro
                 SwingUtilities.invokeLater(this::setColumnWidths);
             } else if (ExplorerManager.PROP_EXPLORED_CONTEXT.equals(evt.getPropertyName())) {
                 SwingUtilities.invokeLater(this::setColumnWidths);
+            } else if (evt.getPropertyName().equals(ExplorerManager.PROP_SELECTED_NODES)) {
+                final Node[] selectedNodes = accountsTableEM.getSelectedNodes();
+                final Set<AccountDeviceInstance> accountDeviceInstances = new HashSet<>();
+           
+                CommunicationsFilter filter = null;
+                for (final Node node : selectedNodes) {
+                    accountDeviceInstances.add(((AccountDeviceInstanceNode) node).getAccountDeviceInstance());
+                    filter = ((AccountDeviceInstanceNode)node).getFilter();
+                }
+                relationshipBrowser.setSelectionInfo(new SelectionInfo(accountDeviceInstances, new HashSet<>(), filter));
             }
         });
-        final MessageBrowser messageBrowser = new MessageBrowser(accountsTableEM, messageBrowserEM);
-
-        jSplitPane1.setRightComponent(messageBrowser);
-
-        proxyLookup = new ProxyLookup(
-                messageBrowser.getLookup(),
-                ExplorerUtils.createLookup(accountsTableEM, getActionMap()));
+        
+        proxyLookup = new ProxyLookup(relationshipBrowser.getLookup(),
+                        ExplorerUtils.createLookup(accountsTableEM, getActionMap()));
     }
 
     private void setColumnWidths() {
@@ -101,7 +114,7 @@ public final class AccountsBrowser extends JPanel implements ExplorerManager.Pro
 
         final int rows = Math.min(100, outline.getRowCount());
 
-        for (int column = 0; column < outline.getModel().getColumnCount(); column++) {
+        for (int column = 0; column < outline.getColumnCount(); column++) {
             int columnWidthLimit = 500;
             int columnWidth = 0;
 
@@ -120,7 +133,7 @@ public final class AccountsBrowser extends JPanel implements ExplorerManager.Pro
     }
 
     @Subscribe
-    public void handleFilterEvent(CVTEvents.FilterChangeEvent filterChangeEvent) {
+    void handleFilterEvent(CVTEvents.FilterChangeEvent filterChangeEvent) {
         try {
             final CommunicationsManager commsManager = Case.getCurrentCaseThrows().getSleuthkitCase().getCommunicationsManager();
             accountsTableEM.setRootContext(new AbstractNode(Children.create(new AccountDeviceInstanceNodeFactory(commsManager, filterChangeEvent.getNewFilter()), true)));
@@ -129,6 +142,19 @@ public final class AccountsBrowser extends JPanel implements ExplorerManager.Pro
         } catch (NoCurrentCaseException ex) { //NOPMD empty catch clause
             //Case is closed, do nothig.
         }
+    }
+    
+    @Subscribe
+    void historyChange(CVTEvents.StateChangeEvent event) {
+        try {
+            final CommunicationsManager commsManager = Case.getCurrentCaseThrows().getSleuthkitCase().getCommunicationsManager();
+            accountsTableEM.setRootContext(new AbstractNode(Children.create(new AccountDeviceInstanceNodeFactory(commsManager, event.getCommunicationsState().getCommunicationsFilter()), true)));
+        } catch (TskCoreException ex) {
+            logger.log(Level.SEVERE, "There was an error getting the CommunicationsManager for the current case.", ex);
+        } catch (NoCurrentCaseException ex) { //NOPMD empty catch clause
+            //Case is closed, do nothig.
+        }
+
     }
 
     /**
@@ -140,20 +166,14 @@ public final class AccountsBrowser extends JPanel implements ExplorerManager.Pro
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jSplitPane1 = new javax.swing.JSplitPane();
         outlineView = new org.openide.explorer.view.OutlineView();
 
         setLayout(new java.awt.BorderLayout());
-
-        jSplitPane1.setDividerLocation(500);
-        jSplitPane1.setLeftComponent(outlineView);
-
-        add(jSplitPane1, java.awt.BorderLayout.CENTER);
+        add(outlineView, java.awt.BorderLayout.CENTER);
     }// </editor-fold>//GEN-END:initComponents
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JSplitPane jSplitPane1;
     private org.openide.explorer.view.OutlineView outlineView;
     // End of variables declaration//GEN-END:variables
 

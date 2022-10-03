@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011-2018 Basis Technology Corp.
+ * Copyright 2011-2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.autopsy.casemodule;
 
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
@@ -40,8 +39,10 @@ import javax.swing.SwingUtilities;
 import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
 import org.sleuthkit.autopsy.corecomponentinterfaces.DataSourceProcessor;
-import org.sleuthkit.autopsy.datasourceprocessors.RawDSProcessor;
 import org.sleuthkit.autopsy.coreutils.Logger;
+import org.sleuthkit.autopsy.datasourceprocessors.RawDSProcessor;
+import org.sleuthkit.autopsy.logicalimager.dsp.LogicalImagerDSProcessor;
+import org.sleuthkit.autopsy.python.JythonModuleLoader;
 
 /**
  * Panel which displays the available DataSourceProcessors and allows selection
@@ -156,7 +157,7 @@ final class AddImageWizardSelectDspVisual extends JPanel {
             } else {
                 myLabel.setText(dspType);
             }
-            myLabel.setBackground(new Color(240, 240, 240));//matches background of panel
+            myLabel.setOpaque(false);
             myLabel.setEditable(false);
             myLabel.setWrapStyleWord(true);
             myLabel.setLineWrap(true);
@@ -181,7 +182,7 @@ final class AddImageWizardSelectDspVisual extends JPanel {
     /**
      * Create a list of the DataSourceProcessors which should exist as options
      * on this panel. The default Autopsy DataSourceProcessors will appear at
-     * the beggining of the list in the same order.
+     * the beginning of the list in the same order.
      *
      * @return dspList a list of DataSourceProcessors which can be chose in this
      *         panel
@@ -196,10 +197,20 @@ final class AddImageWizardSelectDspVisual extends JPanel {
                 logger.log(Level.SEVERE, "discoverDataSourceProcessors(): A DataSourceProcessor already exists for type = {0}", dsProcessor.getDataSourceType()); //NON-NLS
             }
         }
+
+        for (DataSourceProcessor dsProcessor : JythonModuleLoader.getDataSourceProcessorModules()) {
+            if (!datasourceProcessorsMap.containsKey(dsProcessor.getDataSourceType())) {
+                datasourceProcessorsMap.put(dsProcessor.getDataSourceType(), dsProcessor);
+            } else {
+                logger.log(Level.SEVERE, "discoverDataSourceProcessors(): A DataSourceProcessor already exists for type = {0}", dsProcessor.getDataSourceType()); //NON-NLS
+            }
+        }
+
         dspList.add(ImageDSProcessor.getType());
         dspList.add(LocalDiskDSProcessor.getType());
         dspList.add(LocalFilesDSProcessor.getType());
         dspList.add(RawDSProcessor.getType());
+        dspList.add(LogicalImagerDSProcessor.getType());
         // now add any addtional DSPs that haven't already been added
         for (String dspType : datasourceProcessorsMap.keySet()) {
             if (!dspList.contains(dspType)) {

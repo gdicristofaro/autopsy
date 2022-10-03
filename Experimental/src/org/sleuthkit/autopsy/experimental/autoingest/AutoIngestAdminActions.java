@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2018 Basis Technology Corp.
+ * Copyright 2018-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -137,7 +137,122 @@ final class AutoIngestAdminActions {
                 }
             }
         }
+
+        static final class GenerateThreadDumpControlAction extends AutoIngestNodeControlAction {
+
+            private static final long serialVersionUID = 1L;
+
+            GenerateThreadDumpControlAction(AutoIngestNodeState nodeState) {
+                super(nodeState, Bundle.AutoIngestAdminActions_getThreadDump_title());
+            }
+
+            @Override
+            public Object clone() throws CloneNotSupportedException {
+                return super.clone(); //To change body of generated methods, choose Tools | Templates.
+            }
+
+            @Override
+            protected void controlAutoIngestNode(AinStatusDashboard dashboard) throws AutoIngestMonitor.AutoIngestMonitorException {
+                dashboard.getMonitor().generateThreadDump(getNodeState().getName());
+            }
+        }
     }
+    
+    @NbBundle.Messages({"AutoIngestAdminActions.enableOCR.title=Enable OCR For This Case",
+    "AutoIngestAdminActions.enableOCR.error=Failed to enable OCR for case \"%s\"."})
+    static final class EnableOCR extends AbstractAction {
+
+        private static final long serialVersionUID = 1L;
+        private final AutoIngestJob job;
+
+        EnableOCR(AutoIngestJob job) {
+            super(Bundle.AutoIngestAdminActions_enableOCR_title());
+            this.job = job;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+
+            if (job == null) {
+                return;
+            }
+
+            final AutoIngestDashboardTopComponent tc = (AutoIngestDashboardTopComponent) WindowManager.getDefault().findTopComponent(AutoIngestDashboardTopComponent.PREFERRED_ID);
+            if (tc == null) {
+                return;
+            }
+
+            AutoIngestDashboard dashboard = tc.getAutoIngestDashboard();
+            if (dashboard != null) {
+                dashboard.getPendingJobsPanel().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                EventQueue.invokeLater(() -> {
+                    try {
+                        dashboard.getMonitor().changeOcrStateForCase(job.getManifest().getCaseName(), true);
+                        dashboard.getPendingJobsPanel().refresh(new AutoIngestNodeRefreshEvents.RefreshCaseEvent(dashboard.getMonitor(), job.getManifest().getCaseName()));
+                    } catch (AutoIngestMonitor.AutoIngestMonitorException ex) {
+                        String errorMessage = String.format(Bundle.AutoIngestAdminActions_enableOCR_error(), job.getManifest().getCaseName());
+                        logger.log(Level.SEVERE, errorMessage, ex);
+                        MessageNotifyUtil.Message.error(errorMessage);
+                    } finally {
+                        dashboard.getPendingJobsPanel().setCursor(Cursor.getDefaultCursor());
+                    }
+                });
+            }
+        }
+
+        @Override
+        public Object clone() throws CloneNotSupportedException {
+            return super.clone(); //To change body of generated methods, choose Tools | Templates.
+        }
+    }
+    
+    @NbBundle.Messages({"AutoIngestAdminActions.disableOCR.title=Disable OCR For This Case",
+    "AutoIngestAdminActions.disableOCR.error=Failed to disable OCR for case \"%s\"."})
+    static final class DisableOCR extends AbstractAction {
+
+        private static final long serialVersionUID = 1L;
+        private final AutoIngestJob job;
+
+        DisableOCR(AutoIngestJob job) {
+            super(Bundle.AutoIngestAdminActions_disableOCR_title());
+            this.job = job;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+
+            if (job == null) {
+                return;
+            }
+
+            final AutoIngestDashboardTopComponent tc = (AutoIngestDashboardTopComponent) WindowManager.getDefault().findTopComponent(AutoIngestDashboardTopComponent.PREFERRED_ID);
+            if (tc == null) {
+                return;
+            }
+
+            AutoIngestDashboard dashboard = tc.getAutoIngestDashboard();
+            if (dashboard != null) {
+                dashboard.getPendingJobsPanel().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                EventQueue.invokeLater(() -> {
+                    try {
+                        dashboard.getMonitor().changeOcrStateForCase(job.getManifest().getCaseName(), false);
+                        dashboard.getPendingJobsPanel().refresh(new AutoIngestNodeRefreshEvents.RefreshCaseEvent(dashboard.getMonitor(), job.getManifest().getCaseName()));
+                    } catch (AutoIngestMonitor.AutoIngestMonitorException ex) {
+                        String errorMessage = String.format(Bundle.AutoIngestAdminActions_disableOCR_error(), job.getManifest().getCaseName());
+                        logger.log(Level.SEVERE, errorMessage, ex);
+                        MessageNotifyUtil.Message.error(errorMessage);
+                    } finally {
+                        dashboard.getPendingJobsPanel().setCursor(Cursor.getDefaultCursor());
+                    }
+                });
+            }
+        }
+
+        @Override
+        public Object clone() throws CloneNotSupportedException {
+            return super.clone(); //To change body of generated methods, choose Tools | Templates.
+        }
+    }    
 
     @NbBundle.Messages({"AutoIngestAdminActions.progressDialogAction.title=Ingest Progress"})
     static final class ProgressDialogAction extends AbstractAction {
@@ -158,6 +273,41 @@ final class AutoIngestAdminActions {
                 if (dashboard != null) {
                     new IngestProgressSnapshotDialog(dashboard.getTopLevelAncestor(), true, job);
                 }
+            }
+        }
+
+        @Override
+        public Object clone() throws CloneNotSupportedException {
+            return super.clone(); //To change body of generated methods, choose Tools | Templates.
+        }
+    }
+
+    @NbBundle.Messages({"AutoIngestAdminActions.getThreadDump.title=Generate Thread Dump"})
+    static final class GenerateThreadDump extends AbstractAction {
+
+        private static final long serialVersionUID = 1L;
+        private final AutoIngestJob job;
+
+        GenerateThreadDump(AutoIngestJob job) {
+            super(Bundle.AutoIngestAdminActions_getThreadDump_title());
+            this.job = job;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+
+            if (job == null) {
+                return;
+            }
+
+            final AutoIngestDashboardTopComponent tc = (AutoIngestDashboardTopComponent) WindowManager.getDefault().findTopComponent(AutoIngestDashboardTopComponent.PREFERRED_ID);
+            if (tc == null) {
+                return;
+            }
+
+            AutoIngestDashboard dashboard = tc.getAutoIngestDashboard();
+            if (dashboard != null) {
+                dashboard.getMonitor().generateThreadDump(job.getProcessingHostName());
             }
         }
 
@@ -284,75 +434,6 @@ final class AutoIngestAdminActions {
                         dashboard.getCompletedJobsPanel().setCursor(Cursor.getDefaultCursor());
                     }
                 });
-            }
-        }
-
-        @Override
-        public Object clone() throws CloneNotSupportedException {
-            return super.clone(); //To change body of generated methods, choose Tools | Templates.
-        }
-    }
-
-    @NbBundle.Messages({"AutoIngestAdminActions.deleteCaseAction.title=Delete Case",
-        "AutoIngestAdminActions.deleteCaseAction.error=Failed to delete case."})
-    static final class DeleteCaseAction extends AbstractAction {
-
-        private static final long serialVersionUID = 1L;
-        private final AutoIngestJob job;
-
-        DeleteCaseAction(AutoIngestJob selectedJob) {
-            super(Bundle.AutoIngestAdminActions_deleteCaseAction_title());
-            this.job = selectedJob;
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            if (job == null) {
-                return;
-            }
-
-            final AutoIngestDashboardTopComponent tc = (AutoIngestDashboardTopComponent) WindowManager.getDefault().findTopComponent(AutoIngestDashboardTopComponent.PREFERRED_ID);
-            if (tc == null) {
-                return;
-            }
-
-            AutoIngestDashboard dashboard = tc.getAutoIngestDashboard();
-            if (dashboard != null) {
-                String caseName = job.getManifest().getCaseName();
-
-                Object[] options = {
-                    org.openide.util.NbBundle.getMessage(AutoIngestControlPanel.class, "ConfirmationDialog.Delete"),
-                    org.openide.util.NbBundle.getMessage(AutoIngestControlPanel.class, "ConfirmationDialog.DoNotDelete")
-                };
-                Object[] msgContent = {org.openide.util.NbBundle.getMessage(AutoIngestControlPanel.class, "ConfirmationDialog.DeleteAreYouSure") + "\"" + caseName + "\"?"};
-                int reply = JOptionPane.showOptionDialog(dashboard,
-                        msgContent,
-                        org.openide.util.NbBundle.getMessage(AutoIngestControlPanel.class, "ConfirmationDialog.ConfirmDeletionHeader"),
-                        JOptionPane.DEFAULT_OPTION,
-                        JOptionPane.WARNING_MESSAGE,
-                        null,
-                        options,
-                        options[JOptionPane.NO_OPTION]);
-                if (reply == JOptionPane.YES_OPTION) {
-                    EventQueue.invokeLater(() -> {
-                        dashboard.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-                        AutoIngestManager.CaseDeletionResult result = dashboard.getMonitor().deleteCase(job);
-
-                        dashboard.getCompletedJobsPanel().refresh(new AutoIngestNodeRefreshEvents.RefreshChildrenEvent(dashboard.getMonitor()));
-                        dashboard.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-                        if (AutoIngestManager.CaseDeletionResult.FAILED == result) {
-                            JOptionPane.showMessageDialog(dashboard,
-                                    String.format("Could not delete case %s. It may be in use.", caseName),
-                                    org.openide.util.NbBundle.getMessage(AutoIngestControlPanel.class, "AutoIngestControlPanel.DeletionFailed"),
-                                    JOptionPane.INFORMATION_MESSAGE);
-                        } else if (AutoIngestManager.CaseDeletionResult.PARTIALLY_DELETED == result) {
-                            JOptionPane.showMessageDialog(dashboard,
-                                    String.format("Could not fully delete case %s. See log for details.", caseName),
-                                    org.openide.util.NbBundle.getMessage(AutoIngestControlPanel.class, "AutoIngestControlPanel.DeletionFailed"),
-                                    JOptionPane.INFORMATION_MESSAGE);
-                        }
-                    });
-                }
             }
         }
 

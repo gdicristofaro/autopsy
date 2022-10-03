@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2012-2018 Basis Technology Corp.
+ * Copyright 2012-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,10 +19,12 @@
 package org.sleuthkit.autopsy.ingest;
 
 import java.util.Map;
+import java.util.logging.Level;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.coreutils.ModuleSettings;
+import org.sleuthkit.datamodel.Blackboard;
 import org.sleuthkit.datamodel.SleuthkitCase;
 
 /**
@@ -31,6 +33,7 @@ import org.sleuthkit.datamodel.SleuthkitCase;
  */
 public final class IngestServices {
 
+    private final static Logger logger = Logger.getLogger(IngestServices.class.getName());
     private static IngestServices instance = null;
 
     /**
@@ -104,14 +107,24 @@ public final class IngestServices {
      *
      * @param moduleDataEvent A module data event, i.e., an event that
      *                        encapsulates artifact data.
+     *
+     * @deprecated Use org.sleuthkit.datamodel.Blackboard.postArtifact or
+     * org.sleuthkit.datamodel.Blackboard.postArtifacts instead.
      */
+    @Deprecated
     public void fireModuleDataEvent(ModuleDataEvent moduleDataEvent) {
-        IngestManager.getInstance().fireIngestModuleDataEvent(moduleDataEvent);
+        try {
+            Blackboard blackboard = Case.getCurrentCaseThrows().getSleuthkitCase().getBlackboard();
+            blackboard.postArtifacts(moduleDataEvent.getArtifacts(), moduleDataEvent.getModuleName(), null);
+        } catch (NoCurrentCaseException | Blackboard.BlackboardException ex) {
+            logger.log(Level.SEVERE, "Failed to post artifacts", ex);
+        }
     }
 
     /**
      * Fires an event to notify registered listeners that there is new content
-     * (e.g., files extracted from an archive file, carved files, etc.)
+     * added to the case. (e.g., files extracted from an archive file, carved
+     * files, etc.)
      *
      * @param moduleContentEvent A module content event, i.e., an event that
      *                           encapsulates new content data.
@@ -169,10 +182,7 @@ public final class IngestServices {
      * Sets all of the global configuration settings for an ingest module.
      *
      * @param moduleName A unique identifier for the module.
-     *
-     * @param moduleName moduleName identifier unique to that module
      * @param settings   A mapping of setting names to setting values.
-     *
      */
     public void setConfigSettings(String moduleName, Map<String, String> settings) {
         ModuleSettings.setConfigSettings(moduleName, settings);

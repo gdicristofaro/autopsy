@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011-2018 Basis Technology Corp.
+ * Copyright 2011-2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +27,6 @@ import java.awt.event.WindowEvent;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
-import javax.swing.JFrame;
 import javax.swing.JPanel;
 import org.openide.util.NbBundle;
 import org.openide.util.NbBundle.Messages;
@@ -43,6 +42,7 @@ import org.sleuthkit.autopsy.modules.filetypeid.FileType.Signature;
 final class AddFileTypeSignatureDialog extends JDialog {
 
     private static final long serialVersionUID = 1L;
+    private static final Dimension BUTTON_SIZE = new Dimension(85, 23);
     private final AddFileTypeSignaturePanel addFileTypeSigPanel;
     private static final String TITLE = NbBundle.getMessage(RunIngestModulesAction.class, "RunIngestModulesAction.name");
     private Signature signature;
@@ -61,9 +61,9 @@ final class AddFileTypeSignatureDialog extends JDialog {
      * Creates a file type signature dialog for a new signature.
      */
     AddFileTypeSignatureDialog() {
-        super(new JFrame(TITLE), TITLE, true);
+        super(WindowManager.getDefault().getMainWindow(), TITLE, true);
         this.addFileTypeSigPanel = new AddFileTypeSignaturePanel();
-        this.display(true);
+        init();
     }
 
     /**
@@ -72,9 +72,67 @@ final class AddFileTypeSignatureDialog extends JDialog {
      * @param toEdit The signature to edit.
      */
     AddFileTypeSignatureDialog(Signature toEdit) {
-        super(new JFrame(TITLE), TITLE, true);
+        super(WindowManager.getDefault().getMainWindow(), TITLE, true);
         this.addFileTypeSigPanel = new AddFileTypeSignaturePanel(toEdit);
-        this.display(false);
+        init();
+    }
+
+    private void init() {
+        setLayout(new BorderLayout());
+
+        /**
+         * Get the default or saved ingest job settings for this context and use
+         * them to create and add an ingest job settings panel.
+         */
+        add(this.addFileTypeSigPanel, BorderLayout.PAGE_START);
+
+        // Add the add/done button.
+        JButton okButton;
+        okButton = new JButton(Bundle.AddFileTypeSignatureDialog_addButton_title());
+        okButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                doButtonAction(true);
+            }
+        });
+        //setting both max and preffered size appears to be necessary to change the button size
+        okButton.setMaximumSize(BUTTON_SIZE);
+        okButton.setPreferredSize(BUTTON_SIZE);
+
+        // Add a close button.
+        JButton cancelButton = new JButton(Bundle.AddFileTypeSignatureDialog_cancelButton_title());
+        cancelButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                doButtonAction(false);
+            }
+        });
+        //setting both max and preffered size appears to be necessary to change the button size
+        cancelButton.setMaximumSize(BUTTON_SIZE);
+        cancelButton.setPreferredSize(BUTTON_SIZE);
+
+        // Put the buttons in their own panel, under the settings panel.
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.LINE_AXIS));
+        buttonPanel.add(okButton);
+        buttonPanel.add(new javax.swing.Box.Filler(new Dimension(10, 35), new Dimension(10, 35), new Dimension(10, 35)));
+        buttonPanel.add(cancelButton);
+        buttonPanel.add(new javax.swing.Box.Filler(new Dimension(10, 35), new Dimension(10, 35), new Dimension(10, 35)));
+        buttonPanel.validate();
+        add(buttonPanel, BorderLayout.LINE_END);
+
+        /**
+         * Add a handler for when the dialog window is closed directly,
+         * bypassing the buttons.
+         */
+        this.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                doButtonAction(false);
+            }
+        });
+        setResizable(false);
+        pack();
     }
 
     /**
@@ -101,71 +159,16 @@ final class AddFileTypeSignatureDialog extends JDialog {
      * @param add Whether or not this is an edit or a new window.
      */
     @Messages({
-        "AddFileTypeSignatureDialog.addButton.title=Add",
-        "AddFileTypeSignatureDialog.addButton.title2=Done",
+        "AddFileTypeSignatureDialog.addButton.title=OK",
         "AddFileTypeSignatureDialog.cancelButton.title=Cancel"})
-    void display(boolean add) {
-        setLayout(new BorderLayout());
-
+    void display(boolean add) {      
         /**
          * Center the dialog.
          */
         setLocationRelativeTo(WindowManager.getDefault().getMainWindow());
-
-        /**
-         * Get the default or saved ingest job settings for this context and use
-         * them to create and add an ingest job settings panel.
-         */
-        add(this.addFileTypeSigPanel, BorderLayout.PAGE_START);
-
-        // Add the add/done button.
-        JButton addButton;
-        if (add) {
-            addButton = new JButton(Bundle.AddFileTypeSignatureDialog_addButton_title());
-        } else {
-            addButton = new JButton(Bundle.AddFileTypeSignatureDialog_addButton_title2());
-        }
-        addButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                doButtonAction(true);
-            }
-        });
-
-        // Add a close button.
-        JButton closeButton = new JButton(Bundle.AddFileTypeSignatureDialog_cancelButton_title());
-        closeButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                doButtonAction(false);
-            }
-        });
-
-        // Put the buttons in their own panel, under the settings panel.
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.LINE_AXIS));
-        buttonPanel.add(new javax.swing.Box.Filler(new Dimension(10, 10), new Dimension(10, 10), new Dimension(10, 10)));
-        buttonPanel.add(addButton);
-        buttonPanel.add(new javax.swing.Box.Filler(new Dimension(10, 10), new Dimension(10, 10), new Dimension(10, 10)));
-        buttonPanel.add(closeButton);
-        add(buttonPanel, BorderLayout.LINE_START);
-
-        /**
-         * Add a handler for when the dialog window is closed directly,
-         * bypassing the buttons.
-         */
-        this.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                doButtonAction(false);
-            }
-        });
-
         /**
          * Show the dialog.
          */
-        pack();
-        setResizable(false);
         setVisible(true);
     }
 

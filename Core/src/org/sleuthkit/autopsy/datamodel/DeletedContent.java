@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011-2018 Basis Technology Corp.
+ * Copyright 2011-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,8 +28,6 @@ import java.util.Observable;
 import java.util.Observer;
 import java.util.Set;
 import java.util.logging.Level;
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
 import org.openide.nodes.AbstractNode;
 import org.openide.nodes.ChildFactory;
 import org.openide.nodes.Children;
@@ -37,13 +35,11 @@ import org.openide.nodes.Node;
 import org.openide.nodes.Sheet;
 import org.openide.util.NbBundle;
 import org.openide.util.lookup.Lookups;
-import org.openide.windows.WindowManager;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
-import org.sleuthkit.autopsy.core.UserPreferences;
 import org.sleuthkit.autopsy.coreutils.Logger;
-import static org.sleuthkit.autopsy.datamodel.Bundle.*;
 import org.sleuthkit.autopsy.ingest.IngestManager;
+import static org.sleuthkit.autopsy.ingest.IngestManager.IngestModuleEvent.CONTENT_CHANGED;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.ContentVisitor;
@@ -54,6 +50,7 @@ import org.sleuthkit.datamodel.LayoutFile;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskData;
+import org.sleuthkit.datamodel.VirtualDirectory;
 
 /**
  * deleted content view nodes
@@ -61,7 +58,7 @@ import org.sleuthkit.datamodel.TskData;
 public class DeletedContent implements AutopsyVisitableItem {
 
     private SleuthkitCase skCase;
-    private final long datasourceObjId;
+    private final long filteringDSObjId;    // 0 if not filtering/grouping by data source
 
     @NbBundle.Messages({"DeletedContent.fsDelFilter.text=File System",
         "DeletedContent.allDelFilter.text=All"})
@@ -107,13 +104,13 @@ public class DeletedContent implements AutopsyVisitableItem {
 
     public DeletedContent(SleuthkitCase skCase, long dsObjId) {
         this.skCase = skCase;
-        this.datasourceObjId = dsObjId;
+        this.filteringDSObjId = dsObjId;
     }
-    
+
     long filteringDataSourceObjId() {
-        return this.datasourceObjId;
+        return this.filteringDSObjId;
     }
-    
+
     @Override
     public <T> T accept(AutopsyItemVisitor<T> visitor) {
         return visitor.visit(this);
@@ -189,14 +186,17 @@ public class DeletedContent implements AutopsyVisitableItem {
          * fired. Other nodes are listening to this for changes.
          */
         private static final class DeletedContentsChildrenObservable extends Observable {
+
             private static final Set<Case.Events> CASE_EVENTS_OF_INTEREST = EnumSet.of(
-                Case.Events.DATA_SOURCE_ADDED,
-                Case.Events.CURRENT_CASE
+                    Case.Events.DATA_SOURCE_ADDED,
+                    Case.Events.CURRENT_CASE
             );
+            private static final Set<IngestManager.IngestJobEvent> INGEST_JOB_EVENTS_OF_INTEREST = EnumSet.of(IngestManager.IngestJobEvent.COMPLETED, IngestManager.IngestJobEvent.CANCELLED);
+            private static final Set<IngestManager.IngestModuleEvent> INGEST_MODULE_EVENTS_OF_INTEREST = EnumSet.of(CONTENT_CHANGED);
 
             DeletedContentsChildrenObservable() {
-                IngestManager.getInstance().addIngestJobEventListener(pcl);
-                IngestManager.getInstance().addIngestModuleEventListener(pcl);
+                IngestManager.getInstance().addIngestJobEventListener(INGEST_JOB_EVENTS_OF_INTEREST, pcl);
+                IngestManager.getInstance().addIngestModuleEventListener(INGEST_MODULE_EVENTS_OF_INTEREST, pcl);
                 Case.addEventTypeSubscriber(CASE_EVENTS_OF_INTEREST, pcl);
             }
 
@@ -211,12 +211,11 @@ public class DeletedContent implements AutopsyVisitableItem {
                 String eventType = evt.getPropertyName();
                 if (eventType.equals(IngestManager.IngestModuleEvent.CONTENT_CHANGED.toString())) {
                     /**
-                     * + // @@@ COULD CHECK If the new file is deleted
-                     * before notifying... Checking for a current case is a
-                     * stop gap measure	+ update(); until a different way of
-                     * handling the closing of cases is worked out.
-                     * Currently, remote events may be received for a case
-                     * that is already closed.
+                     * + // @@@ COULD CHECK If the new file is deleted before
+                     * notifying... Checking for a current case is a stop gap
+                     * measure	+ update(); until a different way of handling the
+                     * closing of cases is worked out. Currently, remote events
+                     * may be received for a case that is already closed.
                      */
                     try {
                         Case.getCurrentCaseThrows();
@@ -232,10 +231,10 @@ public class DeletedContent implements AutopsyVisitableItem {
                         || eventType.equals(IngestManager.IngestJobEvent.CANCELLED.toString())
                         || eventType.equals(Case.Events.DATA_SOURCE_ADDED.toString())) {
                     /**
-                     * Checking for a current case is a stop gap measure
-                     * until a different way of handling the closing of
-                     * cases is worked out. Currently, remote events may be
-                     * received for a case that is already closed.
+                     * Checking for a current case is a stop gap measure until a
+                     * different way of handling the closing of cases is worked
+                     * out. Currently, remote events may be received for a case
+                     * that is already closed.
                      */
                     try {
                         Case.getCurrentCaseThrows();
@@ -280,7 +279,7 @@ public class DeletedContent implements AutopsyVisitableItem {
             // Use version that has observer for updates
             @Deprecated
             DeletedContentNode(SleuthkitCase skCase, DeletedContent.DeletedContentFilter filter, long dsObjId) {
-                super(Children.create(new DeletedContentChildren(filter, skCase, null, dsObjId ), true), Lookups.singleton(filter.getDisplayName()));
+                super(Children.create(new DeletedContentChildren(filter, skCase, null, dsObjId), true), Lookups.singleton(filter.getDisplayName()));
                 this.filter = filter;
                 this.datasourceObjId = dsObjId;
                 init();
@@ -359,16 +358,17 @@ public class DeletedContent implements AutopsyVisitableItem {
             }
         }
 
-        static class DeletedContentChildren extends ChildFactory.Detachable<AbstractFile> {
+        static class DeletedContentChildren extends BaseChildFactory<AbstractFile> {
 
             private final SleuthkitCase skCase;
             private final DeletedContent.DeletedContentFilter filter;
             private static final Logger logger = Logger.getLogger(DeletedContentChildren.class.getName());
-            private static final int MAX_OBJECTS = 10001;
+
             private final Observable notifier;
             private final long datasourceObjId;
 
             DeletedContentChildren(DeletedContent.DeletedContentFilter filter, SleuthkitCase skCase, Observable o, long datasourceObjId) {
+                super(filter.getName(), new ViewsKnownAndSlackFilter<>());
                 this.skCase = skCase;
                 this.filter = filter;
                 this.notifier = o;
@@ -377,49 +377,32 @@ public class DeletedContent implements AutopsyVisitableItem {
 
             private final Observer observer = new DeletedContentChildrenObserver();
 
+            @Override
+            protected List<AbstractFile> makeKeys() {
+                return runFsQuery();
+            }
+
             // Cause refresh of children if there are changes
             private class DeletedContentChildrenObserver implements Observer {
 
                 @Override
                 public void update(Observable o, Object arg) {
                     refresh(true);
-                }                                                 
+                }
             }
 
             @Override
-            protected void addNotify() {
+            protected void onAdd() {
                 if (notifier != null) {
                     notifier.addObserver(observer);
                 }
             }
 
             @Override
-            protected void removeNotify() {
+            protected void onRemove() {
                 if (notifier != null) {
                     notifier.deleteObserver(observer);
                 }
-            }
-
-            @Override
-            @NbBundle.Messages({"# {0} - The deleted files threshold",
-                "DeletedContent.createKeys.maxObjects.msg="
-                + "There are more Deleted Files than can be displayed."
-                + " Only the first {0} Deleted Files will be shown."})
-            protected boolean createKeys(List<AbstractFile> list) {
-                List<AbstractFile> queryList = runFsQuery();
-                if (queryList.size() == MAX_OBJECTS) {
-                    queryList.remove(queryList.size() - 1);
-                    // only show the dialog once - not each time we refresh
-                    if (maxFilesDialogShown == false) {
-                        maxFilesDialogShown = true;
-                        SwingUtilities.invokeLater(()
-                                -> JOptionPane.showMessageDialog(WindowManager.getDefault().getMainWindow(),
-                                        DeletedContent_createKeys_maxObjects_msg(MAX_OBJECTS - 1))
-                        );
-                    }
-                }
-                list.addAll(queryList);
-                return true;
             }
 
             static private String makeQuery(DeletedContent.DeletedContentFilter filter, long filteringDSObjId) {
@@ -441,6 +424,8 @@ public class DeletedContent implements AutopsyVisitableItem {
                                 + " AND type = " + TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType() //NON-NLS
                                 + " )"
                                 + " OR type = " + TskData.TSK_DB_FILES_TYPE_ENUM.CARVED.getFileType() //NON-NLS
+                                + " OR (dir_flags = " + TskData.TSK_FS_NAME_FLAG_ENUM.UNALLOC.getValue()
+                                + " AND type = " + TskData.TSK_DB_FILES_TYPE_ENUM.LAYOUT_FILE.getFileType() + " )"
                                 + " )";
                         //+ " AND type != " + TskData.TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType()
                         //+ " AND type != " + TskData.TSK_DB_FILES_TYPE_ENUM.UNUSED_BLOCKS.getFileType()
@@ -455,16 +440,9 @@ public class DeletedContent implements AutopsyVisitableItem {
 
                 }
 
-                if (UserPreferences.hideKnownFilesInViewsTree()) {
-                    query += " AND (known != " + TskData.FileKnown.KNOWN.getFileKnownValue() //NON-NLS
-                            + " OR known IS NULL)"; //NON-NLS
+                if (filteringDSObjId > 0) {
+                    query += " AND data_source_obj_id = " + filteringDSObjId;
                 }
-
-                if (UserPreferences.groupItemsInTreeByDatasource()) {
-                    query +=  " AND data_source_obj_id = " + filteringDSObjId;
-                }
-                
-                query += " LIMIT " + MAX_OBJECTS; //NON-NLS
                 return query;
             }
 
@@ -522,6 +500,11 @@ public class DeletedContent implements AutopsyVisitableItem {
 
                     @Override
                     public FileNode visit(Directory f) {
+                        return new FileNode(f, false);
+                    }
+
+                    @Override
+                    public FileNode visit(VirtualDirectory f) {
                         return new FileNode(f, false);
                     }
 

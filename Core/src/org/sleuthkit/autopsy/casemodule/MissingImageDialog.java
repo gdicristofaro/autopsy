@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2012-2018 Basis Technology Corp.
+ * Copyright 2012-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.Arrays;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.logging.Level;
 import java.io.File;
 import javax.swing.JFileChooser;
@@ -33,6 +32,7 @@ import org.openide.util.NbBundle;
 import org.openide.windows.WindowManager;
 import org.sleuthkit.autopsy.coreutils.DriveUtils;
 import org.sleuthkit.autopsy.coreutils.Logger;
+import org.sleuthkit.autopsy.guiutils.JFileChooserFactory;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
 
@@ -46,7 +46,8 @@ class MissingImageDialog extends javax.swing.JDialog {
     long obj_id;
     SleuthkitCase db;
 
-    private final JFileChooser fileChooser = new JFileChooser();
+    private JFileChooser fileChooser;
+    private final JFileChooserFactory chooserHelper;
 
     /**
      * Instantiate a MissingImageDialog.
@@ -59,17 +60,8 @@ class MissingImageDialog extends javax.swing.JDialog {
         this.obj_id = obj_id;
         this.db = db;
         initComponents();
-
-        fileChooser.setDragEnabled(false);
-        fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        fileChooser.setMultiSelectionEnabled(false);
-
-        List<FileFilter> fileFiltersList = ImageDSProcessor.getFileFiltersList();
-        for (FileFilter fileFilter : fileFiltersList) {
-            fileChooser.addChoosableFileFilter(fileFilter);
-        }
-        fileChooser.setFileFilter(fileFiltersList.get(0));
-
+        
+        chooserHelper = new JFileChooserFactory();
         selectButton.setEnabled(false);
     }
 
@@ -133,7 +125,6 @@ class MissingImageDialog extends javax.swing.JDialog {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
-        selectButton.setFont(selectButton.getFont().deriveFont(selectButton.getFont().getStyle() & ~java.awt.Font.BOLD, 11));
         org.openide.awt.Mnemonics.setLocalizedText(selectButton, org.openide.util.NbBundle.getMessage(MissingImageDialog.class, "MissingImageDialog.selectButton.text")); // NOI18N
         selectButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -141,7 +132,6 @@ class MissingImageDialog extends javax.swing.JDialog {
             }
         });
 
-        cancelButton.setFont(cancelButton.getFont().deriveFont(cancelButton.getFont().getStyle() & ~java.awt.Font.BOLD, 11));
         org.openide.awt.Mnemonics.setLocalizedText(cancelButton, org.openide.util.NbBundle.getMessage(MissingImageDialog.class, "MissingImageDialog.cancelButton.text")); // NOI18N
         cancelButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -170,7 +160,6 @@ class MissingImageDialog extends javax.swing.JDialog {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        pathNameTextField.setFont(pathNameTextField.getFont().deriveFont(pathNameTextField.getFont().getStyle() & ~java.awt.Font.BOLD, 11));
         pathNameTextField.setText(org.openide.util.NbBundle.getMessage(MissingImageDialog.class, "MissingImageDialog.pathNameTextField.text")); // NOI18N
         pathNameTextField.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -178,7 +167,6 @@ class MissingImageDialog extends javax.swing.JDialog {
             }
         });
 
-        browseButton.setFont(browseButton.getFont().deriveFont(browseButton.getFont().getStyle() & ~java.awt.Font.BOLD, 11));
         org.openide.awt.Mnemonics.setLocalizedText(browseButton, org.openide.util.NbBundle.getMessage(MissingImageDialog.class, "MissingImageDialog.browseButton.text")); // NOI18N
         browseButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -186,7 +174,7 @@ class MissingImageDialog extends javax.swing.JDialog {
             }
         });
 
-        lbWarning.setFont(lbWarning.getFont().deriveFont(lbWarning.getFont().getStyle() | java.awt.Font.BOLD, 12));
+        lbWarning.setFont(lbWarning.getFont().deriveFont(lbWarning.getFont().getStyle() | java.awt.Font.BOLD, lbWarning.getFont().getSize()+1));
         lbWarning.setForeground(new java.awt.Color(244, 0, 0));
         org.openide.awt.Mnemonics.setLocalizedText(lbWarning, org.openide.util.NbBundle.getMessage(MissingImageDialog.class, "MissingImageDialog.lbWarning.text")); // NOI18N
         lbWarning.setToolTipText(org.openide.util.NbBundle.getMessage(MissingImageDialog.class, "MissingImageDialog.lbWarning.toolTipText")); // NOI18N
@@ -217,7 +205,7 @@ class MissingImageDialog extends javax.swing.JDialog {
                 .addGap(18, 18, 18))
         );
 
-        titleLabel.setFont(titleLabel.getFont().deriveFont(titleLabel.getFont().getStyle() | java.awt.Font.BOLD, 12));
+        titleLabel.setFont(titleLabel.getFont().deriveFont(titleLabel.getFont().getStyle() | java.awt.Font.BOLD, titleLabel.getFont().getSize()+1));
         org.openide.awt.Mnemonics.setLocalizedText(titleLabel, org.openide.util.NbBundle.getMessage(MissingImageDialog.class, "MissingImageDialog.titleLabel.text")); // NOI18N
 
         titleSeparator.setForeground(new java.awt.Color(102, 102, 102));
@@ -261,7 +249,7 @@ class MissingImageDialog extends javax.swing.JDialog {
             this.dispose();
         } catch (TskCoreException ex) {
             lbWarning.setText(NbBundle.getMessage(this.getClass(), "MissingImageDialog.ErrorSettingImage"));
-            logger.log(Level.WARNING, "Error setting image paths", ex); //NON-NLS
+            logger.log(Level.SEVERE, "Error setting image paths", ex); //NON-NLS
         }
     }//GEN-LAST:event_selectButtonActionPerformed
 
@@ -275,6 +263,19 @@ class MissingImageDialog extends javax.swing.JDialog {
 
     private void browseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_browseButtonActionPerformed
 
+        if(fileChooser == null) {
+            fileChooser = chooserHelper.getChooser();
+            fileChooser.setDragEnabled(false);
+            fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+            fileChooser.setMultiSelectionEnabled(false);
+
+            List<FileFilter> fileFiltersList = ImageDSProcessor.getFileFiltersList();
+            for (FileFilter fileFilter : fileFiltersList) {
+                fileChooser.addChoosableFileFilter(fileFilter);
+            }
+            fileChooser.setFileFilter(fileFiltersList.get(0));
+        }
+        
         String oldText = pathNameTextField.getText();
         lbWarning.setText("");
         // set the current directory of the FileChooser if the ImagePath Field is valid

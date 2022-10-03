@@ -26,8 +26,6 @@ import java.util.TimeZone;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 import java.util.logging.Level;
-import java.util.prefs.PreferenceChangeEvent;
-import java.util.prefs.PreferenceChangeListener;
 import javax.swing.SwingWorker;
 import org.netbeans.api.progress.ProgressHandle;
 import org.openide.util.NbBundle;
@@ -39,7 +37,6 @@ import org.sleuthkit.datamodel.ContentVisitor;
 import org.sleuthkit.datamodel.DerivedFile;
 import org.sleuthkit.datamodel.Directory;
 import org.sleuthkit.datamodel.File;
-import org.sleuthkit.datamodel.Image;
 import org.sleuthkit.datamodel.LayoutFile;
 import org.sleuthkit.datamodel.LocalFile;
 import org.sleuthkit.datamodel.LocalDirectory;
@@ -55,20 +52,8 @@ import org.sleuthkit.datamodel.VirtualDirectory;
 public final class ContentUtils {
 
     private final static Logger logger = Logger.getLogger(ContentUtils.class.getName());
-    private static boolean displayTimesInLocalTime = UserPreferences.displayTimesInLocalTime();
     private static final SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
     private static final SimpleDateFormat dateFormatterISO8601 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-
-    static {
-        UserPreferences.addChangeListener(new PreferenceChangeListener() {
-            @Override
-            public void preferenceChange(PreferenceChangeEvent evt) {
-                if (evt.getKey().equals(UserPreferences.DISPLAY_TIMES_IN_LOCAL_TIME)) {
-                    displayTimesInLocalTime = UserPreferences.displayTimesInLocalTime();
-                }
-            }
-        });
-    }
 
     /**
      * Don't instantiate
@@ -85,6 +70,7 @@ public final class ContentUtils {
      *
      * @return The time
      */
+    @Deprecated
     public static String getStringTime(long epochSeconds, TimeZone tzone) {
         String time = "0000-00-00 00:00:00";
         if (epochSeconds != 0) {
@@ -104,6 +90,7 @@ public final class ContentUtils {
      *
      * @return The time
      */
+    @Deprecated
     public static String getStringTimeISO8601(long epochSeconds, TimeZone tzone) {
         String time = "0000-00-00T00:00:00Z"; //NON-NLS
         if (epochSeconds != 0) {
@@ -123,7 +110,10 @@ public final class ContentUtils {
      * @param content
      *
      * @return
+     * 
+     * @deprecated Use org.sleuthkit.autopsy.coreutils.TimeZoneUtils.getFormattedTime instead
      */
+    @Deprecated
     public static String getStringTime(long epochSeconds, Content content) {
         return getStringTime(epochSeconds, getTimeZone(content));
     }
@@ -136,29 +126,30 @@ public final class ContentUtils {
      * @param c
      *
      * @return
+     * 
+     * @deprecated Use org.sleuthkit.autopsy.coreutils.TimeZoneUtils.getFormattedTimeISO8601 instead 
      */
+    @Deprecated
     public static String getStringTimeISO8601(long epochSeconds, Content c) {
         return getStringTimeISO8601(epochSeconds, getTimeZone(c));
     }
 
+    /**
+     * Returns either the user selected time zone or the system time zone.
+     * 
+     * @param content
+     * 
+     * @return 
+     * 
+     * @deprecated Use org.sleuthkit.autopsy.coreutils.TimeZoneUtils.getTimeZone instead
+     */
+    @Deprecated
     public static TimeZone getTimeZone(Content content) {
-
-        try {
-            if (!shouldDisplayTimesInLocalTime()) {
-                return TimeZone.getTimeZone("GMT");
-            } else {
-                final Content dataSource = content.getDataSource();
-                if ((dataSource != null) && (dataSource instanceof Image)) {
-                    Image image = (Image) dataSource;
-                    return TimeZone.getTimeZone(image.getTimeZone());
-                } else {
-                    //case such as top level VirtualDirectory
-                    return TimeZone.getDefault();
-                }
-            }
-        } catch (TskCoreException ex) {
+        if (!shouldDisplayTimesInLocalTime()) {
+            return TimeZone.getTimeZone(UserPreferences.getTimeZoneForDisplays());
+        } else {
             return TimeZone.getDefault();
-        }
+        }  
     }
     private static final SystemNameVisitor systemName = new SystemNameVisitor();
 
@@ -291,6 +282,62 @@ public final class ContentUtils {
     }
 
     /**
+     * Reads all the data from any content object and writes (extracts) it to a
+     * file, using a cancellation check instead of a Future object method.
+     *
+     * @param content     Any content object.
+     * @param outputFile  Will be created if it doesn't exist, and overwritten
+     *                    if it does
+     * @param cancelCheck A function used to check if the file write process
+     *                    should be terminated.
+     * @param startingOffset the starting offset to start reading the file
+     * @param endingOffset the ending offset to read of the file to write
+     *
+     * @return number of bytes extracted
+     *
+     * @throws IOException if file could not be written
+     */
+    public static long writeToFile(Content content, java.io.File outputFile,
+            Supplier<Boolean> cancelCheck, long startingOffset, long endingOffset) throws IOException {
+        
+        InputStream in = new ReadContentInputStream(content);
+        long totalRead = 0;
+        try (FileOutputStream out = new FileOutputStream(outputFile, false)) {
+            long offsetSkipped = in.skip(startingOffset); 
+            if (offsetSkipped != startingOffset) {
+                in.close();
+                throw new IOException(String.format("Skipping file to starting offset {0} was not successful only skipped to offset {1}.", startingOffset, offsetSkipped));            
+            }
+            byte[] buffer = new byte[TO_FILE_BUFFER_SIZE];
+            int len = in.read(buffer);
+            long writeFileLength = endingOffset - startingOffset;
+            writeFileLength = writeFileLength - TO_FILE_BUFFER_SIZE;
+            while (len != -1 && writeFileLength != 0) {
+                out.write(buffer, 0, len);
+                totalRead += len;
+                if (cancelCheck.get()) {
+                    break;
+                }
+                if (writeFileLength > TO_FILE_BUFFER_SIZE) {
+                    len = in.read(buffer);
+                    writeFileLength = writeFileLength - TO_FILE_BUFFER_SIZE;
+                } else {
+                    int writeLength = (int)writeFileLength;
+                    byte[] lastBuffer = new byte[writeLength];
+                    len = in.read(lastBuffer);
+                    out.write(lastBuffer, 0, len);
+                    totalRead += len;
+                    writeFileLength = 0;
+                }
+            }
+                
+        } finally {
+            in.close();
+        }
+        return totalRead;
+    }
+
+    /**
      * Helper to ignore the '.' and '..' directories
      *
      * @param dir the directory to check
@@ -345,85 +392,69 @@ public final class ContentUtils {
         public static <T, V> void extract(Content cntnt, java.io.File dest, ProgressHandle progress, SwingWorker<T, V> worker) {
             cntnt.accept(new ExtractFscContentVisitor<>(dest, progress, worker, true));
         }
+        
+        /**
+         * Base method writing a file to disk.
+         *
+         * @param file     The TSK content file.
+         * @param dest     The disk location where the content will be written.
+         * @param progress progress bar handle to update, if available. null
+         *                 otherwise
+         * @param worker   the swing worker background thread the process runs
+         *                 within, or null, if in the main thread, used to
+         *                 handle task cancellation
+         * @param source   true if source file
+         *
+         * @throws IOException
+         */
+        protected void writeFile(Content file, java.io.File dest, ProgressHandle progress, SwingWorker<T, V> worker, boolean source) throws IOException {
+            ContentUtils.writeToFile(file, dest, progress, worker, source);
+        }
 
-        @Override
-        public Void visit(File file) {
+        /**
+         * Visits a TSK content file and writes that file to disk.
+         * @param file The file to be written.
+         * @param fileType The file type (i.e. "derived file") for error logging.
+         * @return null.
+         */
+        protected Void visitFile(Content file, String fileType) {
             try {
-                ContentUtils.writeToFile(file, dest, progress, worker, source);
+                writeFile(file, dest, progress, worker, source);
             } catch (ReadContentInputStreamException ex) {
                 logger.log(Level.WARNING,
                         String.format("Error reading file '%s' (id=%d).",
                                 file.getName(), file.getId()), ex); //NON-NLS
             } catch (IOException ex) {
                 logger.log(Level.SEVERE,
-                        String.format("Error extracting file '%s' (id=%d) to '%s'.",
-                                file.getName(), file.getId(), dest.getAbsolutePath()), ex); //NON-NLS
+                        String.format("Error extracting %s '%s' (id=%d) to '%s'.",
+                                fileType, file.getName(), file.getId(), dest.getAbsolutePath()), ex); //NON-NLS
             }
             return null;
+        }
+        
+        @Override
+        public Void visit(File file) {
+            return visitFile(file, "file");
         }
 
         @Override
         public Void visit(LayoutFile file) {
-            try {
-                ContentUtils.writeToFile(file, dest, progress, worker, source);
-            } catch (ReadContentInputStreamException ex) {
-                logger.log(Level.WARNING,
-                        String.format("Error reading file '%s' (id=%d).",
-                                file.getName(), file.getId()), ex); //NON-NLS
-            } catch (IOException ex) {
-                logger.log(Level.SEVERE,
-                        String.format("Error extracting unallocated content file '%s' (id=%d) to '%s'.",
-                                file.getName(), file.getId(), dest.getAbsolutePath()), ex); //NON-NLS
-            }
-            return null;
+            return visitFile(file, "unallocated content file");
         }
 
         @Override
         public Void visit(DerivedFile file) {
-            try {
-                ContentUtils.writeToFile(file, dest, progress, worker, source);
-            } catch (ReadContentInputStreamException ex) {
-                logger.log(Level.WARNING,
-                        String.format("Error reading file '%s' (id=%d).",
-                                file.getName(), file.getId()), ex); //NON-NLS
-            } catch (IOException ex) {
-                logger.log(Level.SEVERE,
-                        String.format("Error extracting derived file '%s' (id=%d) to '%s'.",
-                                file.getName(), file.getId(), dest.getAbsolutePath()), ex); //NON-NLS
-            }
-            return null;
+            return visitFile(file, "derived file");
         }
 
         @Override
         public Void visit(LocalFile file) {
-            try {
-                ContentUtils.writeToFile(file, dest, progress, worker, source);
-            } catch (ReadContentInputStreamException ex) {
-                logger.log(Level.WARNING,
-                        String.format("Error reading file '%s' (id=%d).",
-                                file.getName(), file.getId()), ex); //NON-NLS
-            } catch (IOException ex) {
-                logger.log(Level.SEVERE,
-                        String.format("Error extracting local file '%s' (id=%d) to '%s'.",
-                                file.getName(), file.getId(), dest.getAbsolutePath()), ex); //NON-NLS
-            }
-            return null;
+            return visitFile(file, "local file");
         }
 
         @Override
         public Void visit(SlackFile file) {
-            try {
-                ContentUtils.writeToFile(file, dest, progress, worker, source);
-            } catch (ReadContentInputStreamException ex) {
-                logger.log(Level.WARNING,
-                        String.format("Error reading file '%s' (id=%d).",
-                                file.getName(), file.getId()), ex); //NON-NLS
-            } catch (IOException ex) {
-                logger.log(Level.SEVERE,
-                        String.format("Error extracting slack file '%s' (id=%d) to '%s'.",
-                                file.getName(), file.getId(), dest.getAbsolutePath()), ex); //NON-NLS
-            }
-            return null;
+            return visitFile(file, "slack file");
         }
 
         @Override
@@ -446,6 +477,20 @@ public final class ContentUtils {
                     + content.getName();
             return new java.io.File(path);
         }
+        
+        /**
+         * Returns a visitor to visit any child content.
+         * @param childFile     The disk location where the content will be written.
+         * @param progress progress bar handle to update, if available. null
+         *                 otherwise
+         * @param worker   the swing worker background thread the process runs
+         *                 within, or null, if in the main thread, used to
+         *                 handle task cancellation
+         * @return 
+         */
+        protected ExtractFscContentVisitor<T, V> getChildVisitor(java.io.File childFile, ProgressHandle progress, SwingWorker<T, V> worker) {
+            return new ExtractFscContentVisitor<>(childFile, progress, worker, false);
+        }
 
         public Void visitDir(AbstractFile dir) {
 
@@ -462,8 +507,7 @@ public final class ContentUtils {
                 for (Content child : dir.getChildren()) {
                     if (child instanceof AbstractFile) { //ensure the directory's artifact children are ignored
                         java.io.File childFile = getFsContentDest(child);
-                        ExtractFscContentVisitor<T, V> childVisitor
-                                = new ExtractFscContentVisitor<>(childFile, progress, worker, false);
+                        ExtractFscContentVisitor<T, V> childVisitor = getChildVisitor(childFile, progress, worker);
                         // If this is the source directory of an extract it
                         // will have a progress and worker, and will keep track
                         // of the progress bar's progress
@@ -497,9 +541,12 @@ public final class ContentUtils {
      * Indicates whether or not times should be displayed using local time.
      *
      * @return True or false.
+     * 
+     * @deprecated Call UserPreferences.displayTimesInLocalTime instead.
      */
+     @Deprecated
     public static boolean shouldDisplayTimesInLocalTime() {
-        return displayTimesInLocalTime;
+        return UserPreferences.displayTimesInLocalTime();
     }
 
 }

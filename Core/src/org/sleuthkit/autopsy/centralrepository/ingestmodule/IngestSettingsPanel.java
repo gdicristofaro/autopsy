@@ -1,7 +1,7 @@
 /*
  * Central Repository
  *
- * Copyright 2018 Basis Technology Corp.
+ * Copyright 2018-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,7 @@ import org.sleuthkit.autopsy.ingest.IngestModuleIngestJobSettings;
 import org.sleuthkit.autopsy.ingest.IngestModuleIngestJobSettingsPanel;
 
 /**
- * Ingest job settings panel for the Correlation Engine module.
+ * Ingest job settings panel for the Central Repository module.
  */
 @SuppressWarnings("PMD.SingularField") // UI widgets cause lots of false positives
 final class IngestSettingsPanel extends IngestModuleIngestJobSettingsPanel {
@@ -42,11 +42,15 @@ final class IngestSettingsPanel extends IngestModuleIngestJobSettingsPanel {
      */
     private void customizeComponents(IngestSettings settings) {
         flagTaggedNotableItemsCheckbox.setSelected(settings.isFlagTaggedNotableItems());
+        flagPreviouslySeenDevicesCheckbox.setSelected(settings.isFlagPreviousDevices());
+        createCorrelationPropertiesCheckbox.setSelected(settings.shouldCreateCorrelationProperties());
+        flagUniqueAppsCheckbox.setSelected(settings.isFlagUniqueArtifacts());
     }
     
     @Override
     public IngestModuleIngestJobSettings getSettings() {
-        return new IngestSettings(flagTaggedNotableItemsCheckbox.isSelected());
+        return new IngestSettings(flagTaggedNotableItemsCheckbox.isSelected(), flagPreviouslySeenDevicesCheckbox.isSelected(), 
+                createCorrelationPropertiesCheckbox.isSelected(), flagUniqueAppsCheckbox.isSelected());
     }
 
     /**
@@ -60,11 +64,20 @@ final class IngestSettingsPanel extends IngestModuleIngestJobSettingsPanel {
 
         ingestSettingsLabel = new javax.swing.JLabel();
         flagTaggedNotableItemsCheckbox = new javax.swing.JCheckBox();
+        flagPreviouslySeenDevicesCheckbox = new javax.swing.JCheckBox();
+        createCorrelationPropertiesCheckbox = new javax.swing.JCheckBox();
+        flagUniqueAppsCheckbox = new javax.swing.JCheckBox();
 
-        ingestSettingsLabel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        ingestSettingsLabel.setFont(ingestSettingsLabel.getFont().deriveFont(ingestSettingsLabel.getFont().getStyle() | java.awt.Font.BOLD));
         org.openide.awt.Mnemonics.setLocalizedText(ingestSettingsLabel, org.openide.util.NbBundle.getMessage(IngestSettingsPanel.class, "IngestSettingsPanel.ingestSettingsLabel.text")); // NOI18N
 
         org.openide.awt.Mnemonics.setLocalizedText(flagTaggedNotableItemsCheckbox, org.openide.util.NbBundle.getMessage(IngestSettingsPanel.class, "IngestSettingsPanel.flagTaggedNotableItemsCheckbox.text")); // NOI18N
+
+        org.openide.awt.Mnemonics.setLocalizedText(flagPreviouslySeenDevicesCheckbox, org.openide.util.NbBundle.getMessage(IngestSettingsPanel.class, "IngestSettingsPanel.flagPreviouslySeenDevicesCheckbox.text")); // NOI18N
+
+        org.openide.awt.Mnemonics.setLocalizedText(createCorrelationPropertiesCheckbox, org.openide.util.NbBundle.getMessage(IngestSettingsPanel.class, "IngestSettingsPanel.createCorrelationPropertiesCheckbox.text")); // NOI18N
+
+        org.openide.awt.Mnemonics.setLocalizedText(flagUniqueAppsCheckbox, org.openide.util.NbBundle.getMessage(IngestSettingsPanel.class, "IngestSettingsPanel.flagUniqueAppsCheckbox.text")); // NOI18N
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
@@ -73,25 +86,38 @@ final class IngestSettingsPanel extends IngestModuleIngestJobSettingsPanel {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(ingestSettingsLabel)
                     .addGroup(layout.createSequentialGroup()
                         .addGap(10, 10, 10)
-                        .addComponent(flagTaggedNotableItemsCheckbox))
-                    .addComponent(ingestSettingsLabel))
-                .addContainerGap(65, Short.MAX_VALUE))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(flagTaggedNotableItemsCheckbox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(flagPreviouslySeenDevicesCheckbox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(createCorrelationPropertiesCheckbox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(flagUniqueAppsCheckbox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                .addContainerGap(16, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(ingestSettingsLabel)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGap(9, 9, 9)
+                .addComponent(createCorrelationPropertiesCheckbox)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(flagTaggedNotableItemsCheckbox)
-                .addContainerGap(245, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(flagPreviouslySeenDevicesCheckbox)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(flagUniqueAppsCheckbox)
+                .addContainerGap(24, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JCheckBox createCorrelationPropertiesCheckbox;
+    private javax.swing.JCheckBox flagPreviouslySeenDevicesCheckbox;
     private javax.swing.JCheckBox flagTaggedNotableItemsCheckbox;
+    private javax.swing.JCheckBox flagUniqueAppsCheckbox;
     private javax.swing.JLabel ingestSettingsLabel;
     // End of variables declaration//GEN-END:variables
 

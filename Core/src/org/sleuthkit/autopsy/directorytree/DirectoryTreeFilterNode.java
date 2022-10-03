@@ -20,12 +20,12 @@ package org.sleuthkit.autopsy.directorytree;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import javax.swing.Action;
 import org.openide.nodes.FilterNode;
 import org.openide.nodes.Node;
+import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
 import org.openide.util.lookup.Lookups;
 import org.openide.util.lookup.ProxyLookup;
@@ -33,17 +33,14 @@ import org.sleuthkit.autopsy.core.UserPreferences;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.datamodel.AbstractContentNode;
 import org.sleuthkit.autopsy.datamodel.BlackboardArtifactNode;
-import org.sleuthkit.autopsy.ingest.runIngestModuleWizard.RunIngestModulesAction;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.Content;
-import org.sleuthkit.datamodel.Directory;
-import org.sleuthkit.datamodel.Image;
+import org.sleuthkit.datamodel.Host;
+import org.sleuthkit.datamodel.Person;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskData;
-import org.sleuthkit.datamodel.VirtualDirectory;
-import org.sleuthkit.datamodel.Volume;
 
 /**
  * A node filter (decorator) that sets the actions for a node in the tree view
@@ -60,9 +57,9 @@ class DirectoryTreeFilterNode extends FilterNode {
      * the tree view and wraps the Children object of the wrapped node with a
      * DirectoryTreeFilterChildren.
      *
-     * @param nodeToWrap     The node to wrap.
+     * @param nodeToWrap The node to wrap.
      * @param createChildren Whether to create the children of the wrapped node
-     *                       or treat it a a leaf node.
+     * or treat it a a leaf node.
      */
     DirectoryTreeFilterNode(Node nodeToWrap, boolean createChildren) {
         super(nodeToWrap,
@@ -137,11 +134,17 @@ class DirectoryTreeFilterNode extends FilterNode {
                         numVisibleChildren--;
                     }
                 } else if (child instanceof BlackboardArtifact) {
-                    BlackboardArtifact bba = (BlackboardArtifact) child;
 
-                    // Only message type artifacts are displayed in the tree
-                    if ((bba.getArtifactTypeID() != ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID())
-                            && (bba.getArtifactTypeID() != ARTIFACT_TYPE.TSK_MESSAGE.getTypeID())) {
+                    if (FilterNodeUtils.showMessagesInDatasourceTree()) {
+                        // In older versions of Autopsy,  attachments were children of email/message artifacts
+                        // and hence email/messages with attachments are shown in the directory tree.
+                        BlackboardArtifact bba = (BlackboardArtifact) child;
+                        // Only message type artifacts are displayed in the tree
+                        if ((bba.getArtifactTypeID() != ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID())
+                                && (bba.getArtifactTypeID() != ARTIFACT_TYPE.TSK_MESSAGE.getTypeID())) {
+                            numVisibleChildren--;
+                        }
+                    } else {
                         numVisibleChildren--;
                     }
                 }
@@ -155,20 +158,31 @@ class DirectoryTreeFilterNode extends FilterNode {
      * Gets the context mneu (right click menu) actions for the wrapped node.
      *
      * @param context Whether to find actions for context meaning or for the
-     *                node itself.
+     * node itself.
      *
      * @return
      */
     @Override
     public Action[] getActions(boolean context) {
         List<Action> actions = new ArrayList<>();
-        
-        final Content content = this.getLookup().lookup(Content.class);
-        if (content != null) {
-            actions.addAll(Arrays.asList(super.getActions(true)));
-        }
+        actions.addAll(Arrays.asList(getNodeActions()));
         actions.add(collapseAllAction);
         return actions.toArray(new Action[actions.size()]);
+    }
+
+    /**
+     * @return If lookup node is content, host, or person, returns super
+     * actions. Otherwise, returns empty array.
+     */
+    private Action[] getNodeActions() {
+        Lookup lookup = this.getLookup();
+        if (lookup.lookup(Content.class) != null
+                || lookup.lookup(Host.class) != null
+                || lookup.lookup(Person.class) != null) {
+            return super.getActions(true);
+        } else {
+            return new Action[0];
+        }
     }
 
     /**

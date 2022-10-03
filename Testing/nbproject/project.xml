@@ -47,7 +47,15 @@
                     <compile-dependency/>
                     <run-dependency>
                         <release-version>10</release-version>
-                        <specification-version>10.10</specification-version>
+                        <specification-version>10.24</specification-version>
+                    </run-dependency>
+                </dependency>
+                <dependency>
+                    <code-name-base>org.sleuthkit.autopsy.coretestlibs</code-name-base>
+                    <build-prerequisite/>
+                    <compile-dependency/>
+                    <run-dependency>
+                        <specification-version>1.0</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
@@ -56,7 +64,7 @@
                     <compile-dependency/>
                     <run-dependency>
                         <release-version>6</release-version>
-                        <specification-version>6.3</specification-version>
+                        <specification-version>6.6</specification-version>
                     </run-dependency>
                 </dependency>
             </module-dependencies>

@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2017-2018 Basis Technology Corp.
+ * Copyright 2017-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,19 +18,18 @@
  */
 package org.sleuthkit.autopsy.modules.encryptiondetection;
 
-import com.healthmarketscience.jackcess.CryptCodecProvider;
+import com.healthmarketscience.jackcess.crypt.CryptCodecProvider;
 import com.healthmarketscience.jackcess.Database;
 import com.healthmarketscience.jackcess.DatabaseBuilder;
-import com.healthmarketscience.jackcess.InvalidCredentialsException;
+import com.healthmarketscience.jackcess.crypt.InvalidCredentialsException;
 import com.healthmarketscience.jackcess.impl.CodecProvider;
 import com.healthmarketscience.jackcess.impl.UnsupportedCodecException;
 import com.healthmarketscience.jackcess.util.MemFileChannel;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.logging.Level;
-import org.sleuthkit.datamodel.ReadContentInputStream;
 import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.logging.Level;
 import org.apache.tika.exception.EncryptedDocumentException;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
@@ -40,19 +39,20 @@ import org.apache.tika.sax.BodyContentHandler;
 import org.openide.util.NbBundle.Messages;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
-import org.sleuthkit.autopsy.casemodule.services.Blackboard;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.ingest.FileIngestModuleAdapter;
 import org.sleuthkit.autopsy.ingest.IngestJobContext;
 import org.sleuthkit.autopsy.ingest.IngestMessage;
 import org.sleuthkit.autopsy.ingest.IngestModule;
 import org.sleuthkit.autopsy.ingest.IngestServices;
-import org.sleuthkit.autopsy.ingest.ModuleDataEvent;
 import org.sleuthkit.autopsy.modules.filetypeid.FileTypeDetector;
 import org.sleuthkit.datamodel.AbstractFile;
+import org.sleuthkit.datamodel.Blackboard;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
+import org.sleuthkit.datamodel.ReadContentInputStream;
 import org.sleuthkit.datamodel.ReadContentInputStream.ReadContentInputStreamException;
+import org.sleuthkit.datamodel.Score;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskData;
 import org.xml.sax.ContentHandler;
@@ -64,7 +64,7 @@ import org.xml.sax.SAXException;
 final class EncryptionDetectionFileIngestModule extends FileIngestModuleAdapter {
 
     private static final int FILE_SIZE_MODULUS = 512;
-
+    
     private static final String DATABASE_FILE_EXTENSION = "db";
     private static final int MINIMUM_DATABASE_FILE_SIZE = 65536; //64 KB
 
@@ -81,8 +81,9 @@ final class EncryptionDetectionFileIngestModule extends FileIngestModuleAdapter 
     private final Logger logger = services.getLogger(EncryptionDetectionModuleFactory.getModuleName());
     private FileTypeDetector fileTypeDetector;
     private Blackboard blackboard;
+    private IngestJobContext context;
     private double calculatedEntropy;
-
+    
     private final double minimumEntropy;
     private final int minimumFileSize;
     private final boolean fileSizeMultipleEnforced;
@@ -91,9 +92,9 @@ final class EncryptionDetectionFileIngestModule extends FileIngestModuleAdapter 
     /**
      * Create a EncryptionDetectionFileIngestModule object that will detect
      * files that are either encrypted or password protected and create
-     * blackboard artifacts as appropriate. The supplied
-     * EncryptionDetectionIngestJobSettings object is used to configure the
-     * module.
+     * blackboard artifacts as appropriate.
+     *
+     * @param settings The settings used to configure the module.
      */
     EncryptionDetectionFileIngestModule(EncryptionDetectionIngestJobSettings settings) {
         minimumEntropy = settings.getMinimumEntropy();
@@ -106,7 +107,9 @@ final class EncryptionDetectionFileIngestModule extends FileIngestModuleAdapter 
     public void startUp(IngestJobContext context) throws IngestModule.IngestModuleException {
         try {
             validateSettings();
-            blackboard = Case.getCurrentCaseThrows().getServices().getBlackboard();
+            this.context = context;
+            blackboard = Case.getCurrentCaseThrows().getSleuthkitCase().getBlackboard();
+
             fileTypeDetector = new FileTypeDetector();
         } catch (FileTypeDetector.FileTypeDetectorInitException ex) {
             throw new IngestModule.IngestModuleException("Failed to create file type detector", ex);
@@ -116,7 +119,6 @@ final class EncryptionDetectionFileIngestModule extends FileIngestModuleAdapter 
     }
 
     @Messages({
-        "EncryptionDetectionFileIngestModule.artifactComment.password=Password protection detected.",
         "EncryptionDetectionFileIngestModule.artifactComment.suspected=Suspected encryption due to high entropy (%f)."
     })
     @Override
@@ -153,10 +155,11 @@ final class EncryptionDetectionFileIngestModule extends FileIngestModuleAdapter 
                  */
                 String mimeType = fileTypeDetector.getMIMEType(file);
                 if (mimeType.equals("application/octet-stream") && isFileEncryptionSuspected(file)) {
-                    return flagFile(file, BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_SUSPECTED,
+                    return flagFile(file, BlackboardArtifact.Type.TSK_ENCRYPTION_SUSPECTED, Score.SCORE_LIKELY_NOTABLE,
                             String.format(Bundle.EncryptionDetectionFileIngestModule_artifactComment_suspected(), calculatedEntropy));
                 } else if (isFilePasswordProtected(file)) {
-                    return flagFile(file, BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_DETECTED, Bundle.EncryptionDetectionFileIngestModule_artifactComment_password());
+                    return flagFile(file, BlackboardArtifact.Type.TSK_ENCRYPTION_DETECTED, Score.SCORE_NOTABLE, 
+                    EncryptionDetectionModuleFactory.PASSWORD_PROTECT_MESSAGE);
                 }
             }
         } catch (ReadContentInputStreamException | SAXException | TikaException | UnsupportedCodecException ex) {
@@ -185,31 +188,34 @@ final class EncryptionDetectionFileIngestModule extends FileIngestModuleAdapter 
      * Create a blackboard artifact.
      *
      * @param file         The file to be processed.
-     * @param artifactType The type of artifact to create.
+     * @param artifactType The type of artifact to create. Assumed to be an
+     *                     analysis result type.
+     * @param score        The score of the analysis result.
      * @param comment      A comment to be attached to the artifact.
      *
      * @return 'OK' if the file was processed successfully, or 'ERROR' if there
      *         was a problem.
      */
-    private IngestModule.ProcessResult flagFile(AbstractFile file, BlackboardArtifact.ARTIFACT_TYPE artifactType, String comment) {
+    private IngestModule.ProcessResult flagFile(AbstractFile file, BlackboardArtifact.Type artifactType, Score score, String comment) {
         try {
-            BlackboardArtifact artifact = file.newArtifact(artifactType);
-            artifact.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_COMMENT,
-                    EncryptionDetectionModuleFactory.getModuleName(), comment));
+            if (context.fileIngestIsCancelled()) {
+                return IngestModule.ProcessResult.OK;
+            }
+
+            BlackboardArtifact artifact = file.newAnalysisResult(artifactType, score, null, null, comment, 
+                    Arrays.asList(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_COMMENT,
+                    EncryptionDetectionModuleFactory.getModuleName(), comment)))
+                    .getAnalysisResult();
 
             try {
                 /*
-                 * Index the artifact for keyword search.
+                 * post the artifact which will index the artifact for keyword
+                 * search, and fire an event to notify UI of this new artifact
                  */
-                blackboard.indexArtifact(artifact);
+                blackboard.postArtifact(artifact, EncryptionDetectionModuleFactory.getModuleName(), context.getJobId());
             } catch (Blackboard.BlackboardException ex) {
                 logger.log(Level.SEVERE, "Unable to index blackboard artifact " + artifact.getArtifactID(), ex); //NON-NLS
             }
-
-            /*
-             * Send an event to update the view with the new result.
-             */
-            services.fireModuleDataEvent(new ModuleDataEvent(EncryptionDetectionModuleFactory.getModuleName(), artifactType, Collections.singletonList(artifact)));
 
             /*
              * Make an ingest inbox message.
@@ -319,7 +325,20 @@ final class EncryptionDetectionFileIngestModule extends FileIngestModuleAdapter 
                     DatabaseBuilder databaseBuilder = new DatabaseBuilder();
                     databaseBuilder.setChannel(memFileChannel);
                     databaseBuilder.setCodecProvider(codecProvider);
-                    Database accessDatabase = databaseBuilder.open();
+                    Database accessDatabase;
+                    try {
+                        accessDatabase = databaseBuilder.open();
+                    } catch (InvalidCredentialsException ex) {
+                        logger.log(Level.INFO, String.format(
+                                "Jackcess throws invalid credentials exception for file (name: %s, id: %s).  It will be assumed to be password protected.",
+                                file.getName(), file.getId()));
+                        return true;
+                    } catch (Exception ex) { // Firewall, see JIRA-7097
+                        logger.log(Level.WARNING, String.format("Unexpected exception "
+                                + "trying to open msaccess database using Jackcess "
+                                + "(name: %s, id: %d)", file.getName(), file.getId()), ex);
+                        return passwordProtected;
+                    }
                     /*
                      * No exception has been thrown at this point, so the file
                      * is either a JET database, or an unprotected ACE database.
@@ -391,7 +410,7 @@ final class EncryptionDetectionFileIngestModule extends FileIngestModuleAdapter 
             /*
              * Qualify the entropy.
              */
-            calculatedEntropy = EncryptionDetectionTools.calculateEntropy(file);
+            calculatedEntropy = EncryptionDetectionTools.calculateEntropy(file, context);
             if (calculatedEntropy >= minimumEntropy) {
                 possiblyEncrypted = true;
             }

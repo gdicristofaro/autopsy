@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2015 Basis Technology Corp.
+ * Copyright 2015-18 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.autopsy.imagegallery.gui.drawableviews;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.Objects;
 import static java.util.Objects.nonNull;
 import java.util.Optional;
@@ -25,7 +26,6 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.logging.Level;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -41,7 +41,6 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import org.controlsfx.control.action.ActionUtils;
 import org.openide.util.NbBundle;
-import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.coreutils.ThreadConfined;
 import org.sleuthkit.autopsy.imagegallery.ImageGalleryController;
 import org.sleuthkit.autopsy.imagegallery.actions.OpenExternalViewerAction;
@@ -55,9 +54,9 @@ import org.sleuthkit.datamodel.TskCoreException;
     "DrawableUIBase.errorLabel.OOMText=Insufficent memory"})
 abstract public class DrawableUIBase extends AnchorPane implements DrawableView {
 
-    static final Executor exec = Executors.newSingleThreadExecutor();
-
-    private static final Logger LOGGER = Logger.getLogger(DrawableUIBase.class.getName());
+    /** The use of SingleThreadExecutor means we can only load a single image at
+     * a time */
+    static final Executor exec = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("DrawableUIBase-%d").build());
 
     @FXML
     BorderPane imageBorder;
@@ -96,20 +95,17 @@ abstract public class DrawableUIBase extends AnchorPane implements DrawableView 
     @Override
     synchronized public Optional<DrawableFile> getFile() {
         if (fileIDOpt.isPresent()) {
-            if (fileOpt.isPresent() && fileOpt.get().getId() == fileIDOpt.get()) {
-                return fileOpt;
-            } else {
+            if (!fileOpt.isPresent() || fileOpt.get().getId() != fileIDOpt.get()) {
                 try {
-                    fileOpt = Optional.ofNullable(getController().getFileFromId(fileIDOpt.get()));
+                    fileOpt = Optional.ofNullable(getController().getFileFromID(fileIDOpt.get()));
                 } catch (TskCoreException ex) {
-                    Logger.getAnonymousLogger().log(Level.WARNING, "failed to get DrawableFile for obj_id" + fileIDOpt.get(), ex); //NON-NLS
                     fileOpt = Optional.empty();
                 }
-                return fileOpt;
             }
         } else {
-            return Optional.empty();
+            fileOpt = Optional.empty();
         }
+        return fileOpt;
     }
 
     protected abstract void setFileHelper(Long newFileID);
@@ -126,9 +122,7 @@ abstract public class DrawableUIBase extends AnchorPane implements DrawableView 
     }
 
     synchronized protected void updateContent() {
-        if (getFile().isPresent()) {
-            doReadImageTask(getFile().get());
-        }
+        getFile().ifPresent(this::doReadImageTask);
     }
 
     synchronized Node doReadImageTask(DrawableFile file) {
@@ -138,16 +132,16 @@ abstract public class DrawableUIBase extends AnchorPane implements DrawableView 
         Platform.runLater(() -> imageBorder.setCenter(progressNode));
 
         //called on fx thread
-        myTask.setOnSucceeded(succeeded -> {
+        myTask.setOnSucceeded(succeeded -> {            //on fx thread
             showImage(file, myTask);
             synchronized (DrawableUIBase.this) {
                 imageTask = null;
             }
         });
-        myTask.setOnFailed(failed -> {
+        myTask.setOnFailed(failed -> {            //on fx thread
             Throwable exception = myTask.getException();
             if (exception instanceof OutOfMemoryError
-                    && exception.getMessage().contains("Java heap space")) { //NON-NLS
+                && exception.getMessage().contains("Java heap space")) { //NON-NLS
                 showErrorNode(Bundle.DrawableUIBase_errorLabel_OOMText(), file);
             } else {
                 showErrorNode(Bundle.DrawableUIBase_errorLabel_text(), file);
@@ -156,7 +150,7 @@ abstract public class DrawableUIBase extends AnchorPane implements DrawableView 
                 imageTask = null;
             }
         });
-        myTask.setOnCancelled(cancelled -> {
+        myTask.setOnCancelled(cancelled -> {            //on fx thread
             synchronized (DrawableUIBase.this) {
                 imageTask = null;
             }
@@ -180,9 +174,12 @@ abstract public class DrawableUIBase extends AnchorPane implements DrawableView 
     }
 
     /**
+     * Get a new progress indicator to use as a place holder for the image in
+     * this view.
      *
-     * @param file      the value of file
-     * @param imageTask the value of imageTask
+     * @param imageTask The imageTask to get a progress indicator for.
+     *
+     * @return The new Node to use as a progress indicator.
      */
     Node newProgressIndicator(final Task<?> imageTask) {
         ProgressIndicator loadingProgressIndicator = new ProgressIndicator(-1);

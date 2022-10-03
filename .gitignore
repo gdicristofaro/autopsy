@@ -3,6 +3,7 @@
 /*/build/
 */nbproject/private/*
 /nbproject/private/*
+/apidiff_output/
 
 /Core/release/
 /Core/src/org/sleuthkit/autopsy/coreutils/Version.properties
@@ -23,7 +24,12 @@
 !/CoreLibs/nbproject/project.xml
 !/CoreLibs/nbproject/project.properties
 
-/Core/test/qa-functional/data/
+/CoreTestLibs/release/
+/CoreTestLibs/build/
+/CoreTestLibs/dist/
+
+/Core/test/qa-functional/data/*
+!/Core/test/qa-functional/data/PasswordDetection_img1_v1.img
 
 /KeywordSearch/release/
 /KeywordSearch/build/
@@ -49,6 +55,7 @@ genfiles.properties
 !/test/input/NSRL.txt-md5.idx
 /test/output/*
 !/test/output/gold
+/test/script/output_dir_link.txt
 /test/output/gold/tmp
 /test/script/ScriptLog.txt
 /test/script/__pycache__/
@@ -68,6 +75,7 @@ genfiles.properties
 *~
 /netbeans-plat
 /docs/doxygen-user/user-docs
+/docs/doxygen-dev/build-docs
 /jdiff-javadocs/*
 /jdiff-logs/*
 /gen_version.txt
@@ -80,7 +88,24 @@ hs_err_pid*.log
 /thunderbirdparser/release/
 /RecentActivity/release/
 /CentralRepository/release/
+/Tika/release
+
+.idea/
+*.iml
 
 *.img
 *.vhd
 *.E01
+
+/thirdparty/yara/yarabridge/yarabridge/x64/
+/thirdparty/yara/yarabridge/yarabridge.VC.db
+/thirdparty/yara/yarabridge/yarabridge.VC.VC.opendb
+/thirdparty/yara/yarabridge/x64/
+/thirdparty/yara/YaraWrapperTest/nbproject/private/
+/thirdparty/yara/YaraWrapperTest/build/
+/thirdparty/yara/YaraJNIWrapper/dist/
+/thirdparty/yara/YaraJNIWrapper/build/
+/thirdparty/yara/YaraJNIWrapper/nbproject/private/
+/thirdparty/yara/yarabridge/.vs/
+
+*/path_list.txt

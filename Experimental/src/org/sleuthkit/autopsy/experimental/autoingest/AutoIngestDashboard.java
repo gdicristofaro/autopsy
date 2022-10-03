@@ -18,26 +18,31 @@
  */
 package org.sleuthkit.autopsy.experimental.autoingest;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.awt.Cursor;
-import java.util.Observable;
-import java.util.Observer;
 import java.util.logging.Level;
 import java.awt.Color;
 import java.awt.EventQueue;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.HashSet;
+import java.util.Observable;
+import java.util.Observer;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.swing.JPanel;
 import javax.swing.SwingWorker;
 import javax.swing.UIManager;
-import org.openide.modules.Places;
 import org.openide.util.NbBundle;
 import org.openide.util.NbBundle.Messages;
 import org.sleuthkit.autopsy.core.ServicesMonitor;
 import org.sleuthkit.autopsy.coreutils.Logger;
+import org.sleuthkit.autopsy.coreutils.PlatformUtil;
 import org.sleuthkit.autopsy.experimental.autoingest.AutoIngestNodeRefreshEvents.RefreshChildrenEvent;
 
 /**
@@ -45,15 +50,22 @@ import org.sleuthkit.autopsy.experimental.autoingest.AutoIngestNodeRefreshEvents
  */
 @SuppressWarnings("PMD.SingularField") // UI widgets cause lots of false positives
 final class AutoIngestDashboard extends JPanel implements Observer {
-    
-    private final static String ADMIN_ACCESS_FILE_NAME = "adminAccess";
-    private final static String ADMIN_ACCESS_FILE_PATH = Places.getUserDirectory().getAbsolutePath() + File.separator + ADMIN_ACCESS_FILE_NAME;
+
+    private final static String ADMIN_ACCESS_FILE_NAME = "admin"; // NON-NLS
+    private final static String ADMIN_ACCESS_FILE_PATH = Paths.get(PlatformUtil.getUserConfigDirectory(), ADMIN_ACCESS_FILE_NAME).toString();
+    private final static String ADMIN_EXT_ACCESS_FILE_NAME = "adminext"; // NON-NLS
+    private final static String ADMIN_EXT_ACCESS_FILE_PATH = Paths.get(PlatformUtil.getUserConfigDirectory(), ADMIN_EXT_ACCESS_FILE_NAME).toString();
+    private final static String AID_REFRESH_THREAD_NAME = "AID-refresh-jobs-%d";
+    private final static int AID_REFRESH_INTERVAL_SECS = 30;
+    private final static int AID_DELAY_BEFORE_FIRST_REFRESH = 0;
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(AutoIngestDashboard.class.getName());
     private AutoIngestMonitor autoIngestMonitor;
     private AutoIngestJobsPanel pendingJobsPanel;
     private AutoIngestJobsPanel runningJobsPanel;
     private AutoIngestJobsPanel completedJobsPanel;
+    private final ScheduledThreadPoolExecutor scheduledRefreshThreadPoolExecutor;
+    private AtomicBoolean scheduledRefreshStarted = new AtomicBoolean(false);
 
     /**
      * Maintain a mapping of each service to it's last status update.
@@ -87,7 +99,7 @@ final class AutoIngestDashboard extends JPanel implements Observer {
 
     private AutoIngestDashboard() {
         this.statusByService = new ConcurrentHashMap<>();
-
+        scheduledRefreshThreadPoolExecutor = new ScheduledThreadPoolExecutor(1, new ThreadFactoryBuilder().setNameFormat(AID_REFRESH_THREAD_NAME).build());
         initComponents();
         statusByService.put(ServicesMonitor.Service.REMOTE_CASE_DATABASE.toString(), NbBundle.getMessage(AutoIngestDashboard.class, "AutoIngestDashboard.tbServicesStatusMessage.Message.Down"));
         statusByService.put(ServicesMonitor.Service.REMOTE_KEYWORD_SEARCH.toString(), NbBundle.getMessage(AutoIngestDashboard.class, "AutoIngestDashboard.tbServicesStatusMessage.Message.Down"));
@@ -239,6 +251,7 @@ final class AutoIngestDashboard extends JPanel implements Observer {
         new Thread(() -> {
             try {
                 autoIngestMonitor.startUp();
+
             } catch (AutoIngestMonitor.AutoIngestMonitorException ex) {
                 LOGGER.log(Level.SEVERE, "Unable to start up Auto Ingest Monitor", ex);
             }
@@ -249,6 +262,7 @@ final class AutoIngestDashboard extends JPanel implements Observer {
      * Shut down parts of the AutoIngestDashboard which were initialized
      */
     void shutDown() {
+        scheduledRefreshThreadPoolExecutor.shutdownNow();
         if (autoIngestMonitor != null) {
             autoIngestMonitor.shutDown();
         }
@@ -256,18 +270,19 @@ final class AutoIngestDashboard extends JPanel implements Observer {
 
     @Override
     public void update(Observable observable, Object arg) {
-        if (arg == null ) {
-            EventQueue.invokeLater(() -> {
-                refreshTables();
-            });
+        if (!scheduledRefreshStarted.getAndSet(true)) {
+            scheduledRefreshThreadPoolExecutor.scheduleWithFixedDelay(() -> {
+                EventQueue.invokeLater(() -> {
+                    refreshTables();
+                });
+            }, AID_DELAY_BEFORE_FIRST_REFRESH, AID_REFRESH_INTERVAL_SECS, TimeUnit.SECONDS);
         }
     }
 
     /**
-     * Reloads the table models using a jobs snapshot and refreshes the JTables
-     * that use the models.
+     * Reloads the table models using a RefreshChildrenEvent and refreshes the
+     * JTables that use the models.
      *
-     * @param nodeStateSnapshot The jobs snapshot.
      */
     void refreshTables() {
         pendingJobsPanel.refresh(new RefreshChildrenEvent(autoIngestMonitor));
@@ -306,9 +321,24 @@ final class AutoIngestDashboard extends JPanel implements Observer {
 
     }
 
+    /**
+     * Determines whether or not system adminstrator features of the dashboard
+     * are enabled.
+     *
+     * @return True or false.
+     */
     static boolean isAdminAutoIngestDashboard() {
-        File f = new File(ADMIN_ACCESS_FILE_PATH);
-        return f.exists();
+        return new File(ADMIN_ACCESS_FILE_PATH).exists() || new File(ADMIN_EXT_ACCESS_FILE_PATH).exists();
+    }
+
+    /**
+     * Determines whether the extended system administrator features of the
+     * cases dashboard are enabled.
+     *
+     * @return True or false.
+     */
+    static boolean extendedFeaturesAreEnabled() {
+        return new File(ADMIN_EXT_ACCESS_FILE_PATH).exists();
     }
 
     /**
@@ -319,8 +349,11 @@ final class AutoIngestDashboard extends JPanel implements Observer {
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
 
         jButton1 = new javax.swing.JButton();
+        mainScrollPane = new javax.swing.JScrollPane();
+        mainPanel = new javax.swing.JPanel();
         pendingScrollPane = new javax.swing.JScrollPane();
         runningScrollPane = new javax.swing.JScrollPane();
         completedScrollPane = new javax.swing.JScrollPane();
@@ -333,19 +366,77 @@ final class AutoIngestDashboard extends JPanel implements Observer {
 
         org.openide.awt.Mnemonics.setLocalizedText(jButton1, org.openide.util.NbBundle.getMessage(AutoIngestDashboard.class, "AutoIngestDashboard.jButton1.text")); // NOI18N
 
+        setLayout(new java.awt.BorderLayout());
+
+        mainPanel.setLayout(new java.awt.GridBagLayout());
+
         pendingScrollPane.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         pendingScrollPane.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
         pendingScrollPane.setOpaque(false);
-        pendingScrollPane.setPreferredSize(new java.awt.Dimension(2, 215));
+        pendingScrollPane.setPreferredSize(new java.awt.Dimension(2, 150));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.weighty = 1.0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 10, 10, 10);
+        mainPanel.add(pendingScrollPane, gridBagConstraints);
 
-        lbPending.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
+        runningScrollPane.setPreferredSize(new java.awt.Dimension(2, 150));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 5;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.weighty = 1.0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 10, 10, 10);
+        mainPanel.add(runningScrollPane, gridBagConstraints);
+
+        completedScrollPane.setPreferredSize(new java.awt.Dimension(2, 150));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 7;
+        gridBagConstraints.gridwidth = 5;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.weighty = 1.0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 10, 10, 10);
+        mainPanel.add(completedScrollPane, gridBagConstraints);
+
+        lbPending.setFont(lbPending.getFont().deriveFont(lbPending.getFont().getSize()+3f));
         org.openide.awt.Mnemonics.setLocalizedText(lbPending, org.openide.util.NbBundle.getMessage(AutoIngestDashboard.class, "AutoIngestDashboard.lbPending.text")); // NOI18N
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(10, 10, 5, 10);
+        mainPanel.add(lbPending, gridBagConstraints);
 
-        lbRunning.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
+        lbRunning.setFont(lbRunning.getFont().deriveFont(lbRunning.getFont().getSize()+3f));
         org.openide.awt.Mnemonics.setLocalizedText(lbRunning, org.openide.util.NbBundle.getMessage(AutoIngestDashboard.class, "AutoIngestDashboard.lbRunning.text")); // NOI18N
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(0, 10, 5, 10);
+        mainPanel.add(lbRunning, gridBagConstraints);
 
-        lbCompleted.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
+        lbCompleted.setFont(lbCompleted.getFont().deriveFont(lbCompleted.getFont().getSize()+3f));
         org.openide.awt.Mnemonics.setLocalizedText(lbCompleted, org.openide.util.NbBundle.getMessage(AutoIngestDashboard.class, "AutoIngestDashboard.lbCompleted.text")); // NOI18N
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(0, 10, 5, 10);
+        mainPanel.add(lbCompleted, gridBagConstraints);
 
         org.openide.awt.Mnemonics.setLocalizedText(refreshButton, org.openide.util.NbBundle.getMessage(AutoIngestDashboard.class, "AutoIngestDashboard.refreshButton.text")); // NOI18N
         refreshButton.setToolTipText(org.openide.util.NbBundle.getMessage(AutoIngestDashboard.class, "AutoIngestDashboard.refreshButton.toolTipText")); // NOI18N
@@ -354,63 +445,39 @@ final class AutoIngestDashboard extends JPanel implements Observer {
                 refreshButtonActionPerformed(evt);
             }
         });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 8;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(6, 10, 10, 10);
+        mainPanel.add(refreshButton, gridBagConstraints);
 
-        lbServicesStatus.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
+        lbServicesStatus.setFont(lbServicesStatus.getFont().deriveFont(lbServicesStatus.getFont().getSize()+3f));
         org.openide.awt.Mnemonics.setLocalizedText(lbServicesStatus, org.openide.util.NbBundle.getMessage(AutoIngestDashboard.class, "AutoIngestDashboard.lbServicesStatus.text")); // NOI18N
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(10, 10, 0, 10);
+        mainPanel.add(lbServicesStatus, gridBagConstraints);
 
         tbServicesStatusMessage.setEditable(false);
-        tbServicesStatusMessage.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
+        tbServicesStatusMessage.setFont(tbServicesStatusMessage.getFont().deriveFont(tbServicesStatusMessage.getFont().getStyle() | java.awt.Font.BOLD, tbServicesStatusMessage.getFont().getSize()+1));
         tbServicesStatusMessage.setText(org.openide.util.NbBundle.getMessage(AutoIngestDashboard.class, "AutoIngestDashboard.tbServicesStatusMessage.text")); // NOI18N
         tbServicesStatusMessage.setBorder(null);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.insets = new java.awt.Insets(10, 0, 0, 10);
+        mainPanel.add(tbServicesStatusMessage, gridBagConstraints);
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
-        this.setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(pendingScrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(runningScrollPane, javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(completedScrollPane, javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                        .addComponent(lbServicesStatus)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(tbServicesStatusMessage, javax.swing.GroupLayout.DEFAULT_SIZE, 871, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(lbPending, javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(lbCompleted, javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(lbRunning, javax.swing.GroupLayout.Alignment.LEADING))
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                        .addComponent(refreshButton, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                .addContainerGap())
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(lbServicesStatus, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(tbServicesStatusMessage, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(lbPending, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(1, 1, 1)
-                .addComponent(pendingScrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(lbRunning)
-                .addGap(1, 1, 1)
-                .addComponent(runningScrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 133, Short.MAX_VALUE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(lbCompleted)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(completedScrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 179, Short.MAX_VALUE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(refreshButton)
-                .addContainerGap())
-        );
+        mainScrollPane.setViewportView(mainPanel);
+
+        add(mainScrollPane, java.awt.BorderLayout.CENTER);
     }// </editor-fold>//GEN-END:initComponents
 
     /**
@@ -433,6 +500,8 @@ final class AutoIngestDashboard extends JPanel implements Observer {
     private javax.swing.JLabel lbPending;
     private javax.swing.JLabel lbRunning;
     private javax.swing.JLabel lbServicesStatus;
+    private javax.swing.JPanel mainPanel;
+    private javax.swing.JScrollPane mainScrollPane;
     private javax.swing.JScrollPane pendingScrollPane;
     private javax.swing.JButton refreshButton;
     private javax.swing.JScrollPane runningScrollPane;

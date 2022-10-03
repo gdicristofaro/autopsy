@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2018 Basis Technology Corp.
+ * Copyright 2018-2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,54 +19,66 @@
 package org.sleuthkit.autopsy.centralrepository;
 
 import java.awt.event.ActionEvent;
+import java.util.List;
 import java.util.logging.Level;
 import javax.swing.AbstractAction;
+import javax.swing.Action;
+import org.apache.commons.lang.StringUtils;
 import org.openide.DialogDisplayer;
 import org.openide.NotifyDescriptor;
-import org.openide.util.NbBundle;
 import org.openide.util.NbBundle.Messages;
-import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationAttribute;
-import org.sleuthkit.autopsy.centralrepository.datamodel.EamArtifactUtil;
-import org.sleuthkit.autopsy.centralrepository.datamodel.EamDb;
-import org.sleuthkit.autopsy.centralrepository.datamodel.EamDbException;
+import org.sleuthkit.autopsy.casemodule.Case;
+import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
+import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationAttributeInstance;
+import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationAttributeUtil;
+import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepoException;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.datamodel.AbstractFile;
+import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepository;
 
 /**
  * An AbstractAction to manage adding and modifying a Central Repository file
  * instance comment.
  */
-@Messages({"AddEditCentralRepoCommentAction.menuItemText.addEditCentralRepoComment=Add/Edit Central Repository Comment"})
+@Messages({"AddEditCentralRepoCommentAction.menuItemText.addEditCentralRepoCommentEmptyFile=Add/Edit Central Repository Comment (Empty File)",
+    "AddEditCentralRepoCommentAction.menuItemText.addEditCentralRepoCommentNoMD5=Add/Edit Central Repository Comment (No MD5 Hash)",
+    "AddEditCentralRepoCommentAction.menuItemText.addEditCentralRepoComment=Add/Edit Central Repository Comment"})
 public final class AddEditCentralRepoCommentAction extends AbstractAction {
 
     private static final Logger logger = Logger.getLogger(AddEditCentralRepoCommentAction.class.getName());
+    private static final long serialVersionUID = 1L;
 
     private boolean addToDatabase;
-    private CorrelationAttribute correlationAttribute;
+    private CorrelationAttributeInstance correlationAttributeInstance;
     private String comment;
-
-    /**
-     * Constructor to create an instance given a CorrelationAttribute.
-     *
-     * @param correlationAttribute The correlation attribute to modify.
-     */
-    public AddEditCentralRepoCommentAction(CorrelationAttribute correlationAttribute) {
-        super(Bundle.AddEditCentralRepoCommentAction_menuItemText_addEditCentralRepoComment());
-        this.correlationAttribute = correlationAttribute;
-    }
+    private final Long fileId;
 
     /**
      * Constructor to create an instance given an AbstractFile.
      *
      * @param file The file from which a correlation attribute to modify is
      *             derived.
+     *
      */
     public AddEditCentralRepoCommentAction(AbstractFile file) {
-        super(Bundle.AddEditCentralRepoCommentAction_menuItemText_addEditCentralRepoComment());
-        correlationAttribute = EamArtifactUtil.getCorrelationAttributeFromContent(file);
-        if (correlationAttribute == null) {
+        fileId = file.getId();
+        correlationAttributeInstance = CorrelationAttributeUtil.getCorrAttrForFile(file);
+        if (correlationAttributeInstance == null) {
             addToDatabase = true;
-            correlationAttribute = EamArtifactUtil.makeCorrelationAttributeFromContent(file);
+            final List<CorrelationAttributeInstance> md5CorrelationAttr = CorrelationAttributeUtil.makeCorrAttrsForSearch(file);
+            if (!md5CorrelationAttr.isEmpty()) {
+                //for an abstract file the 'list' of attributes will be a single attribute or empty and is returning a list for consistency with other makeCorrAttrsForSearch methods per 7852 
+                correlationAttributeInstance = md5CorrelationAttr.get(0);
+            } else {
+                correlationAttributeInstance = null;
+            }
+        }
+        if (file.getSize() == 0) {
+            putValue(Action.NAME, Bundle.AddEditCentralRepoCommentAction_menuItemText_addEditCentralRepoCommentEmptyFile());
+        } else if (StringUtils.isBlank(file.getMd5Hash())) {
+            putValue(Action.NAME, Bundle.AddEditCentralRepoCommentAction_menuItemText_addEditCentralRepoCommentNoMD5());
+        } else {
+            putValue(Action.NAME, Bundle.AddEditCentralRepoCommentAction_menuItemText_addEditCentralRepoComment());
         }
     }
 
@@ -83,25 +95,30 @@ public final class AddEditCentralRepoCommentAction extends AbstractAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        CentralRepoCommentDialog centralRepoCommentDialog = new CentralRepoCommentDialog(correlationAttribute);
+        CentralRepoCommentDialog centralRepoCommentDialog = new CentralRepoCommentDialog(correlationAttributeInstance);
         centralRepoCommentDialog.display();
 
         comment = null;
 
         if (centralRepoCommentDialog.isCommentUpdated()) {
-            EamDb dbManager;
+            CentralRepository dbManager;
 
             try {
-                dbManager = EamDb.getInstance();
+                dbManager = CentralRepository.getInstance();
 
                 if (addToDatabase) {
-                    dbManager.addArtifact(correlationAttribute);
+                    dbManager.addArtifactInstance(correlationAttributeInstance);
                 } else {
-                    dbManager.updateAttributeInstanceComment(correlationAttribute);
+                    dbManager.updateAttributeInstanceComment(correlationAttributeInstance);
                 }
 
                 comment = centralRepoCommentDialog.getComment();
-            } catch (EamDbException ex) {
+                try {
+                    Case.getCurrentCaseThrows().notifyCentralRepoCommentChanged(fileId, comment);
+                } catch (NoCurrentCaseException ex) {
+                    logger.log(Level.WARNING, "Case not open after changing central repository comment", ex);
+                }
+            } catch (CentralRepoException ex) {
                 logger.log(Level.SEVERE, "Error adding comment", ex);
                 NotifyDescriptor notifyDescriptor = new NotifyDescriptor.Message(
                         "An error occurred while trying to save the comment to the central repository.",
@@ -121,13 +138,13 @@ public final class AddEditCentralRepoCommentAction extends AbstractAction {
     public String getComment() {
         return comment;
     }
-    
+
     /**
      * Retrieve the associated correlation attribute.
-     * 
+     *
      * @return The correlation attribute.
      */
-    public CorrelationAttribute getCorrelationAttribute() {
-        return correlationAttribute;
+    public CorrelationAttributeInstance getCorrelationAttribute() {
+        return correlationAttributeInstance;
     }
 }

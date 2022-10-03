@@ -1,7 +1,7 @@
 /*
  * Central Repository
  *
- * Copyright 2015-2018 Basis Technology Corp.
+ * Copyright 2015-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,13 +26,12 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
-import org.openide.util.Exceptions;
 import org.openide.util.NbBundle.Messages;
 import org.openide.windows.WindowManager;
 import org.sleuthkit.autopsy.coreutils.Logger;
-import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationAttribute;
-import org.sleuthkit.autopsy.centralrepository.datamodel.EamDbException;
-import org.sleuthkit.autopsy.centralrepository.datamodel.EamDb;
+import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationAttributeInstance;
+import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepoException;
+import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepository;
 
 /**
  * Dialog to handle management of artifact types handled by the Central
@@ -43,7 +42,7 @@ final class ManageCorrelationPropertiesDialog extends javax.swing.JDialog {
 
     private static final Logger LOGGER = Logger.getLogger(ManageCorrelationPropertiesDialog.class.getName());
 
-    private final List<CorrelationAttribute.Type> correlationTypes;
+    private final List<CorrelationAttributeInstance.Type> correlationTypes;
 
     /**
      * Displays a dialog that allows a user to select which Type(s) should be
@@ -70,11 +69,11 @@ final class ManageCorrelationPropertiesDialog extends javax.swing.JDialog {
     private void loadData() {
         DefaultTableModel model = (DefaultTableModel) tbCorrelatableTypes.getModel();
         try {
-            EamDb dbManager = EamDb.getInstance();
+            CentralRepository dbManager = CentralRepository.getInstance();
             correlationTypes.clear();
             correlationTypes.addAll(dbManager.getDefinedCorrelationTypes());
-        } catch (EamDbException ex) {
-            Exceptions.printStackTrace(ex);
+        } catch (CentralRepoException ex) {
+            LOGGER.log(Level.WARNING, "Error loading data", ex);
         }
 
         correlationTypes.forEach((aType) -> {
@@ -132,6 +131,7 @@ final class ManageCorrelationPropertiesDialog extends javax.swing.JDialog {
         taInstructions = new javax.swing.JTextArea();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setResizable(false);
 
         org.openide.awt.Mnemonics.setLocalizedText(okButton, org.openide.util.NbBundle.getMessage(ManageCorrelationPropertiesDialog.class, "ManageCorrelationPropertiesDialog.okButton.text")); // NOI18N
         okButton.addActionListener(new java.awt.event.ActionListener() {
@@ -176,14 +176,13 @@ final class ManageCorrelationPropertiesDialog extends javax.swing.JDialog {
         tbCorrelatableTypes.setMinimumSize(new java.awt.Dimension(150, 0));
         jScrollPane1.setViewportView(tbCorrelatableTypes);
 
-        lbWarningMsg.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        lbWarningMsg.setFont(lbWarningMsg.getFont().deriveFont(lbWarningMsg.getFont().getSize()+1f));
         lbWarningMsg.setForeground(new java.awt.Color(255, 0, 0));
         org.openide.awt.Mnemonics.setLocalizedText(lbWarningMsg, org.openide.util.NbBundle.getMessage(ManageCorrelationPropertiesDialog.class, "ManageCorrelationPropertiesDialog.lbWarningMsg.text")); // NOI18N
 
         taInstructions.setEditable(false);
         taInstructions.setBackground(new java.awt.Color(240, 240, 240));
         taInstructions.setColumns(20);
-        taInstructions.setFont(new java.awt.Font("Tahoma", 0, 11)); // NOI18N
         taInstructions.setLineWrap(true);
         taInstructions.setRows(5);
         taInstructions.setText(org.openide.util.NbBundle.getMessage(ManageCorrelationPropertiesDialog.class, "ManageArtifactTypesDialog.taInstructionsMsg.text")); // NOI18N
@@ -220,14 +219,14 @@ final class ManageCorrelationPropertiesDialog extends javax.swing.JDialog {
                 .addGap(20, 20, 20)
                 .addComponent(taInstructions, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 254, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(lbWarningMsg, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(okButton)
                     .addComponent(cancelButton))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
         );
 
         pack();
@@ -243,10 +242,10 @@ final class ManageCorrelationPropertiesDialog extends javax.swing.JDialog {
         if (0 == correlationTypes.size()) {
             dispose();
         } else {
-            EamDb dbManager;
+            CentralRepository dbManager;
             try {
-                dbManager = EamDb.getInstance();
-            } catch (EamDbException ex) {
+                dbManager = CentralRepository.getInstance();
+            } catch (CentralRepoException ex) {
                 LOGGER.log(Level.SEVERE, "Failed to connect to central repository database.", ex);
                 lbWarningMsg.setText(Bundle.ManageCorrelationPropertiesDialog_okbutton_failure());
                 return;
@@ -255,7 +254,7 @@ final class ManageCorrelationPropertiesDialog extends javax.swing.JDialog {
                 try {
                     dbManager.updateCorrelationType(aType);
                     dispose();
-                } catch (EamDbException ex) {
+                } catch (CentralRepoException ex) {
                     LOGGER.log(Level.SEVERE, "Failed to update correlation properties with selections from dialog.", ex); // NON-NLS
                     lbWarningMsg.setText(Bundle.ManageCorrelationPropertiesDialog_okbutton_failure());
                 }

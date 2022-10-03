@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2018 Basis Technology Corp.
+ * Copyright 2018-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,31 +22,34 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.SwingWorker;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import org.apache.commons.io.FilenameUtils;
 import org.openide.util.NbBundle;
 import org.openide.windows.WindowManager;
 import org.sleuthkit.autopsy.casemodule.Case;
-import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
+import org.sleuthkit.autopsy.coreutils.SQLiteTableReaderException;
 import org.sleuthkit.autopsy.coreutils.Logger;
-import org.sleuthkit.datamodel.AbstractFile;
-import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.autopsy.coreutils.MessageNotifyUtil;
-import org.sleuthkit.autopsy.sqlitereader.SQLiteReader;
+import org.sleuthkit.datamodel.AbstractFile;
+import org.sleuthkit.autopsy.coreutils.SQLiteTableReader;
+import org.sleuthkit.autopsy.guiutils.JFileChooserFactory;
 
 /**
  * A file content viewer for SQLite database files.
@@ -60,15 +63,25 @@ class SQLiteViewer extends javax.swing.JPanel implements FileTypeViewer {
     private static final Logger logger = Logger.getLogger(FileViewer.class.getName());
     private final SQLiteTableView selectedTableView = new SQLiteTableView();
     private AbstractFile sqliteDbFile;
-    private File tmpDbFile;
-    private SQLiteReader sqliteReader;
+
+    private SQLiteTableReader viewReader;
+
+    private Map<String, Object> row = new LinkedHashMap<>();
+    private List<Map<String, Object>> pageOfTableRows = new ArrayList<>();
+    private List<String> currentTableHeader = new ArrayList<>();
+    private String prevTableName;
+
     private int numRows;    // num of rows in the selected table
     private int currPage = 0; // curr page of rows being displayed
+
+    SwingWorker<?, ?> worker;
+    
+    private final JFileChooserFactory chooserHelper = new JFileChooserFactory();
 
     /**
      * Constructs a file content viewer for SQLite database files.
      */
-    public SQLiteViewer() {
+    SQLiteViewer() {
         initComponents();
         jTableDataPanel.add(selectedTableView, BorderLayout.CENTER);
     }
@@ -258,19 +271,19 @@ class SQLiteViewer extends javax.swing.JPanel implements FileTypeViewer {
     }//GEN-LAST:event_tablesDropdownListActionPerformed
 
     /**
-     * The action when the Export Csv button is pressed. The file chooser window will pop
-     * up to choose where the user wants to save the csv file. The default location is case export directory.
+     * The action when the Export Csv button is pressed. The file chooser window
+     * will pop up to choose where the user wants to save the csv file. The
+     * default location is case export directory.
      *
      * @param evt the action event
      */
-
     @NbBundle.Messages({"SQLiteViewer.csvExport.fileName.empty=Please input a file name for exporting.",
-                        "SQLiteViewer.csvExport.title=Export to csv file",
-                        "SQLiteViewer.csvExport.confirm.msg=Do you want to overwrite the existing file?"})
+        "SQLiteViewer.csvExport.title=Export to csv file",
+        "SQLiteViewer.csvExport.confirm.msg=Do you want to overwrite the existing file?"})
     private void exportCsvButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportCsvButtonActionPerformed
         Case openCase = Case.getCurrentCase();
-        File caseDirectory = new File(openCase.getExportDirectory());        
-        JFileChooser fileChooser = new JFileChooser();
+        File caseDirectory = new File(openCase.getExportDirectory());
+        JFileChooser fileChooser = chooserHelper.getChooser();
         fileChooser.setDragEnabled(false);
         fileChooser.setCurrentDirectory(caseDirectory);
         //Set a filter to let the filechooser only work for csv files
@@ -286,14 +299,14 @@ class SQLiteViewer extends javax.swing.JPanel implements FileTypeViewer {
             File file = fileChooser.getSelectedFile();
             if (file.exists() && FilenameUtils.getExtension(file.getName()).equalsIgnoreCase("csv")) {
                 if (JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(this,
-                        Bundle.SQLiteViewer_csvExport_confirm_msg(), 
-                        Bundle.SQLiteViewer_csvExport_title(), 
+                        Bundle.SQLiteViewer_csvExport_confirm_msg(),
+                        Bundle.SQLiteViewer_csvExport_title(),
                         JOptionPane.YES_NO_OPTION)) {
                 } else {
                     return;
-                }            
+                }
             }
-         
+
             exportTableToCsv(file);
         }
     }//GEN-LAST:event_exportCsvButtonActionPerformed
@@ -320,10 +333,17 @@ class SQLiteViewer extends javax.swing.JPanel implements FileTypeViewer {
 
     @Override
     public void setFile(AbstractFile file) {
-        WindowManager.getDefault().getMainWindow().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-        sqliteDbFile = file;
-        processSQLiteFile();
-        WindowManager.getDefault().getMainWindow().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+        if (worker != null) {
+            worker.cancel(true);
+            worker = null;
+        }
+        resetComponent();
+
+        if (file == null) {
+            return;
+        }
+
+        processSQLiteFile(file);
     }
 
     @Override
@@ -337,16 +357,17 @@ class SQLiteViewer extends javax.swing.JPanel implements FileTypeViewer {
         tablesDropdownList.removeAllItems();
         numEntriesField.setText("");
 
-        // close DB connection to file
-        if (null != sqliteReader) {
+        if(viewReader != null) {
             try {
-                sqliteReader.close();
-                sqliteReader = null;
-            } catch (SQLException ex) {
-                logger.log(Level.SEVERE, "Failed to close DB connection to file.", ex); //NON-NLS
+                viewReader.close();
+            } catch (SQLiteTableReaderException ex) {
+                //Could not successfully close the reader, nothing we can do to recover.
             }
         }
-        
+        row = new LinkedHashMap<>();
+        pageOfTableRows = new ArrayList<>();
+        currentTableHeader = new ArrayList<>();
+        viewReader = null;
         sqliteDbFile = null;
     }
 
@@ -361,45 +382,40 @@ class SQLiteViewer extends javax.swing.JPanel implements FileTypeViewer {
         "SQLiteViewer.errorMessage.failedToQueryDatabase=The database tables in the file could not be read.",
         "SQLiteViewer.errorMessage.failedToinitJDBCDriver=The JDBC driver for SQLite could not be loaded.",
         "# {0} - exception message", "SQLiteViewer.errorMessage.unexpectedError=An unexpected error occurred:\n{0).",})
-    private void processSQLiteFile() {       
-        tablesDropdownList.removeAllItems();
-        try {
-            String localDiskPath = Case.getCurrentCaseThrows().getTempDirectory() + 
-                    File.separator + sqliteDbFile.getName();
-            sqliteReader = new SQLiteReader(sqliteDbFile, localDiskPath);
-            
-            Map<String, String> dbTablesMap = sqliteReader.getTableSchemas();
-            
-            if (dbTablesMap.isEmpty()) {
-                tablesDropdownList.addItem(Bundle.SQLiteViewer_comboBox_noTableEntry());
-                tablesDropdownList.setEnabled(false);
-            } else {
-                dbTablesMap.keySet().forEach((tableName) -> {
-                    tablesDropdownList.addItem(tableName);
-                });
+    private void processSQLiteFile(final AbstractFile file) {
+
+        WindowManager.getDefault().getMainWindow().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        worker = new SQLiteViewerWorker(file) {
+            @Override
+            public void done() {
+                if (isCancelled()) {
+                    return;
+                }
+
+                WorkerResults results;
+                try {
+                    results = get();
+                    sqliteDbFile = file;
+                    viewReader = results.getReader();
+                    tablesDropdownList.removeAllItems();
+                    Collection<String> dbTablesMap = results.getDbTablesMap();
+                    if (dbTablesMap.isEmpty()) {
+                        tablesDropdownList.addItem(Bundle.SQLiteViewer_comboBox_noTableEntry());
+                        tablesDropdownList.setEnabled(false);
+                    } else {
+                        dbTablesMap.forEach((tableName) -> {
+                            tablesDropdownList.addItem(tableName);
+                        });
+                    }
+
+                    WindowManager.getDefault().getMainWindow().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                } catch (InterruptedException | ExecutionException ex) {
+                    logger.log(Level.SEVERE, String.format("Failed to display SQL Viewer for file (%d)", file.getId()), ex);
+                }
             }
-        } catch (NoCurrentCaseException ex) {
-            logger.log(Level.SEVERE, "Current case has been closed", ex); //NON-NLS
-            MessageNotifyUtil.Message.error(Bundle.SQLiteViewer_errorMessage_noCurrentCase());
-        } catch (IOException | TskCoreException ex) {
-            logger.log(Level.SEVERE, String.format(
-                    "Failed to create temp copy of DB file '%s' (objId=%d)", //NON-NLS
-                    sqliteDbFile.getName(), sqliteDbFile.getId()), ex);
-            MessageNotifyUtil.Message.error(
-                    Bundle.SQLiteViewer_errorMessage_failedToExtractFile());
-        } catch (ClassNotFoundException ex) {
-            logger.log(Level.SEVERE, String.format(
-                    "Failed to initialize JDBC SQLite '%s' (objId=%d)", //NON-NLS
-                    sqliteDbFile.getName(), sqliteDbFile.getId()), ex);
-            MessageNotifyUtil.Message.error(
-                    Bundle.SQLiteViewer_errorMessage_failedToinitJDBCDriver());
-        } catch (SQLException ex) {
-            logger.log(Level.SEVERE, String.format(
-                    "Failed to get tables from DB file  '%s' (objId=%d)", //NON-NLS
-                    sqliteDbFile.getName(), sqliteDbFile.getId()), ex);
-            MessageNotifyUtil.Message.error(
-                    Bundle.SQLiteViewer_errorMessage_failedToQueryDatabase());
-        }
+        };
+
+        worker.execute();
     }
 
     @NbBundle.Messages({"# {0} - tableName",
@@ -407,7 +423,7 @@ class SQLiteViewer extends javax.swing.JPanel implements FileTypeViewer {
     })
     private void selectTable(String tableName) {
         try {
-            numRows = sqliteReader.getTableRowCount(tableName);
+            numRows = viewReader.getRowCount(tableName);
             numEntriesField.setText(numRows + " entries");
 
             currPage = 1;
@@ -423,124 +439,285 @@ class SQLiteViewer extends javax.swing.JPanel implements FileTypeViewer {
             } else {
                 exportCsvButton.setEnabled(false);
                 nextPageButton.setEnabled(false);
-                selectedTableView.setupTable(Collections.emptyList());
+
+                currentTableHeader = new ArrayList<>();
+                viewReader.read(tableName);
+                Map<String, Object> columnRow = new LinkedHashMap<>();
+                for (int i = 0; i < currentTableHeader.size(); i++) {
+                    columnRow.put(currentTableHeader.get(i), "");
+                }
+                selectedTableView.setupTable(Collections.singletonList(columnRow));
             }
-            
-        } catch (SQLException ex) {
-            logger.log(Level.SEVERE, String.format(
-                    "Failed to load table %s from DB file '%s' (objId=%d)", tableName, //NON-NLS
-                    sqliteDbFile.getName(), sqliteDbFile.getId()), ex);
-            MessageNotifyUtil.Message.error(
-                    Bundle.SQLiteViewer_selectTable_errorText(tableName));
+        } catch (SQLiteTableReaderException ex) {
+            logger.log(Level.WARNING, String.format("Failed to load table %s " //NON-NLS
+                    + "from DB file '%s' (objId=%d)", tableName, sqliteDbFile.getName(), //NON-NLS
+                    sqliteDbFile.getId()), ex.getMessage());
+            MessageNotifyUtil.Message.error(Bundle.SQLiteViewer_selectTable_errorText(tableName));
         }
     }
 
     @NbBundle.Messages({"# {0} - tableName",
         "SQLiteViewer.readTable.errorText=Error getting rows for table: {0}"})
     private void readTable(String tableName, int startRow, int numRowsToRead) {
-
         try {
-            List<Map<String, Object>> rows = sqliteReader.getRowsFromTable(
-                    tableName, startRow, numRowsToRead);
-            if (Objects.nonNull(rows)) {
-                selectedTableView.setupTable(rows);
-            } else {
-                selectedTableView.setupTable(Collections.emptyList());
+            //If the table name has changed, then clear our table header. SQLiteTableReader
+            //will also detect the table name has changed and begin reading it as if it
+            //were a brand new table.
+            if (!tableName.equals(prevTableName)) {
+                prevTableName = tableName;
             }
-        } catch (SQLException ex) {
-            logger.log(Level.SEVERE, String.format(
-                    "Failed to read table %s from DB file '%s' (objId=%d)", tableName, //NON-NLS
-                    sqliteDbFile.getName(), sqliteDbFile.getId()), ex);
-            MessageNotifyUtil.Message.error(
-                    Bundle.SQLiteViewer_readTable_errorText(tableName));
+            currentTableHeader = new ArrayList<>();
+            viewReader.read(tableName, numRowsToRead, startRow - 1);
+            selectedTableView.setupTable(pageOfTableRows);
+            pageOfTableRows = new ArrayList<>();
+        } catch (SQLiteTableReaderException ex) {
+            logger.log(Level.WARNING, String.format("Failed to read table %s from DB file '%s' " //NON-NLS
+                    + "(objId=%d) starting at row [%d] and limit [%d]", //NON-NLS
+                    tableName, sqliteDbFile.getName(), sqliteDbFile.getId(),
+                    startRow - 1, numRowsToRead), ex.getMessage());
+            MessageNotifyUtil.Message.error(Bundle.SQLiteViewer_readTable_errorText(tableName));
         }
     }
-    
+
     /**
-     * Converts a sqlite table into a CSV file.
-     * 
-     * @param file
-     * @param tableName
-     * @param rowMap -- A list of rows in the table, where each row is represented as a column-value
-     * map.
-     * @throws FileNotFoundException
-     * @throws IOException 
+     * Creates a new SQLiteTableReader. This class will iterate through the
+     * table row by row and pass each value to the correct function based on its
+     * data type. For our use, we want to define an action when encountering
+     * column names and an action for all other data types.
      */
-    @NbBundle.Messages({
+    private SQLiteTableReader initReader(AbstractFile sqliteFile) {
+        return new SQLiteTableReader.Builder(sqliteFile)
+                .forAllColumnNames((columnName) -> {
+                    currentTableHeader.add(columnName);
+                })
+                .forAllTableValues(getForAllStrategy()).build();
+    }
+
+    /**
+     * For every database value we encounter on our read of the table do the
+     * following: 1) Get the string representation of the value 2) Collect the
+     * values until we have a full database row. 3) If we have the full row,
+     * write it to the UI.
+     *
+     * rowIndex is purely for indicating if we have read the full row.
+     *
+     * @return Consumer that will perform the actions above. When the
+     *         SQLiteTableReader is reading, values will be passed to this
+     *         consumer.
+     */
+    private Consumer<Object> getForAllStrategy() {
+        return new Consumer<Object>() {
+            private int rowIndex = 0;
+
+            @Override
+            public void accept(Object t) {
+                rowIndex++;
+                String objectStr = (t instanceof byte[]) ? "BLOB Data not shown"
+                        : Objects.toString(t, "");
+
+                row.put(currentTableHeader.get(rowIndex - 1), objectStr);
+
+                //If we have built up a full database row, then add it to our page
+                //of rows to be displayed in the UI.
+                if (rowIndex == currentTableHeader.size()) {
+                    pageOfTableRows.add(row);
+                    row = new LinkedHashMap<>();
+                }
+                rowIndex %= currentTableHeader.size();
+            }
+
+        };
+    }
+
+    private int totalColumnCount;
+
+    @NbBundle.Messages({"SQLiteViewer.exportTableToCsv.write.errText=Failed to export table content to csv file.",
         "SQLiteViewer.exportTableToCsv.FileName=File name: ",
         "SQLiteViewer.exportTableToCsv.TableName=Table name: "
     })
-    public void exportTableToCSV(File file, String tableName, 
-            List<Map<String, Object>> rowMap) throws FileNotFoundException, IOException{
-        
-        File csvFile;
-        String fileName = file.getName();
-        if (FilenameUtils.getExtension(fileName).equalsIgnoreCase("csv")) {
-            csvFile = file;
-        } else {
-            csvFile = new File(file.toString() + ".csv");
-        }
-
-        try (FileOutputStream out = new FileOutputStream(csvFile, false)) {
-
-            out.write((Bundle.SQLiteViewer_exportTableToCsv_FileName() + csvFile.getName() + "\n").getBytes());
-            out.write((Bundle.SQLiteViewer_exportTableToCsv_TableName() + tableName + "\n").getBytes());
-            
-            String header = createColumnHeader(rowMap.get(0)).concat("\n");
-            out.write(header.getBytes());
-
-            for (Map<String, Object> maps : rowMap) {
-                String row = maps.values()
-                        .stream()
-                        .map(Object::toString)
-                        .collect(Collectors.joining(","))
-                        .concat("\n");
-                out.write(row.getBytes());
-            }
-        }
-    }
-    
-    @NbBundle.Messages({
-        "SQLiteViewer.exportTableToCsv.write.errText=Failed to export table content to csv file.",
-    })
     private void exportTableToCsv(File file) {
-        String tableName = (String) this.tablesDropdownList.getSelectedItem();
-        try {
-            List<Map<String, Object>> currentTableRows = 
-                    sqliteReader.getRowsFromTable(tableName);
+        final File csvFile = new File(file.toString() + ".csv");
+        final String tableName = (String) this.tablesDropdownList.getSelectedItem();
 
-            if (Objects.isNull(currentTableRows) || currentTableRows.isEmpty()) {
-                logger.log(Level.INFO, String.format(
-                        "The table %s is empty. (objId=%d)", tableName, //NON-NLS
-                        sqliteDbFile.getId()));
-            } else {
-                exportTableToCSV(file, tableName, currentTableRows);
+        SwingWorker<String, Void> csvWorker = new SwingWorker<String, Void>() {
+            @Override
+            protected String doInBackground() throws Exception {
+                try (FileOutputStream out = new FileOutputStream(csvFile, false)) {
+                    try (SQLiteTableReader sqliteStream = new SQLiteTableReader.Builder(sqliteDbFile)
+                            .forAllColumnNames(getColumnNameCSVStrategy(out))
+                            .forAllTableValues(getForAllCSVStrategy(out)).build()) {
+                        totalColumnCount = sqliteStream.getColumnCount(tableName);
+                        sqliteStream.read(tableName);
+                    }
+                } catch (IOException | SQLiteTableReaderException | RuntimeException ex) {
+                    logger.log(Level.WARNING, String.format("Failed to export table [%s]"
+                            + " to CSV in sqlite file '%s' (objId=%d)", tableName, sqliteDbFile.getName(),
+                            sqliteDbFile.getId()), ex.getMessage()); //NON-NLS
+
+                    return Bundle.SQLiteViewer_exportTableToCsv_write_errText();
+                }
+                return "";
             }
-        } catch (SQLException ex) {
-            logger.log(Level.SEVERE, String.format(
-                    "Failed to read table %s from DB file '%s' (objId=%d)", //NON-NLS
-                    tableName, sqliteDbFile.getName(), sqliteDbFile.getId()), ex); 
-            MessageNotifyUtil.Message.error(
-                    Bundle.SQLiteViewer_readTable_errorText(tableName));
-        } catch (IOException ex) {
-            logger.log(Level.SEVERE, String.format(
-                    "Failed to export table %s to file '%s'", tableName, file.getName()), ex); //NON-NLS
-            MessageNotifyUtil.Message.error(
-                    Bundle.SQLiteViewer_exportTableToCsv_write_errText());
+
+            @Override
+            public void done() {
+                try {
+                    String message = get();
+                    if (!message.isEmpty()) {
+                        MessageNotifyUtil.Message.error(message);
+                    }
+                } catch (InterruptedException | ExecutionException ex) {
+                    logger.log(Level.SEVERE, "Failure occurred writing sql csv file.", ex);
+                }
+            }
+
+        };
+
+        csvWorker.execute();
+    }
+
+    /**
+     * For every column name we encounter on our read of the table do the
+     * following: 1) Format the name so that it is comma seperated 2) Write the
+     * value to the output stream.
+     *
+     * columnIndex is purely for keeping track of where the column name is in
+     * the table so the value can be correctly formatted.
+     *
+     * @param out Output stream that this database table is being written to.
+     *
+     * @return Consumer that will perform the actions above. When the
+     *         SQLiteTableReader is reading, values will be passed to this
+     *         consumer.
+     */
+    private Consumer<String> getColumnNameCSVStrategy(FileOutputStream out) {
+        return new Consumer<String>() {
+            private int columnIndex = 0;
+
+            @Override
+            public void accept(String columnName) {
+                columnIndex++;
+                String csvString = columnName;
+                //Format the value to adhere to the format of a CSV file
+                if (columnIndex == 1) {
+                    csvString = "\"" + csvString + "\"";
+                } else {
+                    csvString = ",\"" + csvString + "\"";
+                }
+                if (columnIndex == totalColumnCount) {
+                    csvString += "\n";
+                }
+
+                try {
+                    out.write(csvString.getBytes());
+                } catch (IOException ex) {
+                    /*
+                     * If we can no longer write to the output stream, toss a
+                     * runtime exception to get out of iteration. We explicitly
+                     * catch this in exportTableToCsv() above.
+                     */
+                    throw new RuntimeException(ex);
+                }
+            }
+        };
+    }
+
+    /**
+     * For every database value we encounter on our read of the table do the
+     * following: 1) Get the string representation of the value 2) Format it so
+     * that it adheres to the CSV format. 3) Write it to the output file.
+     *
+     * rowIndex is purely for keeping track of positioning of the database value
+     * in the row, so that it can be properly formatted.
+     *
+     * @param out Output file
+     *
+     * @return Consumer that will perform the actions above. When the
+     *         SQLiteTableReader is reading, values will be passed to this
+     *         consumer.
+     */
+    private Consumer<Object> getForAllCSVStrategy(FileOutputStream out) {
+        return new Consumer<Object>() {
+            private int rowIndex = 0;
+
+            @Override
+            public void accept(Object tableValue) {
+                rowIndex++;
+                //Substitute string representation of blob with placeholder text.
+                //Automatically wrap the value in quotes in case it contains commas.
+                String objectStr = (tableValue instanceof byte[])
+                        ? "BLOB Data not shown" : Objects.toString(tableValue, "");
+                objectStr = "\"" + objectStr + "\"";
+
+                if (rowIndex > 1) {
+                    objectStr = "," + objectStr;
+                }
+                if (rowIndex == totalColumnCount) {
+                    objectStr += "\n";
+                }
+
+                try {
+                    out.write(objectStr.getBytes());
+                } catch (IOException ex) {
+                    /*
+                     * If we can no longer write to the output stream, toss a
+                     * runtime exception to get out of iteration. We explicitly
+                     * catch this in exportTableToCsv() above.
+                     */
+                    throw new RuntimeException(ex);
+                }
+                rowIndex %= totalColumnCount;
+            }
+        };
+    }
+
+    @Override
+    public boolean isSupported(AbstractFile file) {
+        return true;
+    }
+
+    /**
+     * SwingWorker that will gather the data needed to display the given 
+     * file in the SQL viewer.
+     */
+    private class SQLiteViewerWorker extends SwingWorker<WorkerResults, Void> {
+
+        private final AbstractFile file;
+
+        SQLiteViewerWorker(AbstractFile file) {
+            this.file = file;
+        }
+
+        @Override
+        protected WorkerResults doInBackground() throws Exception {
+            SQLiteTableReader reader = initReader(file);
+            Collection<String> dbTablesMap = reader.getTableNames();
+
+            return new WorkerResults(reader, dbTablesMap);
+        }
+
+    }
+
+    /*
+     * Stores the data gather from the 
+     */
+    private class WorkerResults {
+
+        private final SQLiteTableReader reader;
+        private final Collection<String> dbTablesMap;
+
+        WorkerResults(SQLiteTableReader reader, Collection<String> dbTablesMap) {
+            this.reader = reader;
+            this.dbTablesMap = dbTablesMap;
+        }
+
+        SQLiteTableReader getReader() {
+            return reader;
+        }
+
+        Collection<String> getDbTablesMap() {
+            return dbTablesMap;
         }
     }
-    
-    /**
-     * Returns a comma seperated header string from the keys of the column
-     * row map.
-     * 
-     * @param row -- column header row map
-     * @return -- comma seperated header string
-     */
-    private String createColumnHeader(Map<String, Object> row) {
-        return row.entrySet()
-                .stream()
-                .map(Map.Entry::getKey)
-                .collect(Collectors.joining(","));
-    }
+
 }

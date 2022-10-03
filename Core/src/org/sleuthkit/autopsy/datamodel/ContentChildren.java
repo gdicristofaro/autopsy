@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011-2014 Basis Technology Corp.
+ * Copyright 2011-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,23 +26,22 @@ import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.Directory;
 import org.sleuthkit.datamodel.FileSystem;
+import org.sleuthkit.datamodel.LocalDirectory;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.VolumeSystem;
 
 /**
  * Makes the children nodes / keys for a given content object. Has knowledge
  * about the structure of the directory tree and what levels should be ignored.
- * TODO consider a ContentChildren child factory
  */
 class ContentChildren extends AbstractContentChildren<Content> {
 
     private static final Logger logger = Logger.getLogger(ContentChildren.class.getName());
-    //private static final int MAX_CHILD_COUNT = 1000000;
 
     private final Content parent;
 
     ContentChildren(Content parent) {
-        super(); //initialize lazy behavior
+        super("content_" + Long.toString(parent.getId()));
         this.parent = parent;
     }
 
@@ -88,6 +87,13 @@ class ContentChildren extends AbstractContentChildren<Content> {
                 } else {
                     children.add(c);
                 }
+            } else if (c instanceof LocalDirectory) {
+                LocalDirectory localDir = (LocalDirectory) c;
+                if (localDir.isRoot()) {
+                    children.addAll(getDisplayChildren(localDir));
+                } else {
+                    children.add(c);
+                }
             } else {
                 children.add(c);
             }
@@ -96,27 +102,27 @@ class ContentChildren extends AbstractContentChildren<Content> {
     }
 
     @Override
-    protected void addNotify() {
-        super.addNotify();
-
-        //TODO check global settings
-        //if above limit, query and return subrange
-        //StopWatch s2 = new StopWatch();
-        //s2.start();
-        //logger.log(Level.INFO, "GETTING CHILDREN CONTENT for parent: " + parent.getName());
-        List<Content> children = getDisplayChildren(parent);
-        //s2.stop();
-        //logger.log(Level.INFO, "GOT CHILDREN CONTENTS:" + children.size() + ", took: " + s2.getElapsedTime());
-
-        //limit number children
-        //setKeys(children.subList(0, Math.min(children.size(), MAX_CHILD_COUNT)));
-        setKeys(children);
+    protected List<Content> makeKeys() {
+        List<Content> contentList = getDisplayChildren(parent);
+        
+        // Call the getUniquePath method to cache the value for future use
+        // in the EDT
+        contentList.forEach(content->{
+            try {
+                content.getUniquePath();
+            } catch (TskCoreException ex) {
+                 logger.log(Level.SEVERE, String.format("Failed attempt to cache the "
+                    + "unique path of the abstract file instance. Name: %s (objID=%d)",
+                    content.getName(), content.getId()), ex);
+            }
+        });
+        
+        return contentList;
     }
 
     @Override
-    protected void removeNotify() {
-        super.removeNotify();
-        setKeys(new ArrayList<>());
+    protected void onAdd() {
+        // No-op
     }
 
     /**
@@ -125,7 +131,11 @@ class ContentChildren extends AbstractContentChildren<Content> {
      * them).
      */
     void refreshChildren() {
-        List<Content> children = getDisplayChildren(parent);
-        setKeys(children);
+        refresh(true);
+    }
+
+    @Override
+    protected void onRemove() {
+        // No-op
     }
 }

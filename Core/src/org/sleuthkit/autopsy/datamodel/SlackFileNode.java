@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +19,7 @@
 package org.sleuthkit.autopsy.datamodel;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +29,7 @@ import org.openide.util.Utilities;
 import org.sleuthkit.autopsy.actions.AddContentTagAction;
 import org.sleuthkit.autopsy.actions.DeleteFileContentTagAction;
 import org.sleuthkit.autopsy.coreutils.ContextMenuExtensionPoint;
+import org.sleuthkit.autopsy.directorytree.ExportCSVAction;
 import org.sleuthkit.autopsy.directorytree.ExtractAction;
 import org.sleuthkit.autopsy.directorytree.NewWindowViewAction;
 import org.sleuthkit.autopsy.directorytree.ViewContextAction;
@@ -62,7 +64,7 @@ public class SlackFileNode extends AbstractFsContentNode<AbstractFile> {
         // set name, display name, and icon
         if (file.isDirNameFlagSet(TSK_FS_NAME_FLAG_ENUM.UNALLOC)) {
             if (file.getType().equals(TSK_DB_FILES_TYPE_ENUM.CARVED)) {
-                this.setIconBaseWithExtension("org/sleuthkit/autopsy/images/carved-file-icon-16.png"); //NON-NLS
+                this.setIconBaseWithExtension("org/sleuthkit/autopsy/images/carved-file-x-icon-16.png"); //NON-NLS
             } else {
                 this.setIconBaseWithExtension("org/sleuthkit/autopsy/images/file-icon-deleted.png"); //NON-NLS
             }
@@ -74,17 +76,15 @@ public class SlackFileNode extends AbstractFsContentNode<AbstractFile> {
     @Override
     public Action[] getActions(boolean popup) {
         List<Action> actionsList = new ArrayList<>();
-        for (Action a : super.getActions(true)) {
-            actionsList.add(a);
-        }
         if (!this.getDirectoryBrowseMode()) {
-            actionsList.add(new ViewContextAction(NbBundle.getMessage(this.getClass(), "SlackFileNode.viewFileInDir.text"), this.content));
+            actionsList.add(new ViewContextAction(NbBundle.getMessage(this.getClass(), "SlackFileNode.getActions.viewFileInDir.text"), this.content));
             actionsList.add(null); // creates a menu separator
         }
         actionsList.add(new NewWindowViewAction(
                 NbBundle.getMessage(this.getClass(), "SlackFileNode.getActions.viewInNewWin.text"), this));
         actionsList.add(null); // creates a menu separator
         actionsList.add(ExtractAction.getInstance());
+        actionsList.add(ExportCSVAction.getInstance());
         actionsList.add(null); // creates a menu separator        
         actionsList.add(AddContentTagAction.getInstance());
         
@@ -95,6 +95,8 @@ public class SlackFileNode extends AbstractFsContentNode<AbstractFile> {
         }
         
         actionsList.addAll(ContextMenuExtensionPoint.getActions());
+        actionsList.add(null);
+        actionsList.addAll(Arrays.asList(super.getActions(true)));
         return actionsList.toArray(new Action[actionsList.size()]);
     }
 

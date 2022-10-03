@@ -94,6 +94,10 @@ public enum FileTypeUtils {
         ImageIO.scanForPlugins();
         //add all extension ImageIO claims to support
         imageExtensions.addAll(Stream.of(ImageIO.getReaderFileSuffixes())
+                // remove any empty extension types provided by ImageIO.getReaderFileSuffixes()
+                // This prevents extensions added by SPI implementations from causing errors 
+                // (i.e. 'jai-imageio' utilized with IcePDF)
+                .filter((extension) -> StringUtils.isNotBlank(extension))        
                 .map(String::toLowerCase)
                 .collect(Collectors.toList()));
         //add list of known image extensions
@@ -144,8 +148,12 @@ public enum FileTypeUtils {
          * are not images) to show up in Image Gallery.
          * supportedMimeTypes.addAll(Arrays.asList("application/x-emf"));
          */
-        //add list of mimetypes ImageIO claims to support
+         //add list of mimetypes ImageIO claims to support
         supportedMimeTypes.addAll(Stream.of(ImageIO.getReaderMIMETypes())
+                // remove any empty mime types provided by ImageIO.getReaderMIMETypes()
+                // This prevents mime types added by SPI implementations from causing errors 
+                // (i.e. 'jai-imageio' utilized with IcePDF)
+                .filter((mimeType) -> StringUtils.isNotBlank(mimeType))
                 .map(String::toLowerCase)
                 .collect(Collectors.toList()));
 
@@ -219,8 +227,13 @@ public enum FileTypeUtils {
      *         type. False if a non image/video mimetype. empty Optional if a
      *         mimetype could not be detected.
      */
-    static boolean hasDrawableMIMEType(AbstractFile file) throws FileTypeDetector.FileTypeDetectorInitException {
-        String mimeType = getFileTypeDetector().getMIMEType(file).toLowerCase();
+    static boolean hasDrawableMIMEType(AbstractFile file) {
+        String mimeType = file.getMIMEType();
+        if (mimeType == null) {
+            return false;
+        }
+        
+        mimeType = mimeType.toLowerCase();
         return isDrawableMimeType(mimeType) || (mimeType.equals("audio/x-aiff") && "tiff".equalsIgnoreCase(file.getNameExtension()));
     }
 
@@ -234,13 +247,13 @@ public enum FileTypeUtils {
      *         available, a video extension.
      */
     public static boolean hasVideoMIMEType(AbstractFile file) {
-        try {
-            String mimeType = getFileTypeDetector().getMIMEType(file).toLowerCase();
-            return mimeType.startsWith("video/") || videoMimeTypes.contains(mimeType);
-        } catch (FileTypeDetector.FileTypeDetectorInitException ex) {
-            LOGGER.log(Level.SEVERE, "Error determining MIME type of " + getContentPathSafe(file), ex);
+        String mimeType = file.getMIMEType();       
+        if (mimeType == null) {
             return false;
         }
+        
+        mimeType = mimeType.toLowerCase();
+        return mimeType.startsWith("video/") || videoMimeTypes.contains(mimeType);
     }
 
     /**

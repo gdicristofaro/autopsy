@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011-2018 Basis Technology Corp.
+ * Copyright 2011-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,23 +20,23 @@ package org.sleuthkit.autopsy.test;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.logging.Level;
-
-import org.openide.util.Exceptions;
 import org.openide.util.NbBundle;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
-import org.sleuthkit.autopsy.casemodule.services.Blackboard;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.ingest.FileIngestModuleAdapter;
 import org.sleuthkit.autopsy.ingest.IngestJobContext;
 import org.sleuthkit.datamodel.AbstractFile;
+import org.sleuthkit.datamodel.Blackboard;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
+import org.sleuthkit.datamodel.Score;
 import org.sleuthkit.datamodel.TskCoreException;
 
 /**
- * A file ingest module that creates some interestng artifacts 
+ * A file ingest module that creates some interesting artifacts 
  * with attributes based on files for test purposes.
  */
 @NbBundle.Messages({
@@ -48,14 +48,14 @@ final class InterestingArtifactCreatorIngestModule extends FileIngestModuleAdapt
     private static final String MODULE_NAME = InterestingArtifactCreatorIngestModuleFactory.getModuleName();
     private static final String[] ARTIFACT_TYPE_NAMES = {"TSK_WEB_BOOKMARK", "TSK_KEYWORD_HIT", "TSK_CALLLOG"};
     private static final String[] ARTIFACT_DISPLAY_NAMES = {"Web Bookmarks", "Keyword Hits", "Call Logs"};
-    private static final String INT_ARTIFACT_TYPE_NAME = BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT.getLabel();
-    private static final String INT_ARTIFACT_DISPLAY_NAME = BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ARTIFACT_HIT.getDisplayName();
+    private static final String INT_ARTIFACT_TYPE_NAME = BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ITEM.getLabel();
+    private static final String INT_ARTIFACT_DISPLAY_NAME = BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ITEM.getDisplayName();
     private BlackboardArtifact.Type artifactType;
 
     @Override
     public void startUp(IngestJobContext context) throws IngestModuleException {
         try {
-            Blackboard blackboard = Case.getCurrentCaseThrows().getServices().getBlackboard();
+            Blackboard blackboard = Case.getCurrentCaseThrows().getServices().getArtifactsBlackboard();
             artifactType = blackboard.getOrAddArtifactType(INT_ARTIFACT_TYPE_NAME, INT_ARTIFACT_DISPLAY_NAME);
          } catch (Blackboard.BlackboardException | NoCurrentCaseException ex) {
             throw new IngestModuleException(Bundle.InterestingArtifactCreatorIngestModule_exceptionMessage_errorCreatingCustomType(), ex);
@@ -77,13 +77,13 @@ final class InterestingArtifactCreatorIngestModule extends FileIngestModuleAdapt
              * type.
              */
             int randomArtIndex = (int) (Math.random() * 3);
-            Blackboard blackboard = Case.getCurrentCaseThrows().getServices().getBlackboard();
+            Blackboard blackboard = Case.getCurrentCaseThrows().getServices().getArtifactsBlackboard();
             BlackboardArtifact.Type artifactTypeBase = blackboard.getOrAddArtifactType(ARTIFACT_TYPE_NAMES[randomArtIndex], ARTIFACT_DISPLAY_NAMES[randomArtIndex]);
-            BlackboardArtifact artifactBase = file.newArtifact(artifactTypeBase.getTypeID());
+            
             Collection<BlackboardAttribute> baseAttributes = new ArrayList<>();
             String commentTxt;
             BlackboardAttribute baseAttr;
-            switch (artifactBase.getArtifactTypeID()) {
+            switch (artifactTypeBase.getTypeID()) {
                 case 2:
                     commentTxt = "www.placeholderWebsiteDOTCOM";
                     baseAttr = new BlackboardAttribute(
@@ -112,8 +112,20 @@ final class InterestingArtifactCreatorIngestModule extends FileIngestModuleAdapt
                     commentTxt = "DEPENDENT ON ARTIFACT TYPE";
                     break;
             }
-            artifactBase.addAttributes(baseAttributes);
-            BlackboardArtifact artifact = file.newArtifact(artifactType.getTypeID());
+            
+            BlackboardArtifact artifactBase;
+            switch (artifactTypeBase.getCategory()) {
+                case DATA_ARTIFACT:
+                    artifactBase = file.newDataArtifact(artifactTypeBase, baseAttributes);
+                    break;
+                case ANALYSIS_RESULT:
+                    artifactBase = file.newAnalysisResult(artifactTypeBase, Score.SCORE_UNKNOWN, null, null, null, baseAttributes)
+                            .getAnalysisResult();
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown category type: " + artifactTypeBase.getCategory().getDisplayName());
+            }
+            
             Collection<BlackboardAttribute> attributes = new ArrayList<>();
             BlackboardAttribute att = new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME, MODULE_NAME, "ArtifactsAndTxt");
 
@@ -123,12 +135,24 @@ final class InterestingArtifactCreatorIngestModule extends FileIngestModuleAdapt
             attributes.add(att2);
             attributes.add(att3);
             attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT, MODULE_NAME, artifactBase.getArtifactID()));
-            artifact.addAttributes(attributes);
+            
+            switch (artifactType.getCategory()) {
+                case DATA_ARTIFACT:
+                    file.newDataArtifact(artifactType, attributes);
+                    break;
+                case ANALYSIS_RESULT:
+                    file.newAnalysisResult(artifactType, Score.SCORE_UNKNOWN, null, null, null, attributes)
+                            .getAnalysisResult();
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown category type: " + artifactType.getCategory().getDisplayName());
+            }
+            
         } catch (TskCoreException | NoCurrentCaseException ex) {
             logger.log(Level.SEVERE, String.format("Failed to process file (obj_id = %d)", file.getId()), ex);
             return ProcessResult.ERROR;
         } catch (Blackboard.BlackboardException ex) {
-            Exceptions.printStackTrace(ex);
+            logger.log(Level.WARNING, "Blackboard Exception processing file with obj_id = " + file.getId(), ex);
         }
         return ProcessResult.OK;
     }

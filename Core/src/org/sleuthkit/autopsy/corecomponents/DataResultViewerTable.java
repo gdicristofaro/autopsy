@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2012-2018 Basis Technology Corp.
+ * Copyright 2012-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,32 +18,41 @@
  */
 package org.sleuthkit.autopsy.corecomponents;
 
-import java.awt.Color;
+import com.google.common.eventbus.Subscribe;
 import java.awt.Component;
 import java.awt.Cursor;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
 import java.awt.dnd.DnDConstants;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.beans.FeatureDescriptor;
+import java.beans.PropertyChangeEvent;
 import java.beans.PropertyVetoException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
+import java.util.prefs.PreferenceChangeEvent;
 import java.util.prefs.Preferences;
+import javax.swing.ImageIcon;
+import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
+import static javax.swing.SwingConstants.CENTER;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableColumnModelListener;
+import javax.swing.event.TreeExpansionListener;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
@@ -58,13 +67,26 @@ import org.openide.nodes.AbstractNode;
 import org.openide.nodes.Children;
 import org.openide.nodes.Node;
 import org.openide.nodes.Node.Property;
+import org.openide.nodes.NodeEvent;
+import org.openide.nodes.NodeListener;
+import org.openide.nodes.NodeMemberEvent;
+import org.openide.nodes.NodeReorderEvent;
+import org.openide.util.ImageUtilities;
 import org.openide.util.NbBundle;
 import org.openide.util.NbPreferences;
 import org.openide.util.lookup.ServiceProvider;
+import org.sleuthkit.autopsy.core.UserPreferences;
 import org.sleuthkit.autopsy.corecomponentinterfaces.DataResultViewer;
 import org.sleuthkit.autopsy.coreutils.Logger;
+import org.sleuthkit.autopsy.coreutils.MessageNotifyUtil;
 import org.sleuthkit.autopsy.coreutils.ThreadConfined;
+import org.sleuthkit.autopsy.datamodel.NodeProperty;
 import org.sleuthkit.autopsy.datamodel.NodeSelectionInfo;
+import org.sleuthkit.autopsy.datamodel.BaseChildFactory;
+import org.sleuthkit.autopsy.datamodel.BaseChildFactory.PageChangeEvent;
+import org.sleuthkit.autopsy.datamodel.BaseChildFactory.PageCountChangeEvent;
+import org.sleuthkit.autopsy.datamodel.BaseChildFactory.PageSizeChangeEvent;
+import org.sleuthkit.datamodel.Score.Significance;
 
 /**
  * A tabular result viewer that displays the children of the given root node
@@ -82,15 +104,55 @@ public class DataResultViewerTable extends AbstractDataResultViewer {
 
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(DataResultViewerTable.class.getName());
+
+    // How many rows to sample in order to determine column width.
+    private static final int SAMPLE_ROW_NUM = 100;
+
+    // The padding to be added in addition to content size when considering column width.
+    private static final int COLUMN_PADDING = 15;
+
+    // The minimum column width.
+    private static final int MIN_COLUMN_WIDTH = 30;
+
+    // The maximum column width.
+    private static final int MAX_COLUMN_WIDTH = 300;
+
+    // The minimum row height to use when calculating whether scroll bar will be used.
+    private static final int MIN_ROW_HEIGHT = 10;
+
+    // The width of the scroll bar.
+    private static final int SCROLL_BAR_WIDTH = ((Integer) UIManager.get("ScrollBar.width")).intValue();
+
+    // Any additional padding to be used for the first column.
+    private static final int FIRST_COL_ADDITIONAL_WIDTH = 0;
+
+    private static final String NOTEPAD_ICON_PATH = "org/sleuthkit/autopsy/images/notepad16.png";
+    private static final String RED_CIRCLE_ICON_PATH = "org/sleuthkit/autopsy/images/red-circle-exclamation.png";
+    private static final String YELLOW_CIRCLE_ICON_PATH = "org/sleuthkit/autopsy/images/yellow-circle-yield.png";
+    private static final ImageIcon COMMENT_ICON = new ImageIcon(ImageUtilities.loadImage(NOTEPAD_ICON_PATH, false));
+    private static final ImageIcon INTERESTING_SCORE_ICON = new ImageIcon(ImageUtilities.loadImage(YELLOW_CIRCLE_ICON_PATH, false));
+    private static final ImageIcon NOTABLE_ICON_SCORE = new ImageIcon(ImageUtilities.loadImage(RED_CIRCLE_ICON_PATH, false));
     @NbBundle.Messages("DataResultViewerTable.firstColLbl=Name")
     static private final String FIRST_COLUMN_LABEL = Bundle.DataResultViewerTable_firstColLbl();
-    static private final Color TAGGED_ROW_COLOR = new Color(255, 255, 195);
     private final String title;
     private final Map<String, ETableColumn> columnMap;
     private final Map<Integer, Property<?>> propertiesMap;
     private final Outline outline;
     private final TableListener outlineViewListener;
+    private final IconRendererTableListener iconRendererListener;
     private Node rootNode;
+
+    /**
+     * Multiple nodes may have been visited in the context of this
+     * DataResultViewerTable. We keep track of the page state for these nodes in
+     * the following map.
+     */
+    private final Map<String, PagingSupport> nodeNameToPagingSupportMap = new ConcurrentHashMap<>();
+
+    /**
+     * The paging support instance for the current node.
+     */
+    private PagingSupport pagingSupport = null;
 
     /**
      * Constructs a tabular result viewer that displays the children of the
@@ -137,6 +199,15 @@ public class DataResultViewerTable extends AbstractDataResultViewer {
          */
         initComponents();
 
+        initializePagingSupport();
+
+        /*
+         * Disable the CSV export button for the common properties results
+         */
+        if (this instanceof org.sleuthkit.autopsy.commonpropertiessearch.CommonAttributesSearchResultsViewerTable) {
+            exportCSVButton.setEnabled(false);
+        }
+
         /*
          * Configure the child OutlineView (explorer view) component.
          */
@@ -147,7 +218,6 @@ public class DataResultViewerTable extends AbstractDataResultViewer {
         outline.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         outline.setRootVisible(false);
         outline.setDragEnabled(false);
-        outline.setDefaultRenderer(Object.class, new ColorTagCustomRenderer());
 
         /*
          * Add a table listener to the child OutlineView (explorer view) to
@@ -156,11 +226,42 @@ public class DataResultViewerTable extends AbstractDataResultViewer {
         outlineViewListener = new TableListener();
         outline.getColumnModel().addColumnModelListener(outlineViewListener);
 
+        iconRendererListener = new IconRendererTableListener();
+        outline.getColumnModel().addColumnModelListener(iconRendererListener);
+
         /*
          * Add a mouse listener to the child OutlineView (explorer view) to make
          * sure the first column of the table is kept in place.
          */
         outline.getTableHeader().addMouseListener(outlineViewListener);
+    }
+
+    private void initializePagingSupport() {
+        if (pagingSupport == null) {
+            pagingSupport = new PagingSupport("");
+        }
+
+        // Start out with paging controls invisible
+        pagingSupport.togglePageControls(false);
+
+        /**
+         * Set up a change listener so we know when the user changes the page
+         * size
+         */
+        UserPreferences.addChangeListener((PreferenceChangeEvent evt) -> {
+            if (evt.getKey().equals(UserPreferences.RESULTS_TABLE_PAGE_SIZE)) {
+                setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                /**
+                 * If multiple nodes have been viewed we have to notify all of
+                 * them about the change in page size.
+                 */
+                nodeNameToPagingSupportMap.values().forEach((ps) -> {
+                    ps.postPageSizeChangeEvent();
+                });
+                
+                setCursor(null);
+            }
+        });
     }
 
     /**
@@ -179,14 +280,15 @@ public class DataResultViewerTable extends AbstractDataResultViewer {
 
     /**
      * Gets the title of this tabular result viewer.
-     * @return  title of tab.
+     *
+     * @return title of tab.
      */
     @Override
     @NbBundle.Messages("DataResultViewerTable.title=Table")
     public String getTitle() {
         return title;
     }
-    
+
     /**
      * Indicates whether a given node is supported as a root node for this
      * tabular viewer.
@@ -208,11 +310,11 @@ public class DataResultViewerTable extends AbstractDataResultViewer {
     @Override
     @ThreadConfined(type = ThreadConfined.ThreadType.AWT)
     public void setNode(Node rootNode) {
-        if (! SwingUtilities.isEventDispatchThread()) {
+        if (!SwingUtilities.isEventDispatchThread()) {
             LOGGER.log(Level.SEVERE, "Attempting to run setNode() from non-EDT thread");
             return;
         }
-        
+
         /*
          * The quick filter must be reset because when determining column width,
          * ETable.getRowCount is called, and the documentation states that quick
@@ -224,20 +326,69 @@ public class DataResultViewerTable extends AbstractDataResultViewer {
 
         this.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         try {
+            if (rootNode != null) {
+                this.rootNode = rootNode;
+
+                /**
+                 * Check to see if we have previously created a paging support
+                 * class for this node.
+                 */
+                if (!Node.EMPTY.equals(rootNode)) {
+                    String nodeName = rootNode.getName();
+                    pagingSupport = nodeNameToPagingSupportMap.get(nodeName);
+                    if (pagingSupport == null) {
+                        pagingSupport = new PagingSupport(nodeName);
+                        nodeNameToPagingSupportMap.put(nodeName, pagingSupport);
+                    }
+                    pagingSupport.updateControls();
+
+                    rootNode.addNodeListener(new NodeListener() {
+                        @Override
+                        public void childrenAdded(NodeMemberEvent nme) {
+                            /**
+                             * This is the only somewhat reliable way I could
+                             * find to reset the cursor after a page change.
+                             * When you change page the old children nodes will
+                             * be removed and new ones added.
+                             */
+                            SwingUtilities.invokeLater(() -> {
+                                setCursor(null);
+                            });
+                        }
+
+                        @Override
+                        public void childrenRemoved(NodeMemberEvent nme) {
+                            SwingUtilities.invokeLater(() -> {
+                                setCursor(null);
+                            });
+                        }
+
+                        @Override
+                        public void childrenReordered(NodeReorderEvent nre) {
+                            // No-op
+                        }
+
+                        @Override
+                        public void nodeDestroyed(NodeEvent ne) {
+                            // No-op
+                        }
+
+                        @Override
+                        public void propertyChange(PropertyChangeEvent evt) {
+                            // No-op
+                        }
+                    });
+                }
+            }
+
             /*
              * If the given node is not null and has children, set it as the
              * root context of the child OutlineView, otherwise make an
              * "empty"node the root context.
-             *
-             * IMPORTANT NOTE: This is the first of many times where a
-             * getChildren call on the current root node causes all of the
-             * children of the root node to be created and defeats lazy child
-             * node creation, if it is enabled. It also likely leads to many
-             * case database round trips.
              */
             if (rootNode != null && rootNode.getChildren().getNodesCount() > 0) {
-                this.rootNode = rootNode;
                 this.getExplorerManager().setRootContext(this.rootNode);
+                outline.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
                 setupTable();
             } else {
                 Node emptyNode = new AbstractNode(Children.LEAF);
@@ -252,9 +403,19 @@ public class DataResultViewerTable extends AbstractDataResultViewer {
     }
 
     /**
-     * Sets up the Outline view of this tabular result viewer by creating
-     * column headers based on the children of the current root node. The
-     * persisted column order, sorting and visibility is used.
+     * Adds a tree expansion listener to the OutlineView of this tabular results
+     * viewer.
+     *
+     * @param listener The listener
+     */
+    protected void addTreeExpansionListener(TreeExpansionListener listener) {
+        outlineView.addTreeExpansionListener(listener);
+    }
+
+    /**
+     * Sets up the Outline view of this tabular result viewer by creating column
+     * headers based on the children of the current root node. The persisted
+     * column order, sorting and visibility is used.
      */
     private void setupTable() {
         /*
@@ -280,19 +441,10 @@ public class DataResultViewerTable extends AbstractDataResultViewer {
             firstProp = props.remove(0);
         }
 
-        /*
-         * show the horizontal scroll panel and show all the content & header If
-         * there is only one column (which was removed from props above) Just
-         * let the table resize itself.
-         */
-        outline.setAutoResizeMode((props.isEmpty()) ? JTable.AUTO_RESIZE_ALL_COLUMNS : JTable.AUTO_RESIZE_OFF);
-       
         assignColumns(props); // assign columns to match the properties
         if (firstProp != null) {
             ((DefaultOutlineModel) outline.getOutlineModel()).setNodesColumnLabel(firstProp.getDisplayName());
         }
-
-        setColumnWidths();
 
         /*
          * Load column sorting information from preferences file and apply it to
@@ -316,41 +468,56 @@ public class DataResultViewerTable extends AbstractDataResultViewer {
         loadColumnVisibility();
 
         /*
+         * Set the column widths.
+         *
+         * IMPORTANT: This needs to come after the preceding calls to determine
+         * the columns that will be displayed and their layout, which includes a
+         * call to ResultViewerPersistence.getAllChildProperties(). That method
+         * calls Children.getNodes(true) on the root node to ensure ALL of the
+         * nodes have been created in the NetBeans asynch child creation thread,
+         * and then uses the first one hundred nodes to determine which columns
+         * to display, including their header text.
+         */
+        setColumnWidths();
+
+        /*
          * If one of the child nodes of the root node is to be selected, select
          * it.
          */
-        SwingUtilities.invokeLater(() -> {
-            if (rootNode instanceof TableFilterNode) {
-                NodeSelectionInfo selectedChildInfo = ((TableFilterNode) rootNode).getChildNodeSelectionInfo();
-                if (null != selectedChildInfo) {
-                    Node[] childNodes = rootNode.getChildren().getNodes(true);
-                    for (int i = 0; i < childNodes.length; ++i) {
-                        Node childNode = childNodes[i];
-                        if (selectedChildInfo.matches(childNode)) {
+        if (rootNode instanceof TableFilterNode) {
+            NodeSelectionInfo selectedChildInfo = ((TableFilterNode) rootNode).getChildNodeSelectionInfo();
+            if (null != selectedChildInfo) {
+                Node[] childNodes = rootNode.getChildren().getNodes(true);
+                for (int i = 0; i < childNodes.length; ++i) {
+                    Node childNode = childNodes[i];
+                    if (selectedChildInfo.matches(childNode)) {
+                        SwingUtilities.invokeLater(() -> {
                             try {
-                                this.getExplorerManager().setSelectedNodes(new Node[]{childNode});
+                                this.getExplorerManager().setExploredContextAndSelection(this.rootNode, new Node[]{childNode});
                             } catch (PropertyVetoException ex) {
                                 LOGGER.log(Level.SEVERE, "Failed to select node specified by selected child info", ex);
                             }
-                            break;
-                        }
+                        });
+
+                        break;
                     }
-                    ((TableFilterNode) rootNode).setChildNodeSelectionInfo(null);
                 }
+                ((TableFilterNode) rootNode).setChildNodeSelectionInfo(null);
             }
-        });
+        }
 
         /*
          * The table setup is done, so any added/removed events can now be
          * treated as un-hide/hide.
          */
         outlineViewListener.listenToVisibilityChanges(true);
+
     }
 
     /*
-     * Populates the column map for the child OutlineView of this tabular
-     * result viewer with references to the column objects for use when
-     * loading/storing the visibility info.
+     * Populates the column map for the child OutlineView of this tabular result
+     * viewer with references to the column objects for use when loading/storing
+     * the visibility info.
      */
     private void populateColumnMap() {
         columnMap.clear();
@@ -362,52 +529,70 @@ public class DataResultViewerTable extends AbstractDataResultViewer {
             if (entry.getKey() < columnCount) {
                 final ETableColumn column = (ETableColumn) columnModel.getColumn(entry.getKey());
                 columnMap.put(propName, column);
+
             }
         }
     }
 
     /*
      * Sets the column widths for the child OutlineView of this tabular results
-     * viewer.
+     * viewer providing any additional width to last column.
      */
     protected void setColumnWidths() {
-        if (rootNode.getChildren().getNodesCount() != 0) {
-            final Graphics graphics = outlineView.getGraphics();
-            if (graphics != null) {
-                final FontMetrics metrics = graphics.getFontMetrics();
+        // based on https://stackoverflow.com/questions/17627431/auto-resizing-the-jtable-column-widths
+        final TableColumnModel columnModel = outline.getColumnModel();
 
-                int margin = 4;
-                int padding = 8;
+        // the remaining table width that can be used in last row
+        double availableTableWidth = outlineView.getSize().getWidth();
 
-                for (int column = 0; column < outline.getModel().getColumnCount(); column++) {
-                    int firstColumnPadding = (column == 0) ? 32 : 0;
-                    int columnWidthLimit = (column == 0) ? 350 : 300;
-                    int valuesWidth = 0;
+        for (int columnIdx = 0; columnIdx < outline.getColumnCount(); columnIdx++) {
+            int columnPadding = (columnIdx == 0) ? FIRST_COL_ADDITIONAL_WIDTH + COLUMN_PADDING : COLUMN_PADDING;
+            TableColumn tableColumn = columnModel.getColumn(columnIdx);
 
-                    // find the maximum width needed to fit the values for the first 100 rows, at most
-                    for (int row = 0; row < Math.min(100, outline.getRowCount()); row++) {
-                        TableCellRenderer renderer = outline.getCellRenderer(row, column);
-                        Component comp = outline.prepareRenderer(renderer, row, column);
-                        valuesWidth = Math.max(comp.getPreferredSize().width, valuesWidth);
-                    }
+            // The width of this column
+            int width = MIN_COLUMN_WIDTH;
 
-                    int headerWidth = metrics.stringWidth(outline.getColumnName(column));
-                    valuesWidth += firstColumnPadding; // add extra padding for first column
-
-                    int columnWidth = Math.max(valuesWidth, headerWidth);
-                    columnWidth += 2 * margin + padding; // add margin and regular padding
-                    columnWidth = Math.min(columnWidth, columnWidthLimit);
-
-                    outline.getColumnModel().getColumn(column).setPreferredWidth(columnWidth);
-                }
+            // get header cell width
+            // taken in part from https://stackoverflow.com/a/18381924
+            TableCellRenderer headerRenderer = tableColumn.getHeaderRenderer();
+            if (headerRenderer == null) {
+                headerRenderer = outline.getTableHeader().getDefaultRenderer();
             }
-        } else {
-            // if there's no content just auto resize all columns
-            outline.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+            Object headerValue = tableColumn.getHeaderValue();
+            Component headerComp = headerRenderer.getTableCellRendererComponent(outline, headerValue, false, false, 0, columnIdx);
+            width = Math.max(headerComp.getPreferredSize().width + columnPadding, width);
+
+            // get the max of row widths from the first SAMPLE_ROW_NUM rows
+            Component comp = null;
+            int rowCount = outline.getRowCount();
+            for (int row = 0; row < Math.min(rowCount, SAMPLE_ROW_NUM); row++) {
+                TableCellRenderer renderer = outline.getCellRenderer(row, columnIdx);
+                comp = outline.prepareRenderer(renderer, row, columnIdx);
+                width = Math.max(comp.getPreferredSize().width + columnPadding, width);
+            }
+
+            // no higher than maximum column width
+            if (width > MAX_COLUMN_WIDTH) {
+                width = MAX_COLUMN_WIDTH;
+            }
+
+            // if last column, calculate remaining width factoring in the possibility of a scroll bar.
+            if (columnIdx == outline.getColumnCount() - 1) {
+                int rowHeight = comp == null ? MIN_ROW_HEIGHT : comp.getPreferredSize().height;
+                if (headerComp.getPreferredSize().height + rowCount * rowHeight > outlineView.getSize().getHeight()) {
+                    availableTableWidth -= SCROLL_BAR_WIDTH;
+                }
+
+                columnModel.getColumn(columnIdx).setPreferredWidth(Math.max(width, (int) availableTableWidth));
+            } else {
+                // otherwise set preferred width to width and decrement availableTableWidth accordingly
+                columnModel.getColumn(columnIdx).setPreferredWidth(width);
+                availableTableWidth -= width;
+            }
         }
     }
-    
-    protected TableColumnModel getColumnModel(){
+
+    protected TableColumnModel getColumnModel() {
         return outline.getColumnModel();
     }
 
@@ -580,7 +765,6 @@ public class DataResultViewerTable extends AbstractDataResultViewer {
          * property at the end.
          */
         int offset = props.size();
-        boolean noPreviousSettings = true;
 
         final Preferences preferences = NbPreferences.forModule(DataResultViewerTable.class);
 
@@ -588,23 +772,52 @@ public class DataResultViewerTable extends AbstractDataResultViewer {
             Integer value = preferences.getInt(ResultViewerPersistence.getColumnPositionKey(tfn, prop.getName()), -1);
             if (value >= 0 && value < offset && !propertiesMap.containsKey(value)) {
                 propertiesMap.put(value, prop);
-                noPreviousSettings = false;
             } else {
                 propertiesMap.put(offset, prop);
                 offset++;
             }
         }
 
-        // If none of the properties had previous settings, we should decrement
-        // each value by the number of properties to make the values 0-indexed.
-        if (noPreviousSettings) {
-            ArrayList<Integer> keys = new ArrayList<>(propertiesMap.keySet());
-            for (int key : keys) {
-                propertiesMap.put(key - props.size(), propertiesMap.remove(key));
+        /*
+         * NOTE: it is possible to have "discontinuities" in the keys (i.e.
+         * column numbers) of the map. This happens when some of the columns had
+         * a previous setting, and other columns did not. We need to make the
+         * keys 0-indexed and continuous.
+         */
+        compactPropertiesMap();
+
+        return new ArrayList<>(propertiesMap.values());
+    }
+
+    /**
+     * Makes properties map 0-indexed and re-arranges elements to make sure the
+     * indexes are continuous.
+     */
+    private void compactPropertiesMap() {
+
+        // check if there are discontinuities in the map keys. 
+        int size = propertiesMap.size();
+        Queue<Integer> availablePositions = new LinkedList<>();
+        for (int i = 0; i < size; i++) {
+            if (!propertiesMap.containsKey(i)) {
+                availablePositions.add(i);
             }
         }
 
-        return new ArrayList<>(propertiesMap.values());
+        // if there are no discontinuities, we are done
+        if (availablePositions.isEmpty()) {
+            return;
+        }
+
+        // otherwise, move map elements into the available positions. 
+        // we don't want to just move down all elements, as we want to preserve the order
+        // of the ones that had previous setting (i.e. ones that have key < size)
+        ArrayList<Integer> keys = new ArrayList<>(propertiesMap.keySet());
+        for (int key : keys) {
+            if (key >= size) {
+                propertiesMap.put(availablePositions.remove(), propertiesMap.remove(key));
+            }
+        }
     }
 
     /**
@@ -636,6 +849,213 @@ public class DataResultViewerTable extends AbstractDataResultViewer {
         private int getRank() {
             return rank;
         }
+    }
+
+    /**
+     * Maintains the current page state for a node and provides support for
+     * paging through results. Uses an EventBus to communicate with child
+     * factory implementations.
+     */
+    private class PagingSupport {
+
+        private int currentPage;
+        private int totalPages;
+        private final String nodeName;
+
+        PagingSupport(String nodeName) {
+            currentPage = 1;
+            totalPages = 0;
+            this.nodeName = nodeName;
+            initialize();
+        }
+
+        private void initialize() {
+            if (!nodeName.isEmpty()) {
+                BaseChildFactory.register(nodeName, this);
+            }
+            updateControls();
+        }
+
+        void nextPage() {
+            currentPage++;
+            postPageChangeEvent();
+        }
+
+        void previousPage() {
+            currentPage--;
+            postPageChangeEvent();
+        }
+
+        @NbBundle.Messages({"# {0} - totalPages",
+            "DataResultViewerTable.goToPageTextField.msgDlg=Please enter a valid page number between 1 and {0}",
+            "DataResultViewerTable.goToPageTextField.err=Invalid page number"})
+        void gotoPage() {
+            int originalPage = currentPage;
+
+            try {
+                currentPage = Integer.decode(gotoPageTextField.getText());
+            } catch (NumberFormatException e) {
+                //ignore input
+                return;
+            }
+
+            if (currentPage > totalPages || currentPage < 1) {
+                currentPage = originalPage;
+                JOptionPane.showMessageDialog(DataResultViewerTable.this,
+                        Bundle.DataResultViewerTable_goToPageTextField_msgDlg(totalPages),
+                        Bundle.DataResultViewerTable_goToPageTextField_err(),
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            postPageChangeEvent();
+        }
+
+        /**
+         * Notify subscribers (i.e. child factories) that a page change has
+         * occurred.
+         */
+        void postPageChangeEvent() {
+            try {
+                BaseChildFactory.post(nodeName, new PageChangeEvent(currentPage));
+            } catch (BaseChildFactory.NoSuchEventBusException ex) {
+                LOGGER.log(Level.WARNING, "Failed to post page change event.", ex); //NON-NLS
+            }
+            DataResultViewerTable.this.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            updateControls();
+        }
+
+        /**
+         * Notify subscribers (i.e. child factories) that a page size change has
+         * occurred.
+         */
+        void postPageSizeChangeEvent() {
+            // Reset page variables when page size changes
+            currentPage = 1;
+
+            if (this == pagingSupport) {
+                updateControls();
+            }
+            try {
+                BaseChildFactory.post(nodeName, new PageSizeChangeEvent(UserPreferences.getResultsTablePageSize()));
+            } catch (BaseChildFactory.NoSuchEventBusException ex) {
+                LOGGER.log(Level.WARNING, "Failed to post page size change event.", ex); //NON-NLS
+            }
+        }
+
+        /**
+         * Subscribe to notification that the number of pages has changed.
+         *
+         * @param event
+         */
+        @Subscribe
+        public void subscribeToPageCountChange(PageCountChangeEvent event) {
+            if (event != null) {
+                totalPages = event.getPageCount();
+                if (totalPages > 1) {
+                    // Make paging controls visible if there is more than one page.
+                    togglePageControls(true);
+                }
+
+                // Only update UI controls if this event is for the node currently being viewed.
+                if (nodeName.equals(rootNode.getName())) {
+                    updateControls();
+                }
+            }
+        }
+
+        /**
+         * Make paging controls visible or invisible based on flag.
+         *
+         * @param onOff
+         */
+        private void togglePageControls(boolean onOff) {
+            pageLabel.setVisible(onOff);
+            pagesLabel.setVisible(onOff);
+            pagePrevButton.setVisible(onOff);
+            pageNextButton.setVisible(onOff);
+            pageNumLabel.setVisible(onOff);
+            gotoPageLabel.setVisible(onOff);
+            gotoPageTextField.setVisible(onOff);
+            gotoPageTextField.setVisible(onOff);
+            validate();
+            repaint();
+        }
+
+        @NbBundle.Messages({"# {0} - currentPage", "# {1} - totalPages",
+            "DataResultViewerTable.pageNumbers.curOfTotal={0} of {1}"})
+        private void updateControls() {
+            if (totalPages == 0) {
+                pagePrevButton.setEnabled(false);
+                pageNextButton.setEnabled(false);
+                pageNumLabel.setText("");
+                gotoPageTextField.setText("");
+                gotoPageTextField.setEnabled(false);
+            } else {
+                pageNumLabel.setText(Bundle.DataResultViewerTable_pageNumbers_curOfTotal(Integer.toString(currentPage), Integer.toString(totalPages)));
+
+                pageNextButton.setEnabled(currentPage != totalPages);
+                pagePrevButton.setEnabled(currentPage != 1);
+                gotoPageTextField.setEnabled(totalPages > 1);
+                gotoPageTextField.setText("");
+            }
+        }
+    }
+
+    /**
+     * Listener which sets the custom icon renderer on columns which contain
+     * icons instead of text when a column is added.
+     */
+    private class IconRendererTableListener implements TableColumnModelListener {
+
+        @NbBundle.Messages({"DataResultViewerTable.commentRender.name=C",
+            "DataResultViewerTable.commentRender.toolTip=C(omments) indicates whether the item has a comment",
+            "DataResultViewerTable.scoreRender.name=S",
+            "DataResultViewerTable.scoreRender.toolTip=S(core) indicates whether the item is interesting or notable",
+            "DataResultViewerTable.countRender.name=O",
+            "DataResultViewerTable.countRender.toolTip=O(ccurrences) indicates the number of data sources containing the item in the Central Repository"})
+        @Override
+        public void columnAdded(TableColumnModelEvent e) {
+            if (e.getSource() instanceof ETableColumnModel) {
+                TableColumn column = ((TableColumnModel) e.getSource()).getColumn(e.getToIndex());
+                if (column.getHeaderValue().toString().equals(Bundle.DataResultViewerTable_commentRender_name())) {
+                    //if the current column is a comment column set the cell renderer to be the HasCommentCellRenderer
+                    outlineView.setPropertyColumnDescription(column.getHeaderValue().toString(), Bundle.DataResultViewerTable_commentRender_toolTip());
+                    column.setCellRenderer(new HasCommentCellRenderer());
+                } else if (column.getHeaderValue().toString().equals(Bundle.DataResultViewerTable_scoreRender_name())) {
+                    //if the current column is a score column set the cell renderer to be the ScoreCellRenderer
+                    outlineView.setPropertyColumnDescription(column.getHeaderValue().toString(), Bundle.DataResultViewerTable_scoreRender_toolTip());
+                    column.setCellRenderer(new ScoreCellRenderer());
+                } else if (column.getHeaderValue().toString().equals(Bundle.DataResultViewerTable_countRender_name())) {
+                    outlineView.setPropertyColumnDescription(column.getHeaderValue().toString(), Bundle.DataResultViewerTable_countRender_toolTip());
+                    column.setCellRenderer(new CountCellRenderer());
+                }
+            }
+        }
+
+        @Override
+        public void columnRemoved(TableColumnModelEvent e
+        ) {
+            //Don't do anything when column removed
+        }
+
+        @Override
+        public void columnMoved(TableColumnModelEvent e
+        ) {
+            //Don't do anything when column moved
+        }
+
+        @Override
+        public void columnMarginChanged(ChangeEvent e
+        ) {
+            //Don't do anything when column margin changed
+        }
+
+        @Override
+        public void columnSelectionChanged(ListSelectionEvent e
+        ) {
+            //Don't do anything when column selection changed
+        }
+
     }
 
     /**
@@ -772,46 +1192,186 @@ public class DataResultViewerTable extends AbstractDataResultViewer {
         }
     }
 
-    /**
-     * This custom renderer extends the renderer that was already being used by
-     * the outline table. This renderer colors a row if the tags property of the
-     * node is not empty.
+    /*
+     * A renderer which based on the contents of the cell will display an icon
+     * to indicate the presence of a comment related to the content.
      */
-    private class ColorTagCustomRenderer extends DefaultOutlineCellRenderer {
+    private final class HasCommentCellRenderer extends DefaultOutlineCellRenderer {
+
+        private static final long serialVersionUID = 1L;
+
+        @NbBundle.Messages({"DataResultViewerTable.commentRenderer.crComment.toolTip=Comment exists in Central Repository",
+            "DataResultViewerTable.commentRenderer.tagComment.toolTip=Comment exists on associated tag(s)",
+            "DataResultViewerTable.commentRenderer.crAndTagComment.toolTip=Comments exist both in Central Repository and on associated tag(s)",
+            "DataResultViewerTable.commentRenderer.noComment.toolTip=No comments found"})
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            setBackground(component.getBackground());  //inherit highlighting for selection
+            setHorizontalAlignment(CENTER);
+            Object switchValue = null;
+            if ((value instanceof NodeProperty)) {
+                //The Outline view has properties in the cell, the value contained in the property is what we want
+                try {
+                    switchValue = ((Node.Property) value).getValue();
+                } catch (IllegalAccessException | InvocationTargetException ex) {
+                    //Unable to get the value from the NodeProperty no Icon will be displayed
+                }
+            } else {
+                //JTables contain the value we want directly in the cell
+                switchValue = value;
+            }
+            setText("");
+            if ((switchValue instanceof HasCommentStatus)) {
+
+                switch ((HasCommentStatus) switchValue) {
+                    case CR_COMMENT:
+                        setIcon(COMMENT_ICON);
+                        setToolTipText(Bundle.DataResultViewerTable_commentRenderer_crComment_toolTip());
+                        break;
+                    case TAG_COMMENT:
+                        setIcon(COMMENT_ICON);
+                        setToolTipText(Bundle.DataResultViewerTable_commentRenderer_tagComment_toolTip());
+                        break;
+                    case CR_AND_TAG_COMMENTS:
+                        setIcon(COMMENT_ICON);
+                        setToolTipText(Bundle.DataResultViewerTable_commentRenderer_crAndTagComment_toolTip());
+                        break;
+                    case TAG_NO_COMMENT:
+                    case NO_COMMENT:
+                    default:
+                        setIcon(null);
+                        setToolTipText(Bundle.DataResultViewerTable_commentRenderer_noComment_toolTip());
+                }
+            } else {
+                setIcon(null);
+            }
+
+            return this;
+        }
+
+    }
+
+    /*
+     * A renderer which based on the contents of the cell will display an icon
+     * to indicate the score associated with the item.
+     */
+    private final class ScoreCellRenderer extends DefaultOutlineCellRenderer {
+
+        private static final long serialVersionUID = 1L;
+
+        /**
+         * Returns the icon denoted by the Score's Significance.
+         *
+         * @param significance The Score's Significance.
+         *
+         * @return The icon (or null) related to that significance.
+         */
+        private ImageIcon getIcon(Significance significance) {
+            if (significance == null) {
+                return null;
+            }
+
+            switch (significance) {
+                case NOTABLE:
+                    return NOTABLE_ICON_SCORE;
+                case LIKELY_NOTABLE:
+                    return INTERESTING_SCORE_ICON;
+                case LIKELY_NONE:
+                case NONE:
+                case UNKNOWN:
+                default:
+                    return null;
+            }
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            setBackground(component.getBackground());  //inherit highlighting for selection
+            setHorizontalAlignment(CENTER);
+            Object switchValue = null;
+            if ((value instanceof NodeProperty)) {
+                //The Outline view has properties in the cell, the value contained in the property is what we want
+                try {
+                    switchValue = ((Node.Property) value).getValue();
+                    setToolTipText(((FeatureDescriptor) value).getShortDescription());
+                } catch (IllegalAccessException | InvocationTargetException ex) {
+                    //Unable to get the value from the NodeProperty no Icon will be displayed
+                }
+
+            } else {
+                //JTables contain the value we want directly in the cell
+                switchValue = value;
+            }
+            setText("");
+            if ((switchValue instanceof org.sleuthkit.datamodel.Score)) {
+                setIcon(getIcon(((org.sleuthkit.datamodel.Score) switchValue).getSignificance()));
+            } else {
+                setIcon(null);
+            }
+            return this;
+        }
+
+    }
+
+    /*
+     * A renderer which based on the contents of the cell will display an empty
+     * cell if no count was available.
+     */
+    private final class CountCellRenderer extends DefaultOutlineCellRenderer {
 
         private static final long serialVersionUID = 1L;
 
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
-
-            Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col);
-            // only override the color if a node is not selected
-            if (rootNode != null && !isSelected) {
-                Node node = rootNode.getChildren().getNodeAt(table.convertRowIndexToModel(row));
-                boolean tagFound = false;
-                if (node != null) {
-                    Node.PropertySet[] propSets = node.getPropertySets();
-                    if (propSets.length != 0) {
-                        // currently, a node has only one property set, named Sheet.PROPERTIES ("properties")
-                        Node.Property<?>[] props = propSets[0].getProperties();
-                        for (Property<?> prop : props) {
-                            if ("Tags".equals(prop.getName())) {//NON-NLS
-                                try {
-                                    tagFound = !prop.getValue().equals("");
-                                } catch (IllegalAccessException | InvocationTargetException ignore) {
-                                }
-                                break;
-                            }
-                        }
-                    }
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            setBackground(component.getBackground());  //inherit highlighting for selection
+            setHorizontalAlignment(LEFT);
+            Object countValue = null;
+            if ((value instanceof NodeProperty)) {
+                //The Outline view has properties in the cell, the value contained in the property is what we want
+                try {
+                    countValue = ((Node.Property) value).getValue();
+                    setToolTipText(((FeatureDescriptor) value).getShortDescription());
+                } catch (IllegalAccessException | InvocationTargetException ex) {
+                    //Unable to get the value from the NodeProperty no Icon will be displayed
                 }
-                //if the node does have associated tags, set its background color
-                if (tagFound) {
-                    component.setBackground(TAGGED_ROW_COLOR);
+            } else {
+                //JTables contain the value we want directly in the cell
+                countValue = value;
+            }
+            setText("");
+            if ((countValue instanceof Long)) {
+                //Don't display value if value is negative used so that sorting will behave as desired
+                if ((Long) countValue >= 0) {
+                    setText(countValue.toString());
                 }
             }
-            return component;
+            return this;
         }
+
+    }
+
+    /**
+     * Enum to denote the presence of a comment associated with the content or
+     * artifacts generated from it.
+     */
+    public enum HasCommentStatus {
+        NO_COMMENT,
+        TAG_NO_COMMENT,
+        CR_COMMENT,
+        TAG_COMMENT,
+        CR_AND_TAG_COMMENTS
+    }
+
+    /**
+     * Enum to denote the score given to an item to draw the users attention
+     */
+    public enum Score {
+        NO_SCORE,
+        INTERESTING_SCORE,
+        NOTABLE_SCORE
     }
 
     /**
@@ -823,21 +1383,151 @@ public class DataResultViewerTable extends AbstractDataResultViewer {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        pageLabel = new javax.swing.JLabel();
+        pageNumLabel = new javax.swing.JLabel();
+        pagesLabel = new javax.swing.JLabel();
+        pagePrevButton = new javax.swing.JButton();
+        pageNextButton = new javax.swing.JButton();
         outlineView = new OutlineView(DataResultViewerTable.FIRST_COLUMN_LABEL);
+        gotoPageLabel = new javax.swing.JLabel();
+        gotoPageTextField = new javax.swing.JTextField();
+        exportCSVButton = new javax.swing.JButton();
+
+        pageLabel.setText(org.openide.util.NbBundle.getMessage(DataResultViewerTable.class, "DataResultViewerTable.pageLabel.text")); // NOI18N
+
+        pageNumLabel.setText(org.openide.util.NbBundle.getMessage(DataResultViewerTable.class, "DataResultViewerTable.pageNumLabel.text")); // NOI18N
+
+        pagesLabel.setText(org.openide.util.NbBundle.getMessage(DataResultViewerTable.class, "DataResultViewerTable.pagesLabel.text")); // NOI18N
+
+        pagePrevButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/sleuthkit/autopsy/corecomponents/btn_step_back.png"))); // NOI18N
+        pagePrevButton.setText(org.openide.util.NbBundle.getMessage(DataResultViewerTable.class, "DataResultViewerTable.pagePrevButton.text")); // NOI18N
+        pagePrevButton.setDisabledIcon(new javax.swing.ImageIcon(getClass().getResource("/org/sleuthkit/autopsy/corecomponents/btn_step_back_disabled.png"))); // NOI18N
+        pagePrevButton.setFocusable(false);
+        pagePrevButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        pagePrevButton.setMargin(new java.awt.Insets(2, 0, 2, 0));
+        pagePrevButton.setPreferredSize(new java.awt.Dimension(55, 23));
+        pagePrevButton.setRolloverIcon(new javax.swing.ImageIcon(getClass().getResource("/org/sleuthkit/autopsy/corecomponents/btn_step_back_hover.png"))); // NOI18N
+        pagePrevButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        pagePrevButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                pagePrevButtonActionPerformed(evt);
+            }
+        });
+
+        pageNextButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/sleuthkit/autopsy/corecomponents/btn_step_forward.png"))); // NOI18N
+        pageNextButton.setText(org.openide.util.NbBundle.getMessage(DataResultViewerTable.class, "DataResultViewerTable.pageNextButton.text")); // NOI18N
+        pageNextButton.setDisabledIcon(new javax.swing.ImageIcon(getClass().getResource("/org/sleuthkit/autopsy/corecomponents/btn_step_forward_disabled.png"))); // NOI18N
+        pageNextButton.setFocusable(false);
+        pageNextButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        pageNextButton.setMargin(new java.awt.Insets(2, 0, 2, 0));
+        pageNextButton.setMaximumSize(new java.awt.Dimension(27, 23));
+        pageNextButton.setMinimumSize(new java.awt.Dimension(27, 23));
+        pageNextButton.setRolloverIcon(new javax.swing.ImageIcon(getClass().getResource("/org/sleuthkit/autopsy/corecomponents/btn_step_forward_hover.png"))); // NOI18N
+        pageNextButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        pageNextButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                pageNextButtonActionPerformed(evt);
+            }
+        });
+
+        gotoPageLabel.setText(org.openide.util.NbBundle.getMessage(DataResultViewerTable.class, "DataResultViewerTable.gotoPageLabel.text")); // NOI18N
+
+        gotoPageTextField.setText(org.openide.util.NbBundle.getMessage(DataResultViewerTable.class, "DataResultViewerTable.gotoPageTextField.text")); // NOI18N
+        gotoPageTextField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                gotoPageTextFieldActionPerformed(evt);
+            }
+        });
+
+        exportCSVButton.setText(org.openide.util.NbBundle.getMessage(DataResultViewerTable.class, "DataResultViewerTable.exportCSVButton.text")); // NOI18N
+        exportCSVButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                exportCSVButtonActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(outlineView, javax.swing.GroupLayout.DEFAULT_SIZE, 691, Short.MAX_VALUE)
+            .addComponent(outlineView, javax.swing.GroupLayout.DEFAULT_SIZE, 904, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(pageLabel)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(pageNumLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(14, 14, 14)
+                .addComponent(pagesLabel)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(pagePrevButton, javax.swing.GroupLayout.PREFERRED_SIZE, 16, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(pageNextButton, javax.swing.GroupLayout.PREFERRED_SIZE, 16, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(gotoPageLabel)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(gotoPageTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(exportCSVButton))
         );
+
+        layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {pageNextButton, pagePrevButton});
+
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(outlineView, javax.swing.GroupLayout.DEFAULT_SIZE, 366, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addGap(3, 3, 3)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
+                    .addComponent(pageLabel)
+                    .addComponent(pageNumLabel)
+                    .addComponent(pagesLabel)
+                    .addComponent(pagePrevButton, javax.swing.GroupLayout.PREFERRED_SIZE, 14, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(pageNextButton, javax.swing.GroupLayout.PREFERRED_SIZE, 15, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(gotoPageLabel)
+                    .addComponent(gotoPageTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(exportCSVButton))
+                .addGap(3, 3, 3)
+                .addComponent(outlineView, javax.swing.GroupLayout.DEFAULT_SIZE, 321, Short.MAX_VALUE)
+                .addContainerGap())
         );
+
+        layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {pageNextButton, pagePrevButton});
+
+        gotoPageLabel.getAccessibleContext().setAccessibleName("");
     }// </editor-fold>//GEN-END:initComponents
+
+    private void pagePrevButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_pagePrevButtonActionPerformed
+        pagingSupport.previousPage();
+    }//GEN-LAST:event_pagePrevButtonActionPerformed
+
+    private void pageNextButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_pageNextButtonActionPerformed
+        pagingSupport.nextPage();
+    }//GEN-LAST:event_pageNextButtonActionPerformed
+
+    private void gotoPageTextFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gotoPageTextFieldActionPerformed
+        pagingSupport.gotoPage();
+    }//GEN-LAST:event_gotoPageTextFieldActionPerformed
+
+    @NbBundle.Messages({"DataResultViewerTable.exportCSVButtonActionPerformed.empty=No data to export"
+    })
+    private void exportCSVButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportCSVButtonActionPerformed
+        Node currentRoot = this.getExplorerManager().getRootContext();
+        if (currentRoot != null && currentRoot.getChildren().getNodesCount() > 0) {
+            org.sleuthkit.autopsy.directorytree.ExportCSVAction.saveNodesToCSV(java.util.Arrays.asList(currentRoot.getChildren().getNodes()), this);
+        } else {
+            MessageNotifyUtil.Message.info(Bundle.DataResultViewerTable_exportCSVButtonActionPerformed_empty());
+        }
+    }//GEN-LAST:event_exportCSVButtonActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton exportCSVButton;
+    private javax.swing.JLabel gotoPageLabel;
+    private javax.swing.JTextField gotoPageTextField;
     private org.openide.explorer.view.OutlineView outlineView;
+    private javax.swing.JLabel pageLabel;
+    private javax.swing.JButton pageNextButton;
+    private javax.swing.JLabel pageNumLabel;
+    private javax.swing.JButton pagePrevButton;
+    private javax.swing.JLabel pagesLabel;
     // End of variables declaration//GEN-END:variables
 
 }

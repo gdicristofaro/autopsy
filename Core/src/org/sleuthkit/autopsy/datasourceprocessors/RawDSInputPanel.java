@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  * 
- * Copyright 2011-2018 Basis Technology Corp.
+ * Copyright 2011-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,8 +20,7 @@ package org.sleuthkit.autopsy.datasourceprocessors;
 
 import java.io.File;
 import java.util.Calendar;
-import java.util.SimpleTimeZone;
-import java.util.TimeZone;
+import java.util.List;
 import javax.swing.JFileChooser;
 import javax.swing.JPanel;
 import javax.swing.event.DocumentEvent;
@@ -32,6 +31,8 @@ import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
 import org.sleuthkit.autopsy.corecomponentinterfaces.DataSourceProcessor;
 import org.sleuthkit.autopsy.coreutils.ModuleSettings;
 import org.sleuthkit.autopsy.coreutils.PathValidator;
+import org.sleuthkit.autopsy.coreutils.TimeZoneUtils;
+import org.sleuthkit.autopsy.guiutils.JFileChooserFactory;
 
 /**
  * Allows examiner to supply a raw data source.
@@ -41,7 +42,8 @@ final class RawDSInputPanel extends JPanel implements DocumentListener {
     private static final long TWO_GB = 2000000000L;
     private static final long serialVersionUID = 1L;    //default
     private final String PROP_LASTINPUT_PATH = "LBL_LastInputFile_PATH";
-    private final JFileChooser fc = new JFileChooser();
+    private JFileChooser fc;
+    private JFileChooserFactory chooserHelper = new JFileChooserFactory();
     // Externally supplied name is used to store settings 
     private final String contextName;
     /**
@@ -51,11 +53,6 @@ final class RawDSInputPanel extends JPanel implements DocumentListener {
         initComponents();
 
         errorLabel.setVisible(false);
-
-        fc.setDragEnabled(false);
-        fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        fc.setMultiSelectionEnabled(false);
-
         this.contextName = context;
     }
 
@@ -82,26 +79,13 @@ final class RawDSInputPanel extends JPanel implements DocumentListener {
      * machine time zone to be selected.
      */
     private void createTimeZoneList() {
-        // load and add all timezone
-        String[] ids = SimpleTimeZone.getAvailableIDs();
-        for (String id : ids) {
-            TimeZone zone = TimeZone.getTimeZone(id);
-            int offset = zone.getRawOffset() / 1000;
-            int hour = offset / 3600;
-            int minutes = (offset % 3600) / 60;
-            String item = String.format("(GMT%+d:%02d) %s", hour, minutes, id);
-
-            timeZoneComboBox.addItem(item);
+        List<String> timeZoneList = TimeZoneUtils.createTimeZoneList();
+        for (String timeZone : timeZoneList) {
+            timeZoneComboBox.addItem(timeZone);
         }
-        // get the current timezone
-        TimeZone thisTimeZone = Calendar.getInstance().getTimeZone();
-        int thisOffset = thisTimeZone.getRawOffset() / 1000;
-        int thisHour = thisOffset / 3600;
-        int thisMinutes = (thisOffset % 3600) / 60;
-        String formatted = String.format("(GMT%+d:%02d) %s", thisHour, thisMinutes, thisTimeZone.getID());
 
         // set the selected timezone
-        timeZoneComboBox.setSelectedItem(formatted);
+        timeZoneComboBox.setSelectedItem(TimeZoneUtils.createTimeZoneString(Calendar.getInstance().getTimeZone()));
     }
     
     /**
@@ -213,18 +197,25 @@ final class RawDSInputPanel extends JPanel implements DocumentListener {
     }// </editor-fold>//GEN-END:initComponents
     @SuppressWarnings("deprecation")
     private void browseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_browseButtonActionPerformed
-      String oldText = pathTextField.getText();
-      // set the current directory of the FileChooser if the ImagePath Field is valid
-      File currentDir = new File(oldText);
-      if (currentDir.exists()) {
-          fc.setCurrentDirectory(currentDir);
-      }
+        if (fc == null) {
+            fc = chooserHelper.getChooser();
+            fc.setDragEnabled(false);
+            fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+            fc.setMultiSelectionEnabled(false);
+        }
 
-      int retval = fc.showOpenDialog(this);
-      if (retval == JFileChooser.APPROVE_OPTION) {
-          String path = fc.getSelectedFile().getPath();
-          pathTextField.setText(path);
-      }
+        String oldText = pathTextField.getText();
+        // set the current directory of the FileChooser if the ImagePath Field is valid
+        File currentDir = new File(oldText);
+        if (currentDir.exists()) {
+            fc.setCurrentDirectory(currentDir);
+        }
+
+        int retval = fc.showOpenDialog(this);
+        if (retval == JFileChooser.APPROVE_OPTION) {
+            String path = fc.getSelectedFile().getPath();
+            pathTextField.setText(path);
+        }
     }//GEN-LAST:event_browseButtonActionPerformed
 
     private void j2GBBreakupRadioButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_j2GBBreakupRadioButtonActionPerformed
@@ -305,7 +296,7 @@ final class RawDSInputPanel extends JPanel implements DocumentListener {
         "RawDSInputPanel.noOpenCase.errMsg=Exception while getting open case."})
     private void warnIfPathIsInvalid(String path) {
         try {
-        if (!PathValidator.isValidForMultiUserCase(path, Case.getCurrentCaseThrows().getCaseType())) {
+        if (!PathValidator.isValidForCaseType(path, Case.getCurrentCaseThrows().getCaseType())) {
             errorLabel.setVisible(true);
             errorLabel.setText(Bundle.RawDSInputPanel_error_text());
         }

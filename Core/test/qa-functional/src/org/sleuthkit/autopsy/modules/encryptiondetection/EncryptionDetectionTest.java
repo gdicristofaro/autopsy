@@ -22,14 +22,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import org.netbeans.junit.NbModuleSuite;
 import org.sleuthkit.autopsy.casemodule.Case;
 import junit.framework.Test;
 import org.netbeans.junit.NbTestCase;
 import org.openide.util.Exceptions;
-import org.python.icu.impl.Assert;
+import junit.framework.Assert;
 import org.sleuthkit.autopsy.casemodule.ImageDSProcessor;
 import org.sleuthkit.autopsy.casemodule.services.FileManager;
+import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.ingest.IngestJobSettings;
 import org.sleuthkit.autopsy.ingest.IngestJobSettings.IngestType;
 import org.sleuthkit.autopsy.ingest.IngestModuleFactory;
@@ -37,6 +39,7 @@ import org.sleuthkit.autopsy.ingest.IngestModuleIngestJobSettings;
 import org.sleuthkit.autopsy.ingest.IngestModuleTemplate;
 import org.sleuthkit.autopsy.testutils.CaseUtils;
 import org.sleuthkit.autopsy.testutils.IngestUtils;
+import org.sleuthkit.autopsy.testutils.TestUtilsException;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
@@ -52,18 +55,16 @@ import org.sleuthkit.datamodel.VolumeSystem;
  */
 public class EncryptionDetectionTest extends NbTestCase {
 
-    private static final String BITLOCKER_DETECTION_CASE_NAME = "testBitlockerEncryption";
-    private static final String PASSWORD_DETECTION_CASE_NAME = "PasswordDetectionTest";
-    private static final String VERACRYPT_DETECTION_CASE_NAME = "VeraCryptDetectionTest";
-    private static final String SQLCIPHER_DETECTION_CASE_NAME = "SQLCipherDetectionTest";
+    private static final String BITLOCKER_DETECTION_CASE_NAME = "EncryptionDetection_bitlocker";
+    private static final String PASSWORD_DETECTION_CASE_NAME = "EncryptionDetection_password";
+    private static final String VERACRYPT_DETECTION_CASE_NAME = "EncryptionDetection_veracrypt";
+    private static final String SQLCIPHER_DETECTION_CASE_NAME = "EncryptionDetection_sqlcipher";
 
     private final Path BITLOCKER_DETECTION_IMAGE_PATH = Paths.get(this.getDataDir().toString(), "BitlockerDetection_img1_v1.vhd");
     private final Path PASSWORD_DETECTION_IMAGE_PATH = Paths.get(this.getDataDir().toString(), "PasswordDetection_img1_v1.img");
     private final Path VERACRYPT_DETECTION_IMAGE_PATH = Paths.get(this.getDataDir().toString(), "VeracryptDetection_img1_v1.vhd");
     private final Path SQLCIPHER_DETECTION_IMAGE_PATH = Paths.get(this.getDataDir().toString(), "SqlCipherDetection_img1_v1.vhd");
-    
-    private boolean testSucceeded;
-  
+
     public static Test suite() {
         NbModuleSuite.Configuration conf = NbModuleSuite.createConfiguration(EncryptionDetectionTest.class).
                 clusters(".*").
@@ -74,26 +75,27 @@ public class EncryptionDetectionTest extends NbTestCase {
     public EncryptionDetectionTest(String name) {
         super(name);
     }
-    
-    @Override
-    public void setUp() {
-        testSucceeded = false;
-    }
 
     @Override
     public void tearDown() {
-        CaseUtils.closeCurrentCase(testSucceeded);
+        try {
+            CaseUtils.closeCurrentCase();
+        } catch (TestUtilsException ex) {
+            Exceptions.printStackTrace(ex);
+            Assert.fail(ex.getMessage());
+        }
     }
-    
+
     /**
      * Test the Encryption Detection module's volume encryption detection.
      */
     public void testBitlockerEncryption() {
         try {
+            Logger.getLogger(this.getClass().getName()).log(Level.INFO, "---- Starting ----");
             Case openCase = CaseUtils.createAsCurrentCase(BITLOCKER_DETECTION_CASE_NAME);
             ImageDSProcessor dataSourceProcessor = new ImageDSProcessor();
             IngestUtils.addDataSource(dataSourceProcessor, BITLOCKER_DETECTION_IMAGE_PATH);
-            
+
             /*
              * Create ingest job settings and run ingest job.
              */
@@ -149,12 +151,10 @@ public class EncryptionDetectionTest extends NbTestCase {
 
             errorMessage = "Expected to find 'vol2', but no such volume exists.";
             assertEquals(errorMessage, true, vol2Found);
-        } catch (TskCoreException ex) {
+        } catch (TskCoreException | TestUtilsException ex) {
             Exceptions.printStackTrace(ex);
-            Assert.fail(ex);
+            Assert.fail(ex.getMessage());
         }
-        
-        testSucceeded = true;
     }
 
     /**
@@ -162,6 +162,7 @@ public class EncryptionDetectionTest extends NbTestCase {
      */
     public void testPasswordProtection() {
         try {
+            Logger.getLogger(this.getClass().getName()).log(Level.INFO, "---- Starting ----");
             Case openCase = CaseUtils.createAsCurrentCase(PASSWORD_DETECTION_CASE_NAME);
             ImageDSProcessor dataSourceProcessor = new ImageDSProcessor();
             IngestUtils.addDataSource(dataSourceProcessor, PASSWORD_DETECTION_IMAGE_PATH);
@@ -236,12 +237,10 @@ public class EncryptionDetectionTest extends NbTestCase {
                     }
                 }
             }
-        } catch (TskCoreException ex) {
+        } catch (TskCoreException | TestUtilsException ex) {
             Exceptions.printStackTrace(ex);
-            Assert.fail(ex);
+            Assert.fail(ex.getMessage());
         }
-        
-        testSucceeded = true;
     }
 
     /**
@@ -259,6 +258,7 @@ public class EncryptionDetectionTest extends NbTestCase {
      */
     public void testVeraCryptSupport() {
         try {
+            Logger.getLogger(this.getClass().getName()).log(Level.INFO, "---- Starting ----");
             Case openCase = CaseUtils.createAsCurrentCase(VERACRYPT_DETECTION_CASE_NAME);
             ImageDSProcessor dataSourceProcessor = new ImageDSProcessor();
             IngestUtils.addDataSource(dataSourceProcessor, VERACRYPT_DETECTION_IMAGE_PATH);
@@ -291,12 +291,10 @@ public class EncryptionDetectionTest extends NbTestCase {
                 numberOfEncryptedContainers += file.getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_ENCRYPTION_SUSPECTED).size();
             }
             assertEquals("Encrypted Container file should have one encyption suspected artifact", 1, numberOfEncryptedContainers);
-        } catch (TskCoreException ex) {
+        } catch (TskCoreException | TestUtilsException ex) {
             Exceptions.printStackTrace(ex);
-            Assert.fail(ex);
+            Assert.fail(ex.getMessage());
         }
-        
-        testSucceeded = true;
     }
 
     /**
@@ -304,6 +302,7 @@ public class EncryptionDetectionTest extends NbTestCase {
      */
     public void testSqlCipherEncryption() {
         try {
+            Logger.getLogger(this.getClass().getName()).log(Level.INFO, "---- Starting ----");
             Case openCase = CaseUtils.createAsCurrentCase(SQLCIPHER_DETECTION_CASE_NAME);
             ImageDSProcessor dataSourceProcessor = new ImageDSProcessor();
             IngestUtils.addDataSource(dataSourceProcessor, SQLCIPHER_DETECTION_IMAGE_PATH);
@@ -356,10 +355,10 @@ public class EncryptionDetectionTest extends NbTestCase {
                     }
                 }
             }
-        } catch (TskCoreException ex) {
+        } catch (TskCoreException | TestUtilsException ex) {
             Exceptions.printStackTrace(ex);
-            Assert.fail(ex);
+            Assert.fail(ex.getMessage());
         }
-    }    
-    
+    }
+
 }

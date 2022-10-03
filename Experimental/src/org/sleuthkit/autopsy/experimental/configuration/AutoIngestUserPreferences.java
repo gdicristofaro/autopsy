@@ -19,10 +19,7 @@
 package org.sleuthkit.autopsy.experimental.configuration;
 
 import org.sleuthkit.autopsy.core.UserPreferences;
-import org.sleuthkit.autopsy.core.UserPreferencesException;
 import org.sleuthkit.autopsy.coreutils.ModuleSettings;
-import org.sleuthkit.autopsy.coreutils.TextConverter;
-import org.sleuthkit.autopsy.coreutils.TextConverterException;
 
 /**
  * Provides convenient access to a Preferences node for auto ingest user
@@ -42,12 +39,6 @@ public final class AutoIngestUserPreferences {
     private static final String MAX_NUM_TIMES_TO_PROCESS_IMAGE = "MaxNumTimesToAttemptToProcessImage"; // NON-NLS
     private static final int DEFAULT_MAX_TIMES_TO_PROCESS_IMAGE = 0;
     private static final String MAX_CONCURRENT_NODES_FOR_ONE_CASE = "MaxConcurrentNodesForOneCase"; // NON-NLS
-    private static final String STATUS_DATABASE_LOGGING_ENABLED = "StatusDatabaseLoggingEnabled"; // NON-NLS
-    private static final String LOGGING_DB_HOSTNAME_OR_IP = "LoggingHostnameOrIP"; // NON-NLS
-    private static final String LOGGING_PORT = "LoggingPort"; // NON-NLS
-    private static final String LOGGING_USERNAME = "LoggingUsername"; // NON-NLS
-    private static final String LOGGING_PASSWORD = "LoggingPassword"; // NON-NLS
-    private static final String LOGGING_DATABASE_NAME = "LoggingDatabaseName"; // NON-NLS
     private static final String INPUT_SCAN_INTERVAL_TIME = "IntervalBetweenInputScan"; // NON-NLS
 
     // Prevent instantiation.
@@ -279,125 +270,6 @@ public final class AutoIngestUserPreferences {
      */
     public static void setMaxConcurrentIngestNodesForOneCase(int numberOfNodes) {
         ModuleSettings.setConfigSetting(UserPreferences.SETTINGS_PROPERTIES, MAX_CONCURRENT_NODES_FOR_ONE_CASE, Integer.toString(numberOfNodes));
-    }
-
-    /**
-     * Get status database logging checkbox state for automated ingest mode from
-     * persistent storage.
-     *
-     * @return Boolean true if database logging is enabled.
-     */
-    public static Boolean getStatusDatabaseLoggingEnabled() {
-        return Boolean.parseBoolean(getPreferenceValue(STATUS_DATABASE_LOGGING_ENABLED));
-    }
-
-    /**
-     * Save status database logging checkbox state for automated ingest mode to
-     * persistent storage.
-     *
-     * @param databaseLoggingEnabled true = use database logging in auto-ingest
-     *                               mode
-     */
-    public static void setStatusDatabaseLoggingEnabled(boolean databaseLoggingEnabled) {
-        ModuleSettings.setConfigSetting(UserPreferences.SETTINGS_PROPERTIES, STATUS_DATABASE_LOGGING_ENABLED, Boolean.toString(databaseLoggingEnabled));
-    }
-
-    /**
-     * Get the logging database hostname from persistent storage.
-     *
-     * @return Logging database hostname or IP
-     */
-    public static String getLoggingDatabaseHostnameOrIP() {
-        return getPreferenceValue(LOGGING_DB_HOSTNAME_OR_IP);
-    }
-
-    /**
-     * Save the logging database hostname to persistent storage.
-     *
-     * @param hostname Logging database hostname or IP
-     */
-    public static void setLoggingDatabaseHostnameOrIP(String hostname) {
-        ModuleSettings.setConfigSetting(UserPreferences.SETTINGS_PROPERTIES, LOGGING_DB_HOSTNAME_OR_IP, hostname);
-    }
-
-    /**
-     * Get the logging database port from persistent storage.
-     *
-     * @return logging database port
-     */
-    public static String getLoggingPort() {
-        return getPreferenceValue(LOGGING_PORT);
-    }
-
-    /**
-     * Save the logging database port to persistent storage.
-     *
-     * @param port Logging database port
-     */
-    public static void setLoggingPort(String port) {
-        ModuleSettings.setConfigSetting(UserPreferences.SETTINGS_PROPERTIES, LOGGING_PORT, port);
-    }
-
-    /**
-     * Get the logging database username from persistent storage.
-     *
-     * @return logging database username
-     */
-    public static String getLoggingUsername() {
-        return getPreferenceValue(LOGGING_USERNAME);
-    }
-
-    /**
-     * Save the logging database username to persistent storage.
-     *
-     * @param username Logging database username
-     */
-    public static void setLoggingUsername(String username) {
-        ModuleSettings.setConfigSetting(UserPreferences.SETTINGS_PROPERTIES, LOGGING_USERNAME, username);
-    }
-
-    /**
-     * Get the logging database password from persistent storage.
-     *
-     * @return logging database password
-     *
-     * @throws org.sleuthkit.autopsy.core.UserPreferencesException
-     */
-    public static String getLoggingPassword() throws UserPreferencesException {
-        return getPreferenceValue(LOGGING_PASSWORD);
-    }
-
-    /**
-     * Save the logging database password to persistent storage.
-     *
-     * @param password Logging database password
-     *
-     * @throws org.sleuthkit.autopsy.core.UserPreferencesException
-     */
-    public static void setLoggingPassword(String password) throws UserPreferencesException {
-        try {
-            ModuleSettings.setConfigSetting(UserPreferences.SETTINGS_PROPERTIES, LOGGING_PASSWORD, TextConverter.convertTextToHexText(password));
-        } catch (TextConverterException ex) {
-            throw new UserPreferencesException("Error encrypting password", ex);
-        }
-    }
-
-    /**
-     * Get the logging database name from persistent storage.
-     *
-     * @return logging database name
-     */
-    public static String getLoggingDatabaseName() {
-        return getPreferenceValue(LOGGING_DATABASE_NAME);
-    }
-
-    /**
-     * Save the logging database name to persistent storage.
-     *
-     * @param name Logging database name
-     */
-    public static void setLoggingDatabaseName(String name) {
-        ModuleSettings.setConfigSetting(UserPreferences.SETTINGS_PROPERTIES, LOGGING_DATABASE_NAME, name);
     }
 
     /**

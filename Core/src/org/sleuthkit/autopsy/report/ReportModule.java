@@ -1,8 +1,8 @@
- /*
+/*
  *
  * Autopsy Forensic Browser
  * 
- * Copyright 2012 Basis Technology Corp.
+ * Copyright 2012-2019 Basis Technology Corp.
  * 
  * Copyright 2012 42six Solutions.
  * Contact: aebadirad <at> 42six <dot> com
@@ -22,10 +22,12 @@
  */
 package org.sleuthkit.autopsy.report;
 
+import javax.swing.JPanel;
+
 /**
  * Interface for report modules that plug in to the reporting infrastructure.
  */
-interface ReportModule {
+public interface ReportModule {
 
     /**
      * Get the name of the report this module generates.
@@ -43,8 +45,47 @@ interface ReportModule {
      * module. The path should be relative to the location that gets passed in
      * to generateReport() (or similar).
      *
-     * @return Relative path to where report will be stored. May be null if the
-     *         module does not produce a report file.
+     * @return Relative path to where report will be stored. Return an empty
+     * string if the location passed to generateReport() is the output location.
+     * Return null to indicate that there is no report file.
      */
     public String getRelativeFilePath();
+
+    /**
+     * Returns the configuration panel for the report, which is displayed in the
+     * report configuration step of the report wizard.
+     *
+     * @return Configuration panel or null if the module does not need
+     * configuration.
+     */
+    public default JPanel getConfigurationPanel() {
+        return new DefaultReportConfigurationPanel();
+    }
+    
+    /**
+     * Get default configuration for this report module.
+     *
+     * @return Object which contains default report module settings.
+     */
+    public default ReportModuleSettings getDefaultConfiguration() {
+        return new NoReportModuleSettings();
+    }
+
+     /**
+     * Get current configuration for this report module.
+     *
+     * @return Object which contains current report module settings.
+     */
+    public default ReportModuleSettings getConfiguration() {
+        return new NoReportModuleSettings();
+    }
+
+     /**
+     * Set report module configuration.
+     *
+     * @param settings Object which contains report module settings.
+     */
+    public default void setConfiguration(ReportModuleSettings settings) {
+        // NO-OP
+    }
 }

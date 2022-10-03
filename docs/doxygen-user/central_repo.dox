@@ -1,5 +1,8 @@
 /*! \page central_repo_page Central Repository
 
+[TOC]
+
+
 \section cr_overview Overview
 
 The central repository allows a user to find matching artifacts both across cases and across data sources in the same case. 
@@ -11,34 +14,52 @@ The following are some use cases for the central repository:
 - <b>Finding Other Instances of a Property</b>
  - If you navigate to a file or Autopsy artifact (such as a Web History item), there is a content viewer in the bottom right that will show you other instances of this property across the data stored in the central repository. 
 - <b>Alerting When Previously Notable Properties Occur</b>
- - You can use the central repository to record which properties were associated with files and artifacts that were evidence (or notable).  Once these properties have been tagged as notable they will be added to the Interesting Items section of the tree when seen again in any future cases.
+ - You can use the central repository to record which properties were associated with files and artifacts that were evidence (or notable).  Once these properties have been tagged as notable they will be added to the Analysis Results section of the tree when seen again in any future cases.
 - <b>Storing Hash Sets</b>
  - You can create and import hash sets into the central repository instead of using local copies in the \ref hash_db_page "Hash Lookup module". These hash sets are functionally equivalent to local hash sets but can be shared among multiple analysts (when using a PostgreSQL central repository).
 
 \section cr_terms Terms and Concepts
 
-- <b>Central Repository</b> - The Autopsy feature containing the central repository database and Correlation Engine Ingest Module. Also responsible for displaying correlated properties to the user
+- <b>Central Repository</b> - The Autopsy feature containing the central repository database and Central Repository Ingest Module. Also responsible for displaying correlated properties to the user
 - <b>Central Repository Database</b> - the SQLite or PostgreSQL database that holds all the data
-- <b>Correlation Engine Ingest Module</b> - The ingest module responsible for adding new properties to the database and comparing these properties against existing notable properties
+- <b>Central Repository Ingest Module</b> - The ingest module responsible for adding new properties to the database and comparing these properties against existing notable properties
 - <b>Property</b> - The data being stored/correlated. These can be file paths/MD5 hashes, email addresses, phone numbers, etc.
 
 \section cr_setup Setup
 
-To start, open the main options panel and select the "Central Repository" icon. 
+The central repository settings are found on the main options panel (Tools->Options) on the "Central Repository" tab. 
 
 \image html central_repo_options.png
 
-\subsection cr_db_setup Setting up the Database
+\subsection cr_db_setup Database Configuration
 
-On the central repository options panel, check the 'Use a Central Repository' option and then click the Configure button to set up a database. There are two options here:
+There are two types of central repository databases:
+- <b>SQLite</b> - This type of database is stored in a file. It should only be used when a single client will be accessing the database. You can not use this option with \ref multiuser_page "multi-user cases".
+- <b>PostgreSQL</b> - This type of database is stored on a server running either on the user's host or a remote server. This option must be used if multiple users will be using the same database.
+
+\subsubsection cr_db_setup_auto Automatic Database Configuration
+
+Starting with Autopsy 4.15, when you load Autopsy and the central repository is not enabled you will be 
+asked if you want to enable it. Doing so will create a SQLite database in your Autopsy user folder (on Windows this will be in AppData). You will only be prompted to do this once. Whichever option you select, you can change your central repository settings later as described below.
+
+Since a SQLite database can't be used for multi-user cases, you are also given the option to switch to a PostgreSQL database when you \ref multiuser_install_clients "enable multi-user cases". If you are currently using a SQLite database, when you enable multi-user cases you will be asked if you want to switch to a PostgreSQL database on the same server. Note that the contents of your SQLite database will not be copied over.
+
+\subsubsection cr_db_setup_manual Manual Database Configuration
+
+On the central repository options panel, check the 'Use a Central Repository' option and then click the Configure button to set up a database. There are three options here:
 - <b>SQLite</b> - This option stores the database in a file. It should only be used when a single client will be accessing the database.
-- <b>PostgreSQL</b> - This option uses a database server running either on the user's host or a remote server. This option must be used if multiple users will be using the same database.
+- <b>PostgreSQL using multi-user settings</b> - This option uses a central repository on the same PostgreSQL server that has been configured for \ref multiuser_page "multi-user cases". This option can not be selected if multi-user cases are not enabled. This is one of the options if multiple users will be using the same database.
+- <b>Custom PostgreSQL</b> - This option uses a database server running either on the user's host or a remote server, where the server is specified in the central repository settings. This is one of the options if multiple users will be using the same database.
 
 Once a database has been configured, the lower two buttons on the main panel will be enabled, which will be described below.
 
-<b>Setting up PostgreSQL Deployment</b>
+<b>Setting up a PostgreSQL deployment using the multi-user settings</b>
 
-If needed, see the \ref install_postgresql for help setting up your PostgreSQL server.
+See the \ref install_multiuser_page page for instructions on configuring a multi-user environment. Once done, you can select the "PostgreSQL using multi-user settings" option to create/use a central repository on that PostgreSQL server.
+
+<b>Setting up a custom PostgreSQL deployment</b>
+
+If needed, see the \ref install_postgresql_page page for help setting up your PostgreSQL server.
 
 For PostgreSQL all values are required, but some defaults are provided for convenience.
 
@@ -62,7 +83,7 @@ Enter or browse to a folder for the database. If the database file does not exis
 
 \subsection cr_manage_properties Manage Correlation Properties
 
-The Correlation Engine ingest module can save different types of properties to the database. By default all properties are recorded, but 
+The Central Repository ingest module can save different types of properties to the database. By default all properties are recorded, but 
 this setting can be changed on the options panel through the Manage Correlation Properties button. Note that these settings 
 are saved to the database, so in a multi-user setting any changes will affect all users.
 
@@ -70,15 +91,33 @@ are saved to the database, so in a multi-user setting any changes will affect al
 
 Descriptions of the property types:
 - <b>Files</b>
- - Files are correlated based on MD5 hash and file path and name. The Hash Lookup ingest module must be enabled.
+ - Files are correlated based on MD5 hash and file path and name. The \ref hash_db_page must be enabled.
 - <b>Domains</b>
- - Domains are extracted from the various web artifacts, which primarily come from the Recent Activity module
+ - Domains are extracted from the various web artifacts, which primarily come from the \ref recent_activity_page.
 - <b>Email Addresses</b>
- - Email addresses are pulled from Email Address hits from the Keyword Search module.
+ - Email addresses are created by modules such as the \ref email_parser_page.
 - <b>Phone Numbers</b>
- - Phone numbers are currently only extracted from call logs, contact lists and message, which come from the Android Analyzer module.
+ - Phone numbers are currently only extracted from call logs, contact lists and message, which come from the \ref android_analyzer_page.
 - <b>USB Devices</b>
- - USB device properties come from the registry parsing in the Recent Activity Module.
+ - USB device properties come from the registry parsing in the \ref recent_activity_page.
+- <b>Wireless Networks</b>
+ - Wireless networks are correlated on SSIDs, and come from the registry parsing in the \ref recent_activity_page.
+- <b>MAC Addresses</b>
+ - MAC address properties are currently only created by custom Autopsy modules.
+- <b>IMEI Number</b>
+ - IMEIs properties are currently only created by custom Autopsy modules.
+- <b>IMSI Number</b>
+ - IMSI properties are currently only created by custom Autopsy modules.
+- <b>ICCID Number</b>
+ - ICCID properties are currently only created by custom Autopsy modules.
+- <b>Credit Card</b>
+ - Credit Card properties are created by the \ref keyword_search_page.
+- <b>OS Account</b>
+ - OS account properties are created by the disk image data source processor and the \ref recent_activity_page.
+- <b>Installed Programs</b>
+ - Installed program properties are created primarily by the \ref recent_activity_page.
+- <b> App-specific Accounts (Facebook, Twitter, etc)</b>
+ - These properties primarily come from the \ref android_analyzer_page.
 
 \subsection cr_manage_orgs Manage Organizations
 
@@ -90,22 +129,32 @@ One default org, "Not Specified" will always be present in the list. New organiz
 
 \image html central_repo_new_org.png
 
-\subsection cr_show_cases Show Cases
+\subsection cr_show_cases Manage Cases
 
-Displays a list of all cases that are in the central repository database.
+Displays a list of all cases that are in the central repository database and details about each case.
 
 \image html central_repo_details.png
 
 \section cr_using_repo Using the Central Repository
 
-\subsection cr_ingest_module Correlation Engine Module
+\subsection cr_ingest_module Central Repository Module
 
-The Correlation Engine ingest module is responsible for adding properties to the database and comparing each property 
+The Central Repository ingest module is responsible for adding properties to the database and comparing each property 
 against the list of notable properties. It is best to run all ingest modules to get the most out of the Correlation 
-Engine. For example, if Hash Lookup is not run then the Correlation Engine module will not put any files into the 
-database. If the Correlation Engine module is not run on a particular case but a central repository is enabled, 
+Engine. For example, if Hash Lookup is not run then the Central Repository module will not put any files into the 
+database. If the Central Repository module is not run on a particular case but a central repository is enabled, 
 there will still be some limited functionality. The Content Viewer will still display matching properties from 
-other cases/data sources where the Correlation Engine was run.
+other cases/data sources where the Central Repository was run.
+
+\image html central_repo_ingest_settings.png
+
+There are three settings for the Central Repository ingest module:
+<ul>
+<li><b>Save items to the Central Repository</b> - This should only be unselected in the rare case that you don't want to add any properties from the current data source to the central repository, but still want to flag past occurrences.
+<li><b>Flag items previously tagged as notable</b> - Enabling this causes Previously Notable analysis results to be created when properties matching those previously flagged are found. See the next section \ref cr_tagging for details.
+<li><b>Flag devices and users previously seen in other cases</b> - When this is enabled, an Previously Seen analysis result will be created if any device-related property (USB, MAC Address, IMSI, IMEI, ICCID) or an OS account is found that is already in the central repository, regardless of whether they have been flagged.
+<li><b>Flag apps and domains not seen in other cases</b> - When this is enabled, Previously Unseen analysis results will be created for any installed program names or domains that are not in the central repository.
+</li>
 
 \subsection cr_tagging Tagging Files and Artifacts
 
@@ -113,62 +162,52 @@ Tagging a file or artifact with a "notable" tag will change its associated prope
 By default, there will be a tag named "Notable Item" that can be used for this purpose. See the \ref tagging_page "Tagging page" for more information on creating additional tags with notable status. 
 Any future data source ingest (where this module is enabled) 
 will use those notable properties in a similar manner as a Known Bad hash set, causing matching files and artifacts from that 
-ingest to be added to the Interesting Items list in that currently open case.
+ingest to generate Previously Notable analysis results in that future case.
 
 \image html central_repo_tag_file.png
 
 If a tag is accidentally added to a file or artifact, it can be removed though the context menu. This will remove its property's
 notable status in the central repository.
 
-If you would like to prevent the Interesting Items from being created in a particular case, you can disable the flagging 
-through the run time ingest properties. Note that this only disables the Interesting Item results - all properties
-are still added to the central repository.
+If you would like to prevent the analysis results from being created in a particular case, you can disable the flagging 
+through the run time ingest properties. Note that this only disables the analysis results - all properties
+are still added to the central repository unless the top checkbox in the ingest properties is unselected.
 
-\image html central_repo_disable_flagging.png
+\image html central_repo_ingest_settings.png
 
 \section cr_viewing_results Viewing Results
 
-Results from enabling a central repository and running the Correlation Engine Ingest Module can be seen in two places:
+Results from enabling a central repository and running the Central Repository Ingest Module can be seen in two places:
 - The Content Viewer for each file or artifact will display all matching properties from other cases/data sources
-- The Interesting Files node of the result tree will contain any files or results that matched properties previously marked as notable
+- The Analysis Results section of the result tree will contain any files or results that matched properties previously marked as notable, that have been seen before, or that are unique.
 
 \subsection cr_content_viewer Content Viewer
 
 The \ref content_viewer_page panel is where previous instances of properties are displayed. Without a central repository enabled, 
 this "Other Occurrences" panel will show files with hashes matching the selected file within the current case. Enabling a central 
 repository allows this panel to also display matching properties stored in the database, and adds some functionality to the row. 
-Note that the Correlation Engine Ingest Module does not have to have been run on the current data source to see correlated 
+Note that the Central Repository Ingest Module does not have to have been run on the current data source to see correlated 
 properties from the central repository. If the selected file or artifact is associated by one of the supported Correlation Types, 
 to one or more properties in the database, the associated properties will be displayed. Note: the Content 
 Viewer will display ALL associated properties available in the database. It ignores the user's enabled/disabled Correlation Properties.
 
-By default, the rows in the content viewer will have background colors to indicate if they are known to be of interest. Properties that are notable 
-will have a Red background, all others will have a White background.
+The other occurrences are grouped by case and then data source. Selecting one of the results brings up information on it in the right column. If a file or artifact was previously marked as notable, you will see "notable" in red next to "Known Status".
 
 \image html central_repo_content_viewer.png
 
 The user can click on any column heading to sort by the values in that column.
 
-If the user right-clicks on a row, a menu will be displayed.
+If the user selects an entry in the third column and then right-clicks, a menu will be displayed.
 This menu has several options.
--# Select All
--# Export Selected Rows to CSV
+-# Export All Other Occurrences to CSV
 -# Show Case Details
 -# Show Frequency
--# Add/Edit Comment
 
-<b>Select All</b>
+<b>Export All Other Occurrences to CSV</b>
 
-This option will select all rows in the Content Viewer table.
-
-<b>Export Selected Rows to CSV</b>
-
-This option will save ALL SELECTED rows in the Content Viewer table to a CSV file.
+This option will save every other occurrence in the Content Viewer table to a CSV file.
 By default, the CSV file is saved into the Export directory inside the currently open Autopsy case,
 but the user is free to select a different location.
-
-Note: if you want to copy/paste rows, it is usually possible to use CTRL+C to copy the
-selected rows and then CTRL+V to paste them into a file, but it will not be CSV formatted.
 
 <b>Show Case Details</b>
 
@@ -187,29 +226,21 @@ the Case -> Case Properties menu.
 
 This shows how common the selected file is. The value is the percentage of case/data source tuples that have the selected property.
 
-<b>Add/Edit Comment</b>
+\subsection cr_interesting_items Analysis Results
 
-This allows you to add a comment for this entry or edit an existing comment. If you want instead to edit the comment of the originally selected node, it can be done by right clicking on the original item in the result viewer and selecting "Add/Edit Central Repository Comment".
+When this module is enabled, all of the enabled Correlatable Properties will cause matching files and artifacts to be added to the Analysis Results section of the tree during ingest. There are three types of analysis results that can be created:
 
-\image html central_repo_comment_menu.png
+<ul>
+<li> <b>Previously Notable</b> results include files and results that have been previoulsy marked as notable in the central repository.
+<li> <b>Previously Seen</b> results show users and devices that were found in the central repository.
+<li> <b>Previously Unseen</b> results show domains and app names that were not found in the central repository.
+</ul>
 
-\subsection cr_interesting_items Interesting Items
+\image html central_repo_results.png
 
-In the Results tree of an open case is an entry called Interesting Items. When this module is enabled, all of the enabled 
-Correlatable Properties will cause matching files and artifacts to be added to this Interesting Items tree during ingest.
+Each type contains columns in the result viewer showing the correlation type and value that were compared with the central repository, and an "Other Cases" column listing every case the value was found in at the time of ingest (if applicable). 
 
-\image html central_repo_interesting_items.png
-
-As an example, suppose the Files Correlatable Property is enabled and the ingest is currently processing a file "badfile.exe", and the MD5 hash 
-for that file already exists in the database as a notable file property. In this case an entry in the Interesting Items tree will be added for 
-the current instance of "badfile.exe" in the data source currently being ingested.
-
-The same type of thing will happen for each enabled Correlatable Property.
-
-In the case of the phone number correlatable type, the Interesting Items tree will start a sub-tree for each phone number. The sub-tree will 
-then contain each instance of that notable phone number.
-
-
+\image html central_repo_result_viewer.png
 
 
 */

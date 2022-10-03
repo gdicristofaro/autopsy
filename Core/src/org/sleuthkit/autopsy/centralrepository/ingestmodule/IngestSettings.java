@@ -1,7 +1,7 @@
 /*
  * Central Repository
  *
- * Copyright 2018 Basis Technology Corp.
+ * Copyright 2018-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,28 +21,47 @@ package org.sleuthkit.autopsy.centralrepository.ingestmodule;
 import org.sleuthkit.autopsy.ingest.IngestModuleIngestJobSettings;
 
 /**
- * Ingest job settings for the Correlation Engine module.
+ * Ingest job settings for the Central Repository module.
  */
 final class IngestSettings implements IngestModuleIngestJobSettings {
 
     private static final long serialVersionUID = 1L;
-
-    private boolean flagTaggedNotableItems;
+    static final boolean DEFAULT_FLAG_TAGGED_NOTABLE_ITEMS = false;
+    static final boolean DEFAULT_FLAG_PREVIOUS_DEVICES = false;
+    static final boolean DEFAULT_FLAG_UNIQUE_DEVICES = false;
+    static final boolean DEFAULT_CREATE_CR_PROPERTIES = true;
+    
+    private final boolean flagTaggedNotableItems;
+    private final boolean flagPreviousDevices;
+    private final boolean createCorrelationProperties;
+    private final boolean flagUniqueArtifacts;
 
     /**
      * Instantiate the ingest job settings with default values.
      */
     IngestSettings() {
-        this.flagTaggedNotableItems = IngestModule.DEFAULT_FLAG_TAGGED_NOTABLE_ITEMS;
+        this.flagTaggedNotableItems = DEFAULT_FLAG_TAGGED_NOTABLE_ITEMS;
+        this.flagPreviousDevices = DEFAULT_FLAG_PREVIOUS_DEVICES;
+        this.createCorrelationProperties = DEFAULT_CREATE_CR_PROPERTIES;
+        this.flagUniqueArtifacts = DEFAULT_FLAG_UNIQUE_DEVICES;
     }
 
     /**
      * Instantiate the ingest job settings.
      *
-     * @param flagTaggedNotableItems Flag previously tagged notable items.
+     * @param flagTaggedNotableItems      Flag previously tagged notable items.
+     * @param flagPreviousDevices         Flag devices which exist already in
+     *                                    the Central Repository
+     * @param createCorrelationProperties Create correlation properties in the
+     *                                    central repository
+     * @param flagUniqueArtifacts         Flag unique artifacts that have not
+     *                                    been seen in any other cases
      */
-    IngestSettings(boolean flagTaggedNotableItems) {
+    IngestSettings(boolean flagTaggedNotableItems, boolean flagPreviousDevices, boolean createCorrelationProperties, boolean flagUniqueArtifacts) {
         this.flagTaggedNotableItems = flagTaggedNotableItems;
+        this.flagPreviousDevices = flagPreviousDevices;
+        this.createCorrelationProperties = createCorrelationProperties;
+        this.flagUniqueArtifacts = flagUniqueArtifacts;
     }
 
     @Override
@@ -60,12 +79,30 @@ final class IngestSettings implements IngestModuleIngestJobSettings {
     }
 
     /**
-     * Flag or ignore previously identified notable items.
+     * Are devices previously seen in other cases to be flagged?
      *
-     * @param ignorePreviousNotableItems Are previously tagged notable items to
-     *                                   be flagged?
+     * @return True if flagging; otherwise false.
      */
-    void setFlagTaggedNotableItems(boolean flagTaggedNotableItems) {
-        this.flagTaggedNotableItems = flagTaggedNotableItems;
+    boolean isFlagPreviousDevices() {
+        return flagPreviousDevices;
+    }
+
+    /**
+     * Should correlation properties be created
+     *
+     * @return True if creating; otherwise false.
+     */
+    boolean shouldCreateCorrelationProperties() {
+        return createCorrelationProperties;
+    }
+
+    /**
+     * Are artifacts (apps, domains) previously unseen in other cases to be
+     * flagged?
+     *
+     * @return True if flagging; otherwise false.
+     */
+    public boolean isFlagUniqueArtifacts() {
+        return flagUniqueArtifacts;
     }
 }

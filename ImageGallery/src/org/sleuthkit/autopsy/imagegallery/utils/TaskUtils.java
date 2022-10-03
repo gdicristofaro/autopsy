@@ -18,13 +18,25 @@
  */
 package org.sleuthkit.autopsy.imagegallery.utils;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
 
 /**
  *
  */
-public class TaskUtils {
+public final class TaskUtils {
+
+    private TaskUtils() {
+    }
 
     public static <T> Task<T> taskFrom(Callable<T> callable) {
         return new Task<T>() {
@@ -35,6 +47,26 @@ public class TaskUtils {
         };
     }
 
-    private TaskUtils() {
+    public static ListeningExecutorService getExecutorForClass(Class<?> clazz) {
+        return MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor(
+                new ThreadFactoryBuilder().setNameFormat("Image Gallery " + clazz.getSimpleName() + " BG Thread").build()));
+    }
+
+    public static <X> void addFXCallback(ListenableFuture<X> future, Consumer<X> onSuccess, Consumer<Throwable> onFailure) {
+        Futures.addCallback(future, makeFutureCallBack(onSuccess, onFailure), Platform::runLater);
+    }
+
+    public static <X> FutureCallback<  X> makeFutureCallBack(Consumer<X> onSuccess, Consumer<Throwable> onFailure) {
+        return new FutureCallback<X>() {
+            @Override
+            public void onSuccess(X result) {
+                onSuccess.accept(result);
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                onFailure.accept(t);
+            }
+        };
     }
 }

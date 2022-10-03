@@ -40,6 +40,7 @@
     ====================================================== -->
     <folder name="Actions">
         <folder name="Case">
+            <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
             <file name="org-sleuthkit-autopsy-casemodule-AddImageAction.instance"/>
             <file name="org-sleuthkit-autopsy-casemodule-CaseCloseAction.instance"/>
             <file name="org-sleuthkit-autopsy-casemodule-CaseNewAction.instance">
@@ -47,8 +48,11 @@
                 <attr name="displayName" bundlevalue="org.sleuthkit.autopsy.casemodule.Bundle#CTL_CaseNewAction"/>
                 <attr name="noIconInMenu" boolvalue="false"/>
             </file>
-            <file name="org-sleuthkit-autopsy-casemodule-CasePropertiesAction.instance"/>
+            <file name="org-sleuthkit-autopsy-casemodule-CaseDetailsAction.instance"/>
+            <file name="org-sleuthkit-autopsy-casemodule-datasourcesummary-DataSourceSummaryAction.instance"/>
+            <file name="org-sleuthkit-autopsy-datamodel-hosts-OpenHostsAction.instance"/>
             <file name="org-sleuthkit-autopsy-casemodule-CaseDeleteAction.instance"/>
+            <file name="org-sleuthkit-autopsy-casemodule-UnpackagePortableCaseAction.instance"/>
             <file name="org-sleuthkit-autopsy-casemodule-CaseSaveAction.instance">
                 <attr name="delegate" newvalue="org.sleuthkit.autopsy.casemodule.CaseSaveAction"/>
                 <attr name="displayName" bundlevalue="org.sleuthkit.autopsy.casemodule.Bundle#CTL_SaveCaseAction"/>
@@ -77,7 +81,7 @@
         </folder>
         <folder name="Tools">
             <file name="org-sleuthkit-autopsy-filesearch-FileSearchAction.instance"/>
-            <file name="org-sleuthkit-autopsy-commonfilesearch-CommonFilesSearchAction.instance"/>
+            <file name="org-sleuthkit-autopsy-commonpropertiessearch-CommonAttributeSearchAction.instance"/>
             <file name="org-sleuthkit-autopsy-ingest-IngestMessagesAction.instance">
                 <attr name="delegate" newvalue="org.sleuthkit.autopsy.ingest.IngestMessagesAction"/>
             </file>
@@ -108,12 +112,6 @@
                 <attr name="displayName" bundlevalue="org.sleuthkit.autopsy.filebrowser.Bundle#CTL_FileBrowserAction"/>
                 <attr name="instanceCreate" methodvalue="org.openide.windows.TopComponent.openAction"/>
             </file>
-            <file name="org-sleuthkit-autopsy-filebrowser-ChangeViewAction.instance">
-                <attr name="delegate" newvalue="org.sleuthkit.autopsy.filebrowser.ChangeViewAction"/>
-                <attr name="displayName" bundlevalue="org.sleuthkit.autopsy.filebrowser.Bundle#CTL_ChangeViewAction"/>
-                <attr name="instanceCreate" methodvalue="org.openide.awt.Actions.alwaysEnabled"/>
-                <attr name="noIconInMenu" boolvalue="false"/>
-            </file>
             <file name="org-sleuthkit-autopsy-filebrowser-DetailWindowAction.instance">
                 <attr name="component" methodvalue="org.sleuthkit.autopsy.filebrowser.DetailWindowTopComponent.findInstance"/>
                 <attr name="displayName" bundlevalue="org.sleuthkit.autopsy.filebrowser.Bundle#CTL_DetailWindowAction"/>
@@ -143,28 +141,37 @@
         <file name="Edit_hidden"/>
         <file name="File_hidden"/>
         <folder name="Case">
+            <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
             <file name="org-sleuthkit-autopsy-casemodule-CaseNewAction.shadow">
                 <attr name="originalFile" stringvalue="Actions/Case/org-sleuthkit-autopsy-casemodule-CaseNewAction.instance"/>
                 <attr name="position" intvalue="100"/>
             </file>
-            <folder name="Open Recent Case">
+            <folder name="OpenRecentCase">
+                <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
                 <attr name="position" intvalue="101"/>
-                <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.casemodule.Bundle"/>
                 <file name="org-sleuthkit-autopsy-casemodule-RecentCasesAction.shadow">
                     <attr name="originalFile" stringvalue="Actions/Case/org-sleuthkit-autopsy-casemodule-RecentCases.instance"/>
                 </file>
             </folder>
+            <file name="org-sleuthkit-autopsy-casemodule-UnpackagePortableCaseAction.shadow">
+                <attr name="originalFile" stringvalue="Actions/Case/org-sleuthkit-autopsy-casemodule-UnpackagePortableCaseAction.instance"/>
+                <attr name="position" intvalue="103"/>
+            </file>
             <file name="org-sleuthkit-autopsy-casemodule-CaseCloseAct.shadow">
                 <attr name="originalFile" stringvalue="Actions/Case/org-sleuthkit-autopsy-casemodule-CaseCloseAction.instance"/>
-                <attr name="position" intvalue="103"/>
+                <attr name="position" intvalue="104"/>
             </file>
             <file name="org-sleuthkit-autopsy-casemodule-CaseDeleteAction.shadow">
                 <attr name="originalFile" stringvalue="Actions/Case/org-sleuthkit-autopsy-casemodule-CaseDeleteAction.instance"/>
-                <attr name="position" intvalue="104"/>
+                <attr name="position" intvalue="105"/>
             </file>
             <file name="org-sleuthkit-autopsy-casemodule-AddImage-separatorBefore.instance">
                 <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
-                <attr name="position" intvalue="200"/>
+                <attr name="position" intvalue="150"/>
+            </file>
+                <file name="org-sleuthkit-autopsy-datamodel-hosts-OpenHostsAction.shadow">
+                <attr name="originalFile" stringvalue="Actions/Case/org-sleuthkit-autopsy-datamodel-hosts-OpenHostsAction.instance"/>
+                <attr name="position" intvalue="151"/>
             </file>
             <file name="org-sleuthkit-autopsy-casemodule-AddImageAction.shadow">
                 <attr name="originalFile" stringvalue="Actions/Case/org-sleuthkit-autopsy-casemodule-AddImageAction.instance"/>
@@ -179,8 +186,12 @@
                 <attr name="position" intvalue="300"/>
             </file>
             <file name="org-sleuthkit-autopsy-casemodule-CasePropertiesAction.shadow">
-                <attr name="originalFile" stringvalue="Actions/Case/org-sleuthkit-autopsy-casemodule-CasePropertiesAction.instance"/>
+                <attr name="originalFile" stringvalue="Actions/Case/org-sleuthkit-autopsy-casemodule-CaseDetailsAction.instance"/>
                 <attr name="position" intvalue="301"/>
+            </file>
+            <file name="org-sleuthkit-autopsy-casemodule-datasourcesummary-DataSourceSummaryAction.shadow">
+                <attr name="originalFile" stringvalue="Actions/Case/org-sleuthkit-autopsy-casemodule-datasourcesummary-DataSourceSummaryAction.instance"/>
+                <attr name="position" intvalue="302"/>
             </file>
             <file name="org-netbeans-modules-print-action-PageSetupAction.shadow_hidden"/>
             <file name="org-netbeans-modules-print-action-PrintAction.shadow_hidden"/>
@@ -197,29 +208,29 @@
             <file name="org-netbeans-modules-options-OptionsWindowAction.shadow"/>
             <file name="org-netbeans-modules-templates-actions-TemplatesAction.shadow_hidden"/>
             <file name="org-openide-actions-ToolsAction.shadow_hidden"/>
-            <file name="org-sleuthkit-autopsy-commonfilesearch-CommonFilesAction.shadow">
-                <attr name="originalFile" stringvalue="Actions/Tools/org-sleuthkit-autopsy-commonfilesearch-CommonFilesSearchAction.instance"/>
-                <attr name="position" intvalue="103"/>
+            <file name="org-sleuthkit-autopsy-commonpropertiessearch-CommonFilesAction.shadow">
+                <attr name="originalFile" stringvalue="Actions/Tools/org-sleuthkit-autopsy-commonpropertiessearch-CommonAttributeSearchAction.instance"/>
+                <attr name="position" intvalue="202"/>
             </file>
             <file name="org-sleuthkit-autopsy-filesearch-FileSearchAction.shadow">
                 <attr name="originalFile" stringvalue="Actions/Tools/org-sleuthkit-autopsy-filesearch-FileSearchAction.instance"/>
                 <attr name="position" intvalue="200"/>
             </file>
+            <file name="org-sleuthkit-autopsy-filesearch-FileSearchAction-separatorAfter.instance">
+                <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
+                <attr name="position" intvalue="299"/>
+            </file>
             <folder name="RunIngestModules">
-                <attr name="position" intvalue="201"/>
+                <attr name="position" intvalue="300"/>
                 <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.ingest.Bundle"/>
                 <file name="org-sleuthkit-autopsy-ingest-RunIngestAction.shadow">
                     <attr name="originalFile" stringvalue="Actions/Tools/org-sleuthkit-autopsy-ingest-RunIngestAction.instance"/>
                 </file>
             </folder>
-            <!--<file name="org-sleuthkit-autopsy-report-ReportWizardAction.shadow">
-                <attr name="originalFile" stringvalue="Actions/Tools/org-sleuthkit-autopsy-report-ReportWizardAction.instance"/>
+            <!--<file name="org-sleuthkit-autopsy-report-infrastructure-ReportWizardAction.shadow">
+                <attr name="originalFile" stringvalue="Actions/Tools/org-sleuthkit-autopsy-report-infrastructure-ReportWizardAction.instance"/>
                 <attr name="position" intvalue="100"/>
             </file>-->
-            <file name="org-sleuthkit-autopsy-report-ReportWizardAction-separatorAfter.instance">
-                <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
-                <attr name="position" intvalue="199"/>
-            </file>
             <!--<file name="Separator1.instance_hidden"/>
             <file name="Separator3.instance_hidden"/>-->
         </folder>
@@ -239,17 +250,9 @@
             <file name="org-netbeans-core-windows-actions-ResetWindowsAction.shadow_hidden"/>
             <file name="testAction.shadow_hidden"/>
             <file name="org-netbeans-core-io-ui-IOWindowAction.shadow_hidden"/>
-            <file name="org-sleuthkit-autopsy-menuactions-DataResultMenu-separatoBefore.instance">
-                <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
-                <attr name="position" intvalue="75"/>
-            </file>
             <file name="org-sleuthkit-autopsy-menuactions-DataResultMenu.instance">
                 <attr name="originalFile" stringvalue="Actions/Tools/org-sleuthkit-autopsy-menuactions-DataResultMenu.instance"/>
                 <attr name="position" intvalue="100"/>
-            </file>
-            <file name="org-sleuthkit-autopsy-menuactions-DataResultMenu-separatoAfter.instance">
-                <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
-                <attr name="position" intvalue="125"/>
             </file>
             <file name="org-sleuthkit-autopsy-menuactions-DataContentMenu.instance">
                 <attr name="originalFile" stringvalue="Actions/Tools/org-sleuthkit-autopsy-menuactions-DataContentMenu.instance"/>
@@ -272,7 +275,6 @@
         <folder name="Help">
             <file name="org-netbeans-core-actions-AboutAction.shadow_hidden"/>
             <file name="org-netbeans-modules-autoupdate-ui-actions-CheckForUpdatesAction.shadow_hidden"/>
-            <attr name="master-help.xml/org-sleuthkit-autopsy-corecomponents-CustomAboutAction.shadow" boolvalue="true"/>
         </folder>
     </folder>
 
@@ -307,36 +309,36 @@
             <attr name="instanceOf" stringvalue="org.sleuthkit.autopsy.directorytree.FileSearchProvider"/>
             <attr name="position" intvalue="250"/>
         </file>
-        <file name="org-sleuthkit-autopsy-report-ReportHTML.instance">
-            <attr name="instanceOf" stringvalue="org.sleuthkit.autopsy.report.TableReportModule"/>
-            <attr name="instanceCreate" methodvalue="org.sleuthkit.autopsy.report.ReportHTML.getDefault"/>
+        <file name="org-sleuthkit-autopsy-report-modules-html-HTMLReport.instance">
+            <attr name="instanceOf" stringvalue="org.sleuthkit.autopsy.report.infrastructure.TableReportModule"/>
+            <attr name="instanceCreate" methodvalue="org.sleuthkit.autopsy.report.modules.html.HTMLReport.getDefault"/>
             <attr name="position" intvalue="900"/>
         </file>
-        <file name="org-sleuthkit-autopsy-report-ReportExcel.instance">
-            <attr name="instanceOf" stringvalue="org.sleuthkit.autopsy.report.TableReportModule"/>
-            <attr name="instanceCreate" methodvalue="org.sleuthkit.autopsy.report.ReportExcel.getDefault"/>
+        <file name="org-sleuthkit-autopsy-report-modules-excel.ExcelReport.instance">
+            <attr name="instanceOf" stringvalue="org.sleuthkit.autopsy.report.infrastructure.TableReportModule"/>
+            <attr name="instanceCreate" methodvalue="org.sleuthkit.autopsy.report.modules.excel.ExcelReport.getDefault"/>
             <attr name="position" intvalue="901"/>
         </file>
-        <file name="org-sleuthkit-autopsy-report-ReportBodyFile.instance">
+        <file name="org-sleuthkit-autopsy-report-modules-bodyfile-BodyFileReport.instance">
             <attr name="instanceOf" stringvalue="org.sleuthkit.autopsy.report.GeneralReportModule"/>
-            <attr name="instanceCreate" methodvalue="org.sleuthkit.autopsy.report.ReportBodyFile.getDefault"/>
+            <attr name="instanceCreate" methodvalue="org.sleuthkit.autopsy.report.modules.bodyfile.BodyFileReport.getDefault"/>
             <attr name="position" intvalue="902"/>
         </file>
-        <file name="org-sleuthkit-autopsy-report-FileReportText.instance">
-            <attr name="instanceOf" stringvalue="org.sleuthkit.autopsy.report.FileReportModule"/>
-            <attr name="instanceCreate" methodvalue="org.sleuthkit.autopsy.report.FileReportText.getDefault"/>
+        <file name="org-sleuthkit-autopsy-report-modules-file-FileReportText.instance">
+            <attr name="instanceOf" stringvalue="org.sleuthkit.autopsy.report.infrastructure.FileReportModule"/>
+            <attr name="instanceCreate" methodvalue="org.sleuthkit.autopsy.report.modules.file.FileReportText.getDefault"/>
             <attr name="position" intvalue="903"/>
         </file>
-        <file name="org-sleuthkit-autopsy-report-ReportKML.instance">
+        <file name="org-sleuthkit-autopsy-report-modules-kml-KMLReport.instance">
             <attr name="instanceOf" stringvalue="org.sleuthkit.autopsy.report.GeneralReportModule"/>
-            <attr name="instanceCreate" methodvalue="org.sleuthkit.autopsy.report.ReportKML.getDefault"/>
+            <attr name="instanceCreate" methodvalue="org.sleuthkit.autopsy.report.modules.kml.KMLReport.getDefault"/>
             <attr name="position" intvalue="904"/>
         </file>
-        <file name="org-sleuthkit-autopsy-modules-stix-STIXReportModule.instance">
+        <file name="org-sleuthkit-autopsy-report-modules-caseuco-CaseUcoReportModule.instance">
             <attr name="instanceOf" stringvalue="org.sleuthkit.autopsy.report.GeneralReportModule"/>
-            <attr name="instanceCreate" methodvalue="org.sleuthkit.autopsy.modules.stix.STIXReportModule.getDefault"/>
-            <attr name="position" intvalue="910"/>
-        </file>
+            <attr name="instanceCreate" methodvalue="org.sleuthkit.autopsy.report.modules.caseuco.CaseUcoReportModule.getDefault"/>
+            <attr name="position" intvalue="911"/>
+        </file>       
         <!--<folder name="JavaHelp">
             <file name="casemodule-helpset.xml" url="casemodule-helpset.xml">
                 <attr name="position" intvalue="3075"/>
@@ -364,6 +366,7 @@
         <file name="UndoRedo_hidden"/>
         <file name="File_hidden"/>
         <folder name="Case">
+            <attr name="SystemFileSystem.localizingBundle" stringvalue="org.sleuthkit.autopsy.core.Bundle"/>
             <attr name="position" intvalue="90"/>
             <!--<file name="org-sleuthkit-autopsy-casemodule-AddImageAction.instance">
                 <attr name="delegate" newvalue="org.sleuthkit.autopsy.casemodule.AddImageAction"/>
@@ -382,9 +385,9 @@
                 <attr name="position" intvalue="10000"/>
             </file>
             <!--
-            <file name="org-sleuthkit-autopsy-report-ReportWizardAction.shadow">
-                <attr name="displayName" bundlevalue="org.sleuthkit.autopsy.report.Bundle#Toolbars/Reports/org-sleuthkit-autopsy-report-ReportWizardAction.shadow"/>
-                <attr name="originalFile" stringvalue="Actions/Tools/org-sleuthkit-autopsy-report-ReportWizardAction.instance"/>
+            <file name="org-sleuthkit-autopsy-report-infrastructure-ReportWizardAction.shadow">
+                <attr name="displayName" bundlevalue="org.sleuthkit.autopsy.report.Bundle#Toolbars/Reports/org-sleuthkit-autopsy-report-infrastructure-ReportWizardAction.shadow"/>
+                <attr name="originalFile" stringvalue="Actions/Tools/org-sleuthkit-autopsy-report-infrastructure-ReportWizardAction.instance"/>
                 <attr name="position" intvalue="103"/>
             </file>
             <file name="org-sleuthkit-autopsy-casemodule-CaseCloseAction.instance">
@@ -427,7 +430,7 @@
     <folder name="Windows2">
         <folder name="Components">
             <file name="DirectoryTreeTopComponent.settings" url="DirectoryTreeTopComponentSettings.xml"/>
-            <!-- <file name="DataContentTopComponent.settings" url="DataContentTopComponentSettings.xml" /> -->
+            <file name="DataContentTopComponent.settings" url="DataContentTopComponentSettings.xml" />
             <file name="IngestMessageTopComponent.settings" url="IngestMessageTopComponentSettings.xml"/>
         </folder>
         <folder name="Modes">
@@ -439,6 +442,9 @@
             <file name="floatingLeftBottom.wsmode" url="floatingLeftBottomWsmode.xml"/>
             <file name="timeline.wsmode" url="timelineWsmode.xml"/>
             <file name="cvt.wsmode" url="cvtWsmode.xml"/>
+            <file name="discovery.wsmode" url="discoveryWsmode.xml"/>
+            <file name="geolocation.wsmode" url="geolocationWsmode.xml"/>
+            <file name="personas.wsmode" url="personasWsmode.xml"/>
         </folder>
     </folder>
     

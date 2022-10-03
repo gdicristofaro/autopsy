@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2017-2018 Basis Technology Corp.
+ * Copyright 2017-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,12 +21,12 @@ package org.sleuthkit.autopsy.actions;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javax.swing.AbstractAction;
@@ -40,11 +40,12 @@ import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
 import org.sleuthkit.autopsy.casemodule.services.TagsManager;
 import org.sleuthkit.autopsy.coreutils.Logger;
+import org.sleuthkit.autopsy.datamodel.BlackboardArtifactItem;
+import org.sleuthkit.autopsy.tags.TagUtils;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardArtifactTag;
 import org.sleuthkit.datamodel.TagName;
 import org.sleuthkit.datamodel.TskCoreException;
-import org.sleuthkit.datamodel.TskData;
 
 /**
  * Instances of this Action allow users to delete tags applied to blackboard
@@ -82,6 +83,20 @@ public class DeleteFileBlackboardArtifactTagAction extends AbstractAction implem
         return new TagMenu();
     }
 
+    /**
+     * Get the menu for removing tags from the specified collection of
+     * BlackboardArtifacts.
+     *
+     * @param selectedArtifacts The collection of BlackboardArtifacts the menu
+     *                          actions will be applied to.
+     *
+     * @return The menu which will allow users to remove tags from the specified
+     *         collection of BlackboardArtifacts.
+     */
+    public JMenuItem getMenuForArtifacts(Collection<BlackboardArtifact> selectedArtifacts) {
+        return new TagMenu(selectedArtifacts);
+    }
+
     @Override
     public void actionPerformed(ActionEvent event) {
     }
@@ -105,7 +120,7 @@ public class DeleteFileBlackboardArtifactTagAction extends AbstractAction implem
                     Platform.runLater(()
                             -> new Alert(Alert.AlertType.ERROR, Bundle.DeleteFileBlackboardArtifactTagAction_deleteTag_alert(artifactId)).show()
                     );
-                    return null;  
+                    return null;
                 }
 
                 try {
@@ -144,11 +159,15 @@ public class DeleteFileBlackboardArtifactTagAction extends AbstractAction implem
         private static final long serialVersionUID = 1L;
 
         TagMenu() {
+            this(Utilities.actionsGlobalContext()
+                    .lookupAll(BlackboardArtifactItem.class)
+                    .stream()
+                    .map((bai) -> (BlackboardArtifact) bai.getTskContent())
+                    .collect(Collectors.toSet()));
+        }
+
+        TagMenu(Collection<BlackboardArtifact> selectedBlackboardArtifactsList) {
             super(getActionDisplayName());
-
-            final Collection<BlackboardArtifact> selectedBlackboardArtifactsList
-                    = new HashSet<>(Utilities.actionsGlobalContext().lookupAll(BlackboardArtifact.class));
-
             if (!selectedBlackboardArtifactsList.isEmpty()) {
                 BlackboardArtifact artifact
                         = selectedBlackboardArtifactsList.iterator().next();
@@ -172,7 +191,7 @@ public class DeleteFileBlackboardArtifactTagAction extends AbstractAction implem
                     try {
                         List<BlackboardArtifactTag> existingTagsList
                                 = Case.getCurrentCaseThrows().getServices().getTagsManager()
-                                .getBlackboardArtifactTagsByArtifact(artifact);
+                                        .getBlackboardArtifactTagsByArtifact(artifact);
 
                         for (Map.Entry<String, TagName> entry : tagNamesMap.entrySet()) {
                             String tagDisplayName = entry.getKey();
@@ -180,12 +199,11 @@ public class DeleteFileBlackboardArtifactTagAction extends AbstractAction implem
                             TagName tagName = entry.getValue();
                             for (BlackboardArtifactTag artifactTag : existingTagsList) {
                                 if (tagDisplayName.equals(artifactTag.getName().getDisplayName())) {
-                                    String notableString = tagName.getKnownStatus() == TskData.FileKnown.BAD ? TagsManager.getNotableTagLabel() : "";
-                                    JMenuItem tagNameItem = new JMenuItem(tagDisplayName + notableString);
+                                    JMenuItem tagNameItem = new JMenuItem(TagUtils.getDecoratedTagDisplayName(tagName));
                                     tagNameItem.addActionListener((ActionEvent e) -> {
                                         deleteTag(tagName, artifactTag, artifact.getArtifactID());
                                     });
-                                   // Show custom tags before predefined tags in the menu
+                                    // Show custom tags before predefined tags in the menu
                                     if (standardTagNames.contains(tagDisplayName)) {
                                         standardTagMenuitems.add(tagNameItem);
                                     } else {
@@ -200,7 +218,7 @@ public class DeleteFileBlackboardArtifactTagAction extends AbstractAction implem
                     }
                 }
 
-                if ((getItemCount() > 0) &&  !standardTagMenuitems.isEmpty() ){
+                if ((getItemCount() > 0) && !standardTagMenuitems.isEmpty()) {
                     addSeparator();
                 }
                 standardTagMenuitems.forEach((menuItem) -> {

@@ -27,11 +27,12 @@ import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
 import org.sleuthkit.autopsy.coreutils.MessageNotifyUtil;
 import java.util.logging.Level;
+import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.coreutils.Logger;
 
 @OptionsPanelController.TopLevelRegistration(categoryName = "#OptionsCategory_Name_Multi_User_Settings",
         iconBase = "org/sleuthkit/autopsy/images/User-Group-icon-green32.png",
-        position = 3,
+        position = 4,
         keywords = "#OptionsCategory_Keywords_Multi_User_Options",
         keywordsCategory = "Multi-User")
 public final class MultiUserSettingsPanelController extends OptionsPanelController {
@@ -43,7 +44,7 @@ public final class MultiUserSettingsPanelController extends OptionsPanelControll
 
     @Override
     public void update() {
-        getPanel().load();
+        getPanel().load(Case.isCaseOpen());
         changed = false;
     }
 
@@ -59,7 +60,7 @@ public final class MultiUserSettingsPanelController extends OptionsPanelControll
 
     @Override
     public boolean isValid() {
-        return getPanel().valid();
+        return getPanel().valid(Case.isCaseOpen());
     }
 
     @Override

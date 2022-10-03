@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2018 Basis Technology Corp.
+ * Copyright 2018-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.autopsy.contentviewers;
 
-
 import com.google.common.base.Strings;
 import java.awt.Component;
 import java.util.HashMap;
@@ -30,6 +29,7 @@ import org.openide.util.lookup.ServiceProvider;
 import org.sleuthkit.autopsy.corecomponentinterfaces.DataContentViewer;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.modules.filetypeid.FileTypeDetector;
+import org.sleuthkit.autopsy.contentviewers.utils.ViewerPriority;
 import org.sleuthkit.datamodel.AbstractFile;
 
 /**
@@ -39,17 +39,19 @@ import org.sleuthkit.datamodel.AbstractFile;
 @SuppressWarnings("PMD.SingularField") // UI widgets cause lots of false positives
 public class FileViewer extends javax.swing.JPanel implements DataContentViewer {
 
-    private static final int CONFIDENCE_LEVEL = 5;
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(FileViewer.class.getName());
 
     private final Map<String, FileTypeViewer> mimeTypeToViewerMap = new HashMap<>();
 
     // TBD: This hardcoded list of viewers should be replaced with a dynamic lookup
-    private static final FileTypeViewer[] KNOWN_VIEWERS = new FileTypeViewer[]{
+    private final FileTypeViewer[] KNOWN_VIEWERS = new FileTypeViewer[]{
         new SQLiteViewer(),
         new PListViewer(),
-        new MediaFileViewer()
+        new MediaFileViewer(),
+        new HtmlViewer(),
+        new WindowsRegistryViewer(),
+        new PDFViewer()
     };
 
     private FileTypeViewer lastViewer;
@@ -76,14 +78,19 @@ public class FileViewer extends javax.swing.JPanel implements DataContentViewer 
     }
 
     /**
-     * Get the FileTypeViewer for a given mimetype
+     * Get the FileTypeViewer for a given file
      *
-     * @param mimeType
+     * @param file
      *
-     * @return FileTypeViewer, null if no known content viewer supports the mimetype
+     * @return FileTypeViewer, null if no known content viewer supports the
+     *         file
      */
-    private FileTypeViewer getSupportingViewer(String mimeType) {
-        return  mimeTypeToViewerMap.get(mimeType);
+    private FileTypeViewer getSupportingViewer(AbstractFile file) {
+        FileTypeViewer viewer = mimeTypeToViewerMap.get(file.getMIMEType());
+        if (viewer == null || viewer.isSupported(file)) {
+            return viewer;
+        }
+        return null;
     }
 
     /**
@@ -101,18 +108,17 @@ public class FileViewer extends javax.swing.JPanel implements DataContentViewer 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     // End of variables declaration//GEN-END:variables
-    
     @Override
     public void setNode(Node selectedNode) {
-        
+
         resetComponent();
-        
+
         if (selectedNode == null) {
             return;
         }
 
         AbstractFile file = selectedNode.getLookup().lookup(AbstractFile.class);
-        if (file == null) {
+        if ((file == null) || (file.isDir())) {
             return;
         }
 
@@ -122,27 +128,26 @@ public class FileViewer extends javax.swing.JPanel implements DataContentViewer 
             try {
                 FileTypeDetector fileTypeDetector = new FileTypeDetector();
                 mimeType = fileTypeDetector.getMIMEType(file);
-            }catch (FileTypeDetector.FileTypeDetectorInitException ex) {
+            } catch (FileTypeDetector.FileTypeDetectorInitException ex) {
                 LOGGER.log(Level.SEVERE, "Failed to initialize FileTypeDetector.", ex); //NON-NLS
                 return;
             }
         }
-        
+
         if (mimeType.equalsIgnoreCase("application/octet-stream")) {
             return;
-        } 
-        else {
-            FileTypeViewer viewer = getSupportingViewer(mimeType);
+        } else {
+            FileTypeViewer viewer = getSupportingViewer(file);
             if (viewer != null) {
                 lastViewer = viewer;
 
                 viewer.setFile(file);
                 this.removeAll();
                 this.add(viewer.getComponent());
-                this.repaint();
+                this.validate();
             }
         }
-       
+
     }
 
     @Override
@@ -185,7 +190,7 @@ public class FileViewer extends javax.swing.JPanel implements DataContentViewer 
         }
 
         AbstractFile aFile = node.getLookup().lookup(AbstractFile.class);
-        if (aFile == null) {
+        if ((aFile == null) || (aFile.isDir())) {
             return false;
         }
 
@@ -195,44 +200,44 @@ public class FileViewer extends javax.swing.JPanel implements DataContentViewer 
             try {
                 FileTypeDetector fileTypeDetector = new FileTypeDetector();
                 mimeType = fileTypeDetector.getMIMEType(aFile);
-            }catch (FileTypeDetector.FileTypeDetectorInitException ex) {
+            } catch (FileTypeDetector.FileTypeDetectorInitException ex) {
                 LOGGER.log(Level.SEVERE, "Failed to initialize FileTypeDetector.", ex); //NON-NLS
                 return false;
             }
         }
-        
+
         if (mimeType.equalsIgnoreCase("application/octet-stream")) {
             return false;
         } else {
-            return (getSupportingViewer(mimeType) != null);
+            return (getSupportingViewer(aFile) != null);
         }
-       
+
     }
 
     @Override
     public int isPreferred(Node node) {
         AbstractFile file = node.getLookup().lookup(AbstractFile.class);
         String mimeType = file.getMIMEType();
-        
+
         if (Strings.isNullOrEmpty(mimeType)) {
             LOGGER.log(Level.INFO, "Mimetype not known for file: {0}", file.getName()); //NON-NLS
             try {
                 FileTypeDetector fileTypeDetector = new FileTypeDetector();
                 mimeType = fileTypeDetector.getMIMEType(file);
-            }catch (FileTypeDetector.FileTypeDetectorInitException ex) {
+            } catch (FileTypeDetector.FileTypeDetectorInitException ex) {
                 LOGGER.log(Level.SEVERE, "Failed to initialize FileTypeDetector.", ex); //NON-NLS
-                return 0;
+                return ViewerPriority.viewerPriority.LevelZero.getFlag();
             }
         }
-        
+
         if (mimeType.equalsIgnoreCase("application/octet-stream")) {
-            return 0;
+            return ViewerPriority.viewerPriority.LevelZero.getFlag();
         } else {
-            if (null != getSupportingViewer(mimeType)) {
-                return CONFIDENCE_LEVEL;
+            if (null != getSupportingViewer(file)) {
+                return ViewerPriority.viewerPriority.LevelFive.getFlag();
             }
         }
-        
-        return 0;
+
+        return ViewerPriority.viewerPriority.LevelZero.getFlag();
     }
 }

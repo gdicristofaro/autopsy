@@ -30,7 +30,7 @@ import org.sleuthkit.autopsy.coreutils.Logger;
 @OptionsPanelController.TopLevelRegistration(
         categoryName = "#OptionsCategory_Name_HashDatabase",
         iconBase = "org/sleuthkit/autopsy/modules/hashdatabase/options_icon.png",
-        position = 7,
+        position = 8,
         keywords = "#OptionsCategory_Keywords_HashDatabase",
         keywordsCategory = "HashDatabase",
         id = "HashDatabase")
@@ -72,7 +72,10 @@ public final class HashDatabaseOptionsPanelController extends OptionsPanelContro
      */
     @Override
     public void cancel() {
-        getPanel().cancel();
+        if(changed) {
+            getPanel().cancel();
+            changed = false;
+        }
     }
 
     @Override

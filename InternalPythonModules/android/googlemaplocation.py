@@ -1,7 +1,7 @@
 """
 Autopsy Forensic Browser
 
-Copyright 2016 Basis Technology Corp.
+Copyright 2016-2021 Basis Technology Corp.
 Contact: carrier <at> sleuthkit <dot> org
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,17 +30,21 @@ from java.sql import Statement
 from java.util.logging import Level
 from java.util import ArrayList
 from org.sleuthkit.autopsy.casemodule import Case
-from org.sleuthkit.autopsy.casemodule.services import Blackboard
 from org.sleuthkit.autopsy.casemodule.services import FileManager
 from org.sleuthkit.autopsy.coreutils import Logger
 from org.sleuthkit.autopsy.coreutils import MessageNotifyUtil
 from org.sleuthkit.autopsy.datamodel import ContentUtils
 from org.sleuthkit.autopsy.ingest import IngestJobContext
 from org.sleuthkit.datamodel import AbstractFile
+from org.sleuthkit.datamodel import Blackboard
 from org.sleuthkit.datamodel import BlackboardArtifact
 from org.sleuthkit.datamodel import BlackboardAttribute
 from org.sleuthkit.datamodel import Content
 from org.sleuthkit.datamodel import TskCoreException
+from org.sleuthkit.datamodel.Blackboard import BlackboardException
+from org.sleuthkit.datamodel.blackboardutils import GeoArtifactsHelper
+from org.sleuthkit.datamodel.blackboardutils.attributes import GeoWaypoints
+from org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoints import Waypoint
 
 import traceback
 import general
@@ -52,37 +56,53 @@ class GoogleMapLocationAnalyzer(general.AndroidComponentAnalyzer):
 
     def __init__(self):
         self._logger = Logger.getLogger(self.__class__.__name__)
+        self.current_case = None
+        self.PROGRAM_NAME = "Google Maps History"
+        self.CAT_DESTINATION = "Destination"
 
     def analyze(self, dataSource, fileManager, context):
+        try:
+            self.current_case = Case.getCurrentCaseThrows()
+        except NoCurrentCaseException as ex:
+            self._logger.log(Level.WARNING, "No case currently open.", ex)
+            self._logger.log(Level.WARNING, traceback.format_exc())
+            return
+
         try:
             absFiles = fileManager.findFiles(dataSource, "da_destination_history")
             if absFiles.isEmpty():
                 return
             for abstractFile in absFiles:
                 try:
-                    jFile = File(Case.getCurrentCase().getTempDirectory(), str(abstractFile.getId()) + abstractFile.getName())
+                    jFile = File(self.current_case.getTempDirectory(), str(abstractFile.getId()) + abstractFile.getName())
                     ContentUtils.writeToFile(abstractFile, jFile, context.dataSourceIngestIsCancelled)
-                    self.__findGeoLocationsInDB(jFile.toString(), abstractFile)
+                    self.__findGeoLocationsInDB(jFile.toString(), abstractFile, context)
                 except Exception as ex:
                     self._logger.log(Level.SEVERE, "Error parsing Google map locations", ex)
                     self._logger.log(Level.SEVERE, traceback.format_exc())
         except TskCoreException as ex:
-            self._logger.log(Level.SEVERE, "Error finding Google map locations", ex)
-            self._logger.log(Level.SEVERE, traceback.format_exc())
+            # Error finding Google map locations.
+            pass
 
-    def __findGeoLocationsInDB(self, databasePath, abstractFile):
+    def __findGeoLocationsInDB(self, databasePath, abstractFile, context):
         if not databasePath:
             return
 
         try:
+            artifactHelper = GeoArtifactsHelper(self.current_case.getSleuthkitCase(),
+                                    general.MODULE_NAME, self.PROGRAM_NAME, abstractFile, context.getJobId())
             Class.forName("org.sqlite.JDBC") # load JDBC driver
             connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath)
             statement = connection.createStatement()
-        except (ClassNotFoundException, SQLException) as ex:
-            self._logger.log(Level.SEVERE, "Error opening database", ex)
+        except (ClassNotFoundException) as ex:
+            self._logger.log(Level.SEVERE, "Error loading JDBC driver", ex)
             self._logger.log(Level.SEVERE, traceback.format_exc())
             return
+        except (SQLException) as ex:
+            # Error opening database.
+            return
 
+        resultSet = None
         try:
             resultSet = statement.executeQuery(
                 "SELECT time, dest_lat, dest_lng, dest_title, dest_address, source_lat, source_lng FROM destination_history;")
@@ -97,30 +117,23 @@ class GoogleMapLocationAnalyzer(general.AndroidComponentAnalyzer):
                 source_lat = GoogleMapLocationAnalyzer.convertGeo(resultSet.getString("source_lat"))
                 source_lng = GoogleMapLocationAnalyzer.convertGeo(resultSet.getString("source_lng"))
 
-                attributes = ArrayList()
-                artifact = abstractFile.newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_ROUTE)
-                attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_CATEGORY, general.MODULE_NAME, "Destination"))
-                attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME, general.MODULE_NAME, time))
-                attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_LATITUDE_END, general.MODULE_NAME, dest_lat))
-                attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_LONGITUDE_END, general.MODULE_NAME, dest_lng))
-                attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_LATITUDE_START, general.MODULE_NAME, source_lat))
-                attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_LONGITUDE_START, general.MODULE_NAME, source_lng))
-                attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, general.MODULE_NAME, dest_title))
-                attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_LOCATION, general.MODULE_NAME, dest_address))
-                attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, general.MODULE_NAME, "Google Maps History"))
+                waypointlist = GeoWaypoints()
+                waypointlist.addPoint(Waypoint(source_lat, source_lng, None, None))
+                waypointlist.addPoint(Waypoint(dest_lat, dest_lng, None, dest_address))
+				
+                artifactHelper.addRoute(dest_title, time, waypointlist, None)
 
-                artifact.addAttributes(attributes)
-                try:
-                    # index the artifact for keyword search
-                    blackboard = Case.getCurrentCase().getServices().getBlackboard()
-                    blackboard.indexArtifact(artifact)
-                except Blackboard.BlackboardException as ex:
-                    self._logger.log(Level.SEVERE, "Unable to index blackboard artifact " + str(artifact.getArtifactID()), ex)
-                    self._logger.log(Level.SEVERE, traceback.format_exc())
-                    MessageNotifyUtil.Notify.error("Failed to index GPS route artifact for keyword search.", artifact.getDisplayName())
-
+        except SQLException as ex:
+            # Unable to execute Google map locations SQL query against database.
+            pass
+        except TskCoreException as ex:
+                self._logger.log(Level.SEVERE, "Failed to add route artifacts.", ex)
+                self._logger.log(Level.SEVERE, traceback.format_exc())
+        except BlackboardException as ex:
+                self._logger.log(Level.WARNING, "Failed to post artifacts.", ex)
+                self._logger.log(Level.WARNING, traceback.format_exc())
         except Exception as ex:
-            self._logger.log(Level.SEVERE, "Error parsing Google map locations to the blackboard", ex)
+            self._logger.log(Level.SEVERE, "Error processing google maps history.", ex)
             self._logger.log(Level.SEVERE, traceback.format_exc())
         finally:
             try:
@@ -129,8 +142,8 @@ class GoogleMapLocationAnalyzer(general.AndroidComponentAnalyzer):
                 statement.close()
                 connection.close()
             except Exception as ex:
-                self._logger.log(Level.SEVERE, "Error closing the database", ex)
-                self._logger.log(Level.SEVERE, traceback.format_exc())
+                # Error closing the database.
+                pass
 
     # add periods 6 decimal places before the end.
     @staticmethod

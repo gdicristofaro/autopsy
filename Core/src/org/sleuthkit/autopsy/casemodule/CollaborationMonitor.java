@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2015-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,6 +24,7 @@ import java.beans.PropertyChangeListener;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -46,6 +47,7 @@ import org.sleuthkit.autopsy.events.AutopsyEventPublisher;
 import org.sleuthkit.autopsy.ingest.IngestManager;
 import org.sleuthkit.autopsy.ingest.events.DataSourceAnalysisCompletedEvent;
 import org.sleuthkit.autopsy.ingest.events.DataSourceAnalysisStartedEvent;
+import org.sleuthkit.datamodel.Content;
 
 /**
  * A collaboration monitor listens to local events and translates them into
@@ -58,6 +60,7 @@ final class CollaborationMonitor {
     private static final String COLLABORATION_MONITOR_EVENT = "COLLABORATION_MONITOR_EVENT"; //NON-NLS
     private static final Set<Case.Events> CASE_EVENTS_OF_INTEREST = EnumSet.of(Case.Events.ADDING_DATA_SOURCE,
             Case.Events.DATA_SOURCE_ADDED, Case.Events.ADDING_DATA_SOURCE_FAILED);
+    private static final Set<IngestManager.IngestJobEvent> INGEST_JOB_EVENTS_OF_INTEREST = EnumSet.of(IngestManager.IngestJobEvent.DATA_SOURCE_ANALYSIS_STARTED, IngestManager.IngestJobEvent.DATA_SOURCE_ANALYSIS_COMPLETED);
     private static final int NUMBER_OF_PERIODIC_TASK_THREADS = 2;
     private static final String PERIODIC_TASK_THREAD_NAME = "collab-monitor-periodic-tasks-%d"; //NON-NLS
     private static final long HEARTBEAT_INTERVAL_MINUTES = 1;
@@ -112,7 +115,7 @@ final class CollaborationMonitor {
          * Create a local tasks manager to track and broadcast local tasks.
          */
         localTasksManager = new LocalTasksManager();
-        IngestManager.getInstance().addIngestJobEventListener(localTasksManager);
+        IngestManager.getInstance().addIngestJobEventListener(INGEST_JOB_EVENTS_OF_INTEREST, localTasksManager);
         Case.addEventTypeSubscriber(CASE_EVENTS_OF_INTEREST, localTasksManager);
 
         /**
@@ -231,9 +234,12 @@ final class CollaborationMonitor {
          * @param event A data source analysis started event.
          */
         synchronized void addDataSourceAnalysisTask(DataSourceAnalysisStartedEvent event) {
-            String status = NbBundle.getMessage(CollaborationMonitor.class, "CollaborationMonitor.analyzingDataSourceStatus.msg", hostName, event.getDataSource().getName());
-            jobIdsTodataSourceAnalysisTasks.put(event.getDataSourceIngestJobId(), new Task(++nextTaskId, status));
-            eventPublisher.publishRemotely(new CollaborationEvent(hostName, getCurrentTasks()));
+            Content dataSource = event.getDataSource();
+            if (dataSource != null) {
+                String status = NbBundle.getMessage(CollaborationMonitor.class, "CollaborationMonitor.analyzingDataSourceStatus.msg", hostName, dataSource.getName());
+                jobIdsTodataSourceAnalysisTasks.put(event.getIngestJobId(), new Task(++nextTaskId, status));
+                eventPublisher.publishRemotely(new CollaborationEvent(hostName, getCurrentTasks()));
+            }
         }
 
         /**
@@ -244,7 +250,7 @@ final class CollaborationMonitor {
          * @param event A data source analysis completed event.
          */
         synchronized void removeDataSourceAnalysisTask(DataSourceAnalysisCompletedEvent event) {
-            jobIdsTodataSourceAnalysisTasks.remove(event.getDataSourceIngestJobId());
+            jobIdsTodataSourceAnalysisTasks.remove(event.getIngestJobId());
             eventPublisher.publishRemotely(new CollaborationEvent(hostName, getCurrentTasks()));
         }
 
@@ -534,7 +540,7 @@ final class CollaborationMonitor {
          * @return A mapping of task IDs to current tasks
          */
         Map<Long, Task> getCurrentTasks() {
-            return currentTasks;
+            return Collections.unmodifiableMap(currentTasks);
         }
 
     }

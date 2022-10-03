@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011-18 Basis Technology Corp.
+ * Copyright 2011-19 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +22,8 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.awt.Image;
 import java.awt.Toolkit;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.lang.ref.SoftReference;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -38,6 +40,7 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import javax.imageio.ImageIO;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import org.apache.commons.lang3.StringUtils;
@@ -47,7 +50,6 @@ import org.openide.nodes.AbstractNode;
 import org.openide.nodes.Children;
 import org.openide.nodes.FilterNode;
 import org.openide.nodes.Node;
-import org.openide.util.Exceptions;
 import org.openide.util.NbBundle;
 import org.openide.util.lookup.Lookups;
 import org.sleuthkit.autopsy.corecomponents.ResultViewerPersistence.SortCriterion;
@@ -72,6 +74,9 @@ class ThumbnailViewChildren extends Children.Keys<Integer> {
 
     @NbBundle.Messages("ThumbnailViewChildren.progress.cancelling=(Cancelling)")
     private static final String CANCELLING_POSTIX = Bundle.ThumbnailViewChildren_progress_cancelling();
+    
+    private static Image waitingIcon;
+    
     static final int IMAGES_PER_PAGE = 200;
 
     private final ExecutorService executor = Executors.newFixedThreadPool(3,
@@ -81,6 +86,23 @@ class ThumbnailViewChildren extends Children.Keys<Integer> {
     private final Node parent;
     private final List<List<Node>> pages = new ArrayList<>();
     private int thumbSize;
+    
+
+    /**
+     * @return The thumbnail to show while waiting to load the thumbnail.
+     */
+    private static Image getWaitingIcon() {
+        if (waitingIcon == null) {
+            String imgPath = "/org/sleuthkit/autopsy/images/working_spinner.gif";
+            try {
+                waitingIcon = ImageIO.read(ThumbnailViewNode.class.getResource(imgPath));    
+            } catch (IOException ex) {
+                logger.log(Level.WARNING, "There was an error loading image: " + imgPath, ex);
+            }
+        }
+
+        return waitingIcon;
+    }
 
     /**
      * The constructor
@@ -197,7 +219,7 @@ class ThumbnailViewChildren extends Children.Keys<Integer> {
                         }
 
                     } catch (IllegalAccessException | InvocationTargetException ex) {
-                        Exceptions.printStackTrace(ex);
+                        logger.log(Level.WARNING, "Error getting value for thumbnail children", ex);
                     }
                 }
             }
@@ -261,8 +283,6 @@ class ThumbnailViewChildren extends Children.Keys<Integer> {
 
         private final Logger logger = Logger.getLogger(ThumbnailViewNode.class.getName());
 
-        private final Image waitingIcon = Toolkit.getDefaultToolkit().createImage(ThumbnailViewNode.class.getResource("/org/sleuthkit/autopsy/images/working_spinner.gif")); //NOI18N
-
         private SoftReference<Image> thumbCache = null;
         private int thumbSize;
         private final Content content;
@@ -310,7 +330,8 @@ class ThumbnailViewChildren extends Children.Keys<Integer> {
                 waitSpinnerTimer = new Timer(1, actionEvent -> fireIconChange());
                 waitSpinnerTimer.start();
             }
-            return waitingIcon;
+            
+            return getWaitingIcon();
         }
 
         synchronized void setThumbSize(int iconSize) {

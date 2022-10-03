@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011-2018 Basis Technology Corp.
+ * Copyright 2011-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,11 +38,10 @@ import org.openide.windows.WindowManager;
 import org.sleuthkit.autopsy.actions.IngestRunningCheck;
 import org.sleuthkit.autopsy.casemodule.Case.CaseType;
 import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationCase;
-import org.sleuthkit.autopsy.centralrepository.datamodel.EamDb;
-import org.sleuthkit.autopsy.centralrepository.datamodel.EamDbException;
-import org.sleuthkit.autopsy.centralrepository.datamodel.EamOrganization;
+import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepoOrganization;
 import org.sleuthkit.autopsy.coreutils.FileUtil;
 import org.sleuthkit.autopsy.coreutils.Logger;
+import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepository;
 
 /**
  * The action associated with the Case/New Case menu item, t toolbar button, and
@@ -71,7 +70,7 @@ final class NewCaseWizardAction extends CallableSystemAction {
         final WizardDescriptor wizardDescriptor = new WizardDescriptor(getNewCaseWizardPanels());
         wizardDescriptor.setTitleFormat(new MessageFormat("{0}"));
         wizardDescriptor.setTitle(NbBundle.getMessage(this.getClass(), "NewCaseWizardAction.newCase.windowTitle.text"));
-        Dialog dialog = DialogDisplayer.getDefault().createDialog(wizardDescriptor);
+        Dialog dialog = DialogDisplayer.getDefault().createDialog(wizardDescriptor, WindowManager.getDefault().getMainWindow());
         dialog.setVisible(true);
         dialog.toFront();
         if (wizardDescriptor.getValue() == WizardDescriptor.FINISH_OPTION) {
@@ -88,23 +87,23 @@ final class NewCaseWizardAction extends CallableSystemAction {
                     String createdDirectory = (String) wizardDescriptor.getProperty("createdDirectory"); //NON-NLS
                     CaseType caseType = CaseType.values()[(int) wizardDescriptor.getProperty("caseType")]; //NON-NLS
                     Case.createAsCurrentCase(caseType, createdDirectory, new CaseDetails(caseName, caseNumber, examinerName, examinerPhone, examinerEmail, caseNotes));
-                    if (EamDb.isEnabled()) {  //if the eam is enabled we need to save the case organization information now
-                            EamDb dbManager = EamDb.getInstance();
-                            if (dbManager != null) {
-                                CorrelationCase cRCase = dbManager.getCase(Case.getCurrentCaseThrows());
-                                if (cRCase == null) {
-                                    cRCase = dbManager.newCase(Case.getCurrentCaseThrows());
-                                }
-                                if (!organizationName.isEmpty()) {
-                                    for (EamOrganization org : dbManager.getOrganizations()) {
-                                        if (org.getName().equals(organizationName)) {
-                                            cRCase.setOrg(org);
-                                            dbManager.updateCase(cRCase);
-                                        }
+                    if (CentralRepository.isEnabled()) {  //if the eam is enabled we need to save the case organization information now
+                        CentralRepository dbManager = CentralRepository.getInstance();
+                        if (dbManager != null) {
+                            CorrelationCase cRCase = dbManager.getCase(Case.getCurrentCaseThrows());
+                            if (cRCase == null) {
+                                cRCase = dbManager.newCase(Case.getCurrentCaseThrows());
+                            }
+                            if (!organizationName.isEmpty()) {
+                                for (CentralRepoOrganization org : dbManager.getOrganizations()) {
+                                    if (org.getName().equals(organizationName)) {
+                                        cRCase.setOrg(org);
+                                        dbManager.updateCase(cRCase);
                                     }
                                 }
                             }
-                        } 
+                        }
+                    }
                     return null;
                 }
 

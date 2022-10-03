@@ -1,7 +1,7 @@
 /*
  * Central Repository
  *
- * Copyright 2015-2018 Basis Technology Corp.
+ * Copyright 2017-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,11 +21,14 @@ package org.sleuthkit.autopsy.centralrepository.eventlisteners;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
+import org.apache.commons.lang.StringUtils;
 import org.openide.util.NbBundle.Messages;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
@@ -34,15 +37,14 @@ import org.sleuthkit.autopsy.casemodule.events.BlackBoardArtifactTagDeletedEvent
 import org.sleuthkit.autopsy.casemodule.events.ContentTagAddedEvent;
 import org.sleuthkit.autopsy.casemodule.events.ContentTagDeletedEvent;
 import org.sleuthkit.autopsy.casemodule.events.DataSourceAddedEvent;
+import org.sleuthkit.autopsy.casemodule.events.DataSourceNameChangedEvent;
 import org.sleuthkit.autopsy.casemodule.services.TagsManager;
 import org.sleuthkit.autopsy.coreutils.Logger;
-import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationAttribute;
-import org.sleuthkit.autopsy.centralrepository.datamodel.EamArtifactUtil;
+import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationAttributeInstance;
+import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationAttributeUtil;
 import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationCase;
 import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationDataSource;
-import org.sleuthkit.autopsy.centralrepository.datamodel.EamDb;
-import org.sleuthkit.autopsy.centralrepository.datamodel.EamDbException;
-import org.sleuthkit.autopsy.centralrepository.datamodel.EamOrganization;
+import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepoException;
 import org.sleuthkit.autopsy.coreutils.ThreadUtils;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
@@ -52,256 +54,403 @@ import org.sleuthkit.datamodel.ContentTag;
 import org.sleuthkit.datamodel.TagName;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskData;
-import org.sleuthkit.datamodel.TskDataException;
+import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepository;
+import org.sleuthkit.datamodel.Tag;
+import org.sleuthkit.autopsy.events.AutopsyEvent;
+import org.sleuthkit.datamodel.AnalysisResult;
+import org.sleuthkit.datamodel.DataArtifact;
 
 /**
- * Listen for case events and update entries in the Central Repository database
- * accordingly
+ * An Autopsy events listener for case events relevant to the central
+ * repository.
  */
 @Messages({"caseeventlistener.evidencetag=Evidence"})
-final class CaseEventListener implements PropertyChangeListener {
+public final class CaseEventListener implements PropertyChangeListener {
 
     private static final Logger LOGGER = Logger.getLogger(CaseEventListener.class.getName());
+    private static final String CASE_EVENT_THREAD_NAME = "CR-Case-Event-Listener-%d";
+    private static final Set<Case.Events> CASE_EVENTS_OF_INTEREST = EnumSet.of(
+            Case.Events.CONTENT_TAG_ADDED, Case.Events.CONTENT_TAG_DELETED,
+            Case.Events.BLACKBOARD_ARTIFACT_TAG_DELETED, Case.Events.BLACKBOARD_ARTIFACT_TAG_ADDED,
+            Case.Events.CONTENT_TAG_ADDED, Case.Events.CONTENT_TAG_DELETED,
+            Case.Events.DATA_SOURCE_ADDED,
+            Case.Events.TAG_DEFINITION_CHANGED,
+            Case.Events.CURRENT_CASE,
+            Case.Events.DATA_SOURCE_NAME_CHANGED);
     private final ExecutorService jobProcessingExecutor;
-    private static final String CASE_EVENT_THREAD_NAME = "Case-Event-Listener-%d";
 
-    CaseEventListener() {
+    /**
+     * Contructs an Autopsy events listener for case events relevant to the
+     * central repository.
+     */
+    public CaseEventListener() {
         jobProcessingExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(CASE_EVENT_THREAD_NAME).build());
     }
 
-    void shutdown() {
+    /**
+     * Starts up the listener.
+     */
+    public void startUp() {
+        Case.addEventTypeSubscriber(CASE_EVENTS_OF_INTEREST, this);
+    }
+
+    /**
+     * Shuts down the listener.
+     */
+    public void shutdown() {
+        Case.removeEventTypeSubscriber(CASE_EVENTS_OF_INTEREST, this);
         ThreadUtils.shutDownTaskExecutor(jobProcessingExecutor);
     }
 
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
-        EamDb dbManager;
-        try {
-            dbManager = EamDb.getInstance();
-        } catch (EamDbException ex) {
-            LOGGER.log(Level.SEVERE, "Failed to get instance of db manager.", ex);
+        if (!(evt instanceof AutopsyEvent) || (((AutopsyEvent) evt).getSourceType() != AutopsyEvent.SourceType.LOCAL)) {
             return;
         }
+
+        if (!CentralRepository.isEnabled()) {
+            return;
+        }
+
+        CentralRepository centralRepo;
+        try {
+            centralRepo = CentralRepository.getInstance();
+        } catch (CentralRepoException ex) {
+            LOGGER.log(Level.SEVERE, "Failed to access central repository", ex);
+            return;
+        }
+
+        /*
+         * IMPORTANT: If any changes are made to which event types are handled,
+         * the change must also be made to the contents of the
+         * CASE_EVENTS_OF_INTEREST set.
+         */
         switch (Case.Events.valueOf(evt.getPropertyName())) {
             case CONTENT_TAG_ADDED:
-            case CONTENT_TAG_DELETED: {
-                jobProcessingExecutor.submit(new ContentTagTask(dbManager, evt));
-            }
-            break;
-
+            case CONTENT_TAG_DELETED:
+                jobProcessingExecutor.submit(new ContentTagTask(centralRepo, evt));
+                break;
             case BLACKBOARD_ARTIFACT_TAG_DELETED:
-            case BLACKBOARD_ARTIFACT_TAG_ADDED: {
-                jobProcessingExecutor.submit(new BlackboardTagTask(dbManager, evt));
-            }
-            break;
-
-            case DATA_SOURCE_ADDED: {
-                jobProcessingExecutor.submit(new DataSourceAddedTask(dbManager, evt));
-            }
-            break;
-            case TAG_DEFINITION_CHANGED: {
+            case BLACKBOARD_ARTIFACT_TAG_ADDED:
+                jobProcessingExecutor.submit(new ArtifactTagTask(centralRepo, evt));
+                break;
+            case DATA_SOURCE_ADDED:
+                jobProcessingExecutor.submit(new DataSourceAddedTask(centralRepo, evt));
+                break;
+            case TAG_DEFINITION_CHANGED:
                 jobProcessingExecutor.submit(new TagDefinitionChangeTask(evt));
+                break;
+            case CURRENT_CASE:
+                jobProcessingExecutor.submit(new CurrentCaseTask(centralRepo, evt));
+                break;
+            case DATA_SOURCE_NAME_CHANGED:
+                jobProcessingExecutor.submit(new DataSourceNameChangedTask(centralRepo, evt));
+                break;
+            default:
+                break;
+        }
+    }
+
+    /**
+     * Determines whether or not a tag has notable status.
+     *
+     * @param tag The tag.
+     *
+     * @return True or false.
+     */
+    private static boolean isNotableTag(Tag tag) {
+        return (tag != null && isNotableTagDefinition(tag.getName()));
+    }
+
+    /**
+     * Determines whether or not a tag definition calls for notable status.
+     *
+     * @param tagDef The tag definition.
+     *
+     * @return True or false.
+     */
+    private static boolean isNotableTagDefinition(TagName tagDef) {
+        return (tagDef != null && TagsManager.getNotableTagDisplayNames().contains(tagDef.getDisplayName()));
+    }
+
+    /**
+     * Searches a list of tags for a tag with notable status.
+     *
+     * @param tags The tags to search.
+     *
+     * @return Whether or not the list contains a notable tag.
+     */
+    private static boolean hasNotableTag(List<? extends Tag> tags) {
+        if (tags == null) {
+            return false;
+        }
+        return tags.stream()
+                .filter(CaseEventListener::isNotableTag)
+                .findFirst()
+                .isPresent();
+    }
+
+    /**
+     * Sets the notable (known) status of a central repository correlation
+     * attribute corresponding to an artifact.
+     *
+     * @param centralRepo   The central repository.
+     * @param artifact      The artifact.
+     * @param notableStatus The new notable status.
+     */
+    private static void setArtifactKnownStatus(CentralRepository centralRepo, BlackboardArtifact artifact, TskData.FileKnown notableStatus) {
+        List<CorrelationAttributeInstance> corrAttrInstances = new ArrayList<>();
+        if (artifact instanceof DataArtifact) {
+            corrAttrInstances.addAll(CorrelationAttributeUtil.makeCorrAttrsForSearch((DataArtifact) artifact));
+        } else if (artifact instanceof AnalysisResult) {
+            corrAttrInstances.addAll(CorrelationAttributeUtil.makeCorrAttrsForSearch((AnalysisResult) artifact));
+        }
+        for (CorrelationAttributeInstance corrAttrInstance : corrAttrInstances) {
+            try {
+                centralRepo.setAttributeInstanceKnownStatus(corrAttrInstance, notableStatus);
+            } catch (CentralRepoException ex) {
+                LOGGER.log(Level.SEVERE, String.format("Error setting correlation attribute instance known status", corrAttrInstance), ex); //NON-NLS
             }
-            break;
-            case CURRENT_CASE: {
-                jobProcessingExecutor.submit(new CurrentCaseTask(dbManager, evt));
-            }
-            break;
         }
     }
 
     private final class ContentTagTask implements Runnable {
 
-        private final EamDb dbManager;
+        private final CentralRepository dbManager;
         private final PropertyChangeEvent event;
 
-        private ContentTagTask(EamDb db, PropertyChangeEvent evt) {
+        private ContentTagTask(CentralRepository db, PropertyChangeEvent evt) {
             dbManager = db;
             event = evt;
         }
 
         @Override
         public void run() {
-            if (!EamDb.isEnabled()) {
+            if (!CentralRepository.isEnabled()) {
                 return;
             }
 
-            AbstractFile af;
-            TskData.FileKnown knownStatus;
-            String comment;
-            if (Case.Events.valueOf(event.getPropertyName()) == Case.Events.CONTENT_TAG_ADDED) {
-                // For added tags, we want to change the known status to BAD if the 
-                // tag that was just added is in the list of central repo tags.
-                final ContentTagAddedEvent tagAddedEvent = (ContentTagAddedEvent) event;
-                final ContentTag tagAdded = tagAddedEvent.getAddedTag();
+            Case.Events curEventType = Case.Events.valueOf(event.getPropertyName());
+            if (curEventType == Case.Events.CONTENT_TAG_ADDED && event instanceof ContentTagAddedEvent) {
+                handleTagAdded((ContentTagAddedEvent) event);
+            } else if (curEventType == Case.Events.CONTENT_TAG_DELETED && event instanceof ContentTagDeletedEvent) {
+                handleTagDeleted((ContentTagDeletedEvent) event);
+            } else {
+                LOGGER.log(Level.SEVERE,
+                        String.format("Received an event %s of type %s and was expecting either CONTENT_TAG_ADDED or CONTENT_TAG_DELETED.",
+                                event, curEventType));
+            }
+        }
 
-                if (TagsManager.getNotableTagDisplayNames().contains(tagAdded.getName().getDisplayName())) {
-                    if (tagAdded.getContent() instanceof AbstractFile) {
-                        af = (AbstractFile) tagAdded.getContent();
-                        knownStatus = TskData.FileKnown.BAD;
-                        comment = tagAdded.getComment();
-                    } else {
-                        LOGGER.log(Level.WARNING, "Error updating non-file object");
-                        return;
-                    }
-                } else {
-                    // The added tag isn't flagged as bad in central repo, so do nothing
-                    return;
-                }
-            } else { // CONTENT_TAG_DELETED
-                // For deleted tags, we want to set the file status to UNKNOWN if:
-                //   - The tag that was just removed is notable in central repo
-                //   - There are no remaining tags that are notable 
-                final ContentTagDeletedEvent tagDeletedEvent = (ContentTagDeletedEvent) event;
-                long contentID = tagDeletedEvent.getDeletedTagInfo().getContentID();
-
-                String tagName = tagDeletedEvent.getDeletedTagInfo().getName().getDisplayName();
-                if (!TagsManager.getNotableTagDisplayNames().contains(tagName)) {
-                    // If the tag that got removed isn't on the list of central repo tags, do nothing
-                    return;
-                }
-
-                try {
-                    // Get the remaining tags on the content object
-                    Content content = Case.getCurrentCaseThrows().getSleuthkitCase().getContentById(contentID);
-                    TagsManager tagsManager = Case.getCurrentCaseThrows().getServices().getTagsManager();
-                    List<ContentTag> tags = tagsManager.getContentTagsByContent(content);
-
-                    if (tags.stream()
-                            .map(tag -> tag.getName().getDisplayName())
-                            .filter(TagsManager.getNotableTagDisplayNames()::contains)
-                            .collect(Collectors.toList())
-                            .isEmpty()) {
-
-                        // There are no more bad tags on the object
-                        if (content instanceof AbstractFile) {
-                            af = (AbstractFile) content;
-                            knownStatus = TskData.FileKnown.UNKNOWN;
-                            comment = "";
-                        } else {
-                            LOGGER.log(Level.WARNING, "Error updating non-file object");
-                            return;
-                        }
-                    } else {
-                        // There's still at least one bad tag, so leave the known status as is
-                        return;
-                    }
-                } catch (TskCoreException | NoCurrentCaseException ex) {
-                    LOGGER.log(Level.SEVERE, "Failed to find content", ex);
-                    return;
-                }
+        private void handleTagDeleted(ContentTagDeletedEvent evt) {
+            // ensure tag deleted event has a valid content id
+            if (evt.getDeletedTagInfo() == null) {
+                LOGGER.log(Level.SEVERE, "ContentTagDeletedEvent did not have valid content to provide a content id.");
+                return;
             }
 
-            final CorrelationAttribute eamArtifact = EamArtifactUtil.makeCorrelationAttributeFromContent(af);
+            try {
+                // obtain content
+                Content content = Case.getCurrentCaseThrows().getSleuthkitCase().getContentById(evt.getDeletedTagInfo().getContentID());
+                if (content == null) {
+                    LOGGER.log(Level.WARNING,
+                            String.format("Unable to get content for item with content id: %d.", evt.getDeletedTagInfo().getContentID()));
+                    return;
+                }
 
-            if (eamArtifact != null) {
+                // then handle the event 
+                handleTagChange(content);
+            } catch (NoCurrentCaseException | TskCoreException ex) {
+                LOGGER.log(Level.WARNING, "Error updating non-file object: " + evt.getDeletedTagInfo().getContentID(), ex);
+            }
+        }
+
+        private void handleTagAdded(ContentTagAddedEvent evt) {
+            // ensure tag added event has a valid content id
+            if (evt.getAddedTag() == null || evt.getAddedTag().getContent() == null) {
+                LOGGER.log(Level.SEVERE, "ContentTagAddedEvent did not have valid content to provide a content id.");
+                return;
+            }
+
+            // then handle the event
+            handleTagChange(evt.getAddedTag().getContent());
+        }
+
+        /**
+         * When a tag is added or deleted, check if there are other notable tags
+         * for the item. If there are, set known status as notable. If not set
+         * status as unknown.
+         *
+         * @param content The content for the tag that was added or deleted.
+         */
+        private void handleTagChange(Content content) {
+            AbstractFile af = null;
+            try {
+                af = Case.getCurrentCaseThrows().getSleuthkitCase().getAbstractFileById(content.getId());
+            } catch (NoCurrentCaseException | TskCoreException ex) {
+                Long contentID = (content != null) ? content.getId() : null;
+                LOGGER.log(Level.WARNING, "Error updating non-file object: " + contentID, ex);
+            }
+
+            if (af == null) {
+                return;
+            }
+
+            try {
+                // Get the tags on the content object
+                TagsManager tagsManager = Case.getCurrentCaseThrows().getServices().getTagsManager();
+
+                if (hasNotableTag(tagsManager.getContentTagsByContent(content))) {
+                    // if there is a notable tag on the object, set content known status to bad
+                    setContentKnownStatus(af, TskData.FileKnown.BAD);
+                } else {
+                    // otherwise, set to unknown
+                    setContentKnownStatus(af, TskData.FileKnown.UNKNOWN);
+                }
+            } catch (TskCoreException | NoCurrentCaseException ex) {
+                LOGGER.log(Level.SEVERE, "Failed to obtain tags manager for case.", ex);
+            }
+        }
+
+        /**
+         * Sets the known status for the correlation attribute instance for the
+         * given abstract file.
+         *
+         * @param af          The abstract file for which to set the correlation
+         *                    attribute instance.
+         * @param knownStatus The new known status for the correlation attribute
+         *                    instance.
+         */
+        private void setContentKnownStatus(AbstractFile af, TskData.FileKnown knownStatus) {
+            final List<CorrelationAttributeInstance> md5CorrelationAttr = CorrelationAttributeUtil.makeCorrAttrsForSearch(af);
+            if (!md5CorrelationAttr.isEmpty()) {
+                //for an abstract file the 'list' of attributes will be a single attribute or empty and is returning a list for consistency with other makeCorrAttrsForSearch methods per 7852 
                 // send update to Central Repository db
                 try {
-                    dbManager.setArtifactInstanceKnownStatus(eamArtifact, knownStatus);
-                } catch (EamDbException ex) {
+                    dbManager.setAttributeInstanceKnownStatus(md5CorrelationAttr.get(0), knownStatus);
+                } catch (CentralRepoException ex) {
                     LOGGER.log(Level.SEVERE, "Error connecting to Central Repository database while setting artifact known status.", ex); //NON-NLS
                 }
             }
-        } // CONTENT_TAG_ADDED, CONTENT_TAG_DELETED
+        }
     }
 
-    private final class BlackboardTagTask implements Runnable {
+    private final class ArtifactTagTask implements Runnable {
 
-        private final EamDb dbManager;
+        private final CentralRepository dbManager;
         private final PropertyChangeEvent event;
 
-        private BlackboardTagTask(EamDb db, PropertyChangeEvent evt) {
+        private ArtifactTagTask(CentralRepository db, PropertyChangeEvent evt) {
             dbManager = db;
             event = evt;
         }
 
         @Override
         public void run() {
-            if (!EamDb.isEnabled()) {
+            if (!CentralRepository.isEnabled()) {
                 return;
             }
 
-            Content content;
-            BlackboardArtifact bbArtifact;
-            TskData.FileKnown knownStatus;
-            String comment;
-            if (Case.Events.valueOf(event.getPropertyName()) == Case.Events.BLACKBOARD_ARTIFACT_TAG_ADDED) {
-                // For added tags, we want to change the known status to BAD if the 
-                // tag that was just added is in the list of central repo tags.
-                final BlackBoardArtifactTagAddedEvent tagAddedEvent = (BlackBoardArtifactTagAddedEvent) event;
-                final BlackboardArtifactTag tagAdded = tagAddedEvent.getAddedTag();
+            Case.Events curEventType = Case.Events.valueOf(event.getPropertyName());
+            if (curEventType == Case.Events.BLACKBOARD_ARTIFACT_TAG_ADDED && event instanceof BlackBoardArtifactTagAddedEvent) {
+                handleTagAdded((BlackBoardArtifactTagAddedEvent) event);
+            } else if (curEventType == Case.Events.BLACKBOARD_ARTIFACT_TAG_DELETED && event instanceof BlackBoardArtifactTagDeletedEvent) {
+                handleTagDeleted((BlackBoardArtifactTagDeletedEvent) event);
+            } else {
+                LOGGER.log(Level.WARNING,
+                        String.format("Received an event %s of type %s and was expecting either CONTENT_TAG_ADDED or CONTENT_TAG_DELETED.",
+                                event, curEventType));
+            }
+        }
 
-                if (TagsManager.getNotableTagDisplayNames().contains(tagAdded.getName().getDisplayName())) {
-                    content = tagAdded.getContent();
-                    bbArtifact = tagAdded.getArtifact();
-                    knownStatus = TskData.FileKnown.BAD;
-                    comment = tagAdded.getComment();
+        private void handleTagDeleted(BlackBoardArtifactTagDeletedEvent evt) {
+            // ensure tag deleted event has a valid content id
+            if (evt.getDeletedTagInfo() == null) {
+                LOGGER.log(Level.SEVERE, "BlackBoardArtifactTagDeletedEvent did not have valid content to provide a content id.");
+                return;
+            }
+
+            try {
+                Case openCase = Case.getCurrentCaseThrows();
+
+                // obtain content
+                Content content = openCase.getSleuthkitCase().getContentById(evt.getDeletedTagInfo().getContentID());
+                if (content == null) {
+                    LOGGER.log(Level.WARNING,
+                            String.format("Unable to get content for item with content id: %d.", evt.getDeletedTagInfo().getContentID()));
+                    return;
+                }
+
+                // obtain blackboard artifact
+                BlackboardArtifact bbArtifact = openCase.getSleuthkitCase().getBlackboardArtifact(evt.getDeletedTagInfo().getArtifactID());
+                if (bbArtifact == null) {
+                    LOGGER.log(Level.WARNING,
+                            String.format("Unable to get blackboard artifact for item with artifact id: %d.", evt.getDeletedTagInfo().getArtifactID()));
+                    return;
+                }
+
+                // then handle the event 
+                handleTagChange(content, bbArtifact);
+            } catch (NoCurrentCaseException | TskCoreException ex) {
+                LOGGER.log(Level.WARNING, "Error updating non-file object.", ex);
+            }
+        }
+
+        private void handleTagAdded(BlackBoardArtifactTagAddedEvent evt) {
+            // ensure tag added event has a valid content id
+            if (evt.getAddedTag() == null || evt.getAddedTag().getContent() == null || evt.getAddedTag().getArtifact() == null) {
+                LOGGER.log(Level.SEVERE, "BlackBoardArtifactTagAddedEvent did not have valid content to provide a content id.");
+                return;
+            }
+
+            // then handle the event
+            handleTagChange(evt.getAddedTag().getContent(), evt.getAddedTag().getArtifact());
+        }
+
+        /**
+         * When a tag is added or deleted, check if there are other notable tags
+         * for the item. If there are, set known status as notable. If not set
+         * status as unknown.
+         *
+         * @param content    The content for the tag that was added or deleted.
+         * @param bbArtifact The artifact for the tag that was added or deleted.
+         */
+        private void handleTagChange(Content content, BlackboardArtifact bbArtifact) {
+            Case openCase;
+            try {
+                openCase = Case.getCurrentCaseThrows();
+            } catch (NoCurrentCaseException ex) {
+                LOGGER.log(Level.SEVERE, "Exception while getting open case.", ex);
+                return;
+            }
+
+            try {
+                if (isKnownFile(content)) {
+                    return;
+                }
+
+                TagsManager tagsManager = openCase.getServices().getTagsManager();
+                List<BlackboardArtifactTag> tags = tagsManager.getBlackboardArtifactTagsByArtifact(bbArtifact);
+                if (hasNotableTag(tags)) {
+                    setArtifactKnownStatus(dbManager, bbArtifact, TskData.FileKnown.BAD);
                 } else {
-                    // The added tag isn't flagged as bad in central repo, so do nothing
-                    return;
+                    setArtifactKnownStatus(dbManager, bbArtifact, TskData.FileKnown.UNKNOWN);
                 }
-            } else { //BLACKBOARD_ARTIFACT_TAG_DELETED
-                Case openCase;
-                try {
-                    openCase = Case.getCurrentCaseThrows();
-                } catch (NoCurrentCaseException ex) {
-                    LOGGER.log(Level.SEVERE, "Exception while getting open case.", ex);
-                    return;
-                }
-                // For deleted tags, we want to set the file status to UNKNOWN if:
-                //   - The tag that was just removed is notable in central repo
-                //   - There are no remaining tags that are notable 
-                final BlackBoardArtifactTagDeletedEvent tagDeletedEvent = (BlackBoardArtifactTagDeletedEvent) event;
-                long contentID = tagDeletedEvent.getDeletedTagInfo().getContentID();
-                long artifactID = tagDeletedEvent.getDeletedTagInfo().getArtifactID();
-
-                String tagName = tagDeletedEvent.getDeletedTagInfo().getName().getDisplayName();
-                if (!TagsManager.getNotableTagDisplayNames().contains(tagName)) {
-                    // If the tag that got removed isn't on the list of central repo tags, do nothing
-                    return;
-                }
-
-                try {
-                    // Get the remaining tags on the artifact
-                    content = openCase.getSleuthkitCase().getContentById(contentID);
-                    bbArtifact = openCase.getSleuthkitCase().getBlackboardArtifact(artifactID);
-                    TagsManager tagsManager = openCase.getServices().getTagsManager();
-                    List<BlackboardArtifactTag> tags = tagsManager.getBlackboardArtifactTagsByArtifact(bbArtifact);
-
-                    if (tags.stream()
-                            .map(tag -> tag.getName().getDisplayName())
-                            .filter(TagsManager.getNotableTagDisplayNames()::contains)
-                            .collect(Collectors.toList())
-                            .isEmpty()) {
-
-                        // There are no more bad tags on the object
-                        knownStatus = TskData.FileKnown.UNKNOWN;
-                        comment = "";
-
-                    } else {
-                        // There's still at least one bad tag, so leave the known status as is
-                        return;
-                    }
-                } catch (TskCoreException ex) {
-                    LOGGER.log(Level.SEVERE, "Failed to find content", ex);
-                    return;
-                }
+            } catch (TskCoreException ex) {
+                LOGGER.log(Level.SEVERE, "Failed to obtain tags manager for case.", ex);
             }
+        }
 
-            if ((content instanceof AbstractFile) && (((AbstractFile) content).getKnown() == TskData.FileKnown.KNOWN)) {
-                return;
-            }
-
-            List<CorrelationAttribute> convertedArtifacts = EamArtifactUtil.getCorrelationAttributeFromBlackboardArtifact(bbArtifact, true, true);
-            for (CorrelationAttribute eamArtifact : convertedArtifacts) {
-                eamArtifact.getInstances().get(0).setComment(comment);
-                try {
-                    dbManager.setArtifactInstanceKnownStatus(eamArtifact, knownStatus);
-                } catch (EamDbException ex) {
-                    LOGGER.log(Level.SEVERE, "Error connecting to Central Repository database while setting artifact known status.", ex); //NON-NLS
-                }
-            }
-        } // BLACKBOARD_ARTIFACT_TAG_ADDED, BLACKBOARD_ARTIFACT_TAG_DELETED
+        /**
+         * Determines if the content is an abstract file and is a known file.
+         *
+         * @param content The content to assess.
+         *
+         * @return True if an abstract file and a known file.
+         */
+        private boolean isKnownFile(Content content) {
+            return ((content instanceof AbstractFile) && (((AbstractFile) content).getKnown() == TskData.FileKnown.KNOWN));
+        }
 
     }
 
@@ -315,7 +464,7 @@ final class CaseEventListener implements PropertyChangeListener {
 
         @Override
         public void run() {
-            if (!EamDb.isEnabled()) {
+            if (!CentralRepository.isEnabled()) {
                 return;
             }
             //get the display name of the tag that has had it's definition modified
@@ -363,12 +512,7 @@ final class CaseEventListener implements PropertyChangeListener {
                     }
                     //if the Correlation Attribute will have no tags with a status which would prevent the current status from being changed 
                     if (!hasTagWithConflictingKnownStatus) {
-                        //Get the correlation atttributes that correspond to the current BlackboardArtifactTag if their status should be changed
-                        //with the initial set of correlation attributes this should be a single correlation attribute
-                        List<CorrelationAttribute> convertedArtifacts = EamArtifactUtil.getCorrelationAttributeFromBlackboardArtifact(bbTag.getArtifact(), true, true);
-                        for (CorrelationAttribute eamArtifact : convertedArtifacts) {
-                            EamDb.getInstance().setArtifactInstanceKnownStatus(eamArtifact, tagName.getKnownStatus());
-                        }
+                        setArtifactKnownStatus(CentralRepository.getInstance(), bbTag.getArtifact(), tagName.getKnownStatus());
                     }
                 }
                 // Next update the files
@@ -401,15 +545,19 @@ final class CaseEventListener implements PropertyChangeListener {
                     }
                     //if the file will have no tags with a status which would prevent the current status from being changed 
                     if (!hasTagWithConflictingKnownStatus) {
-                        final CorrelationAttribute eamArtifact = EamArtifactUtil.makeCorrelationAttributeFromContent(contentTag.getContent());
-                        if (eamArtifact != null) {
-                            EamDb.getInstance().setArtifactInstanceKnownStatus(eamArtifact, tagName.getKnownStatus());
+                        Content taggedContent = contentTag.getContent();
+                        if (taggedContent instanceof AbstractFile) {
+                            final List<CorrelationAttributeInstance> eamArtifact = CorrelationAttributeUtil.makeCorrAttrsForSearch((AbstractFile) taggedContent);
+                            if (!eamArtifact.isEmpty()) {
+                                //for an abstract file the 'list' of attributes will be a single attribute or empty and is returning a list for consistency with other makeCorrAttrsForSearch methods per 7852 
+                                CentralRepository.getInstance().setAttributeInstanceKnownStatus(eamArtifact.get(0), tagName.getKnownStatus());
+                            }
                         }
                     }
                 }
             } catch (TskCoreException ex) {
                 LOGGER.log(Level.SEVERE, "Cannot update known status in central repository for tag: " + modifiedTagName, ex);  //NON-NLS
-            } catch (EamDbException ex) {
+            } catch (CentralRepoException ex) {
                 LOGGER.log(Level.SEVERE, "Cannot get central repository for tag: " + modifiedTagName, ex);  //NON-NLS
             } catch (NoCurrentCaseException ex) {
                 LOGGER.log(Level.SEVERE, "Exception while getting open case.", ex);  //NON-NLS
@@ -419,17 +567,17 @@ final class CaseEventListener implements PropertyChangeListener {
 
     private final class DataSourceAddedTask implements Runnable {
 
-        private final EamDb dbManager;
+        private final CentralRepository dbManager;
         private final PropertyChangeEvent event;
 
-        private DataSourceAddedTask(EamDb db, PropertyChangeEvent evt) {
+        private DataSourceAddedTask(CentralRepository db, PropertyChangeEvent evt) {
             dbManager = db;
             event = evt;
         }
 
         @Override
         public void run() {
-            if (!EamDb.isEnabled()) {
+            if (!CentralRepository.isEnabled()) {
                 return;
             }
             Case openCase;
@@ -444,28 +592,22 @@ final class CaseEventListener implements PropertyChangeListener {
             Content newDataSource = dataSourceAddedEvent.getDataSource();
 
             try {
-                String deviceId = openCase.getSleuthkitCase().getDataSource(newDataSource.getId()).getDeviceId();
                 CorrelationCase correlationCase = dbManager.getCase(openCase);
-                if (null == correlationCase) {
-                    correlationCase = dbManager.newCase(openCase);
-                }
-                if (null == dbManager.getDataSource(correlationCase, deviceId)) {
+                if (null == dbManager.getDataSource(correlationCase, newDataSource.getId())) {
                     CorrelationDataSource.fromTSKDataSource(correlationCase, newDataSource);
                 }
-            } catch (EamDbException ex) {
+            } catch (CentralRepoException ex) {
                 LOGGER.log(Level.SEVERE, "Error adding new data source to the central repository", ex); //NON-NLS
-            } catch (TskCoreException | TskDataException ex) {
-                LOGGER.log(Level.SEVERE, "Error getting data source from DATA_SOURCE_ADDED event content.", ex); //NON-NLS
             }
         } // DATA_SOURCE_ADDED
     }
 
     private final class CurrentCaseTask implements Runnable {
 
-        private final EamDb dbManager;
+        private final CentralRepository dbManager;
         private final PropertyChangeEvent event;
 
-        private CurrentCaseTask(EamDb db, PropertyChangeEvent evt) {
+        private CurrentCaseTask(CentralRepository db, PropertyChangeEvent evt) {
             dbManager = db;
             event = evt;
         }
@@ -478,9 +620,8 @@ final class CaseEventListener implements PropertyChangeListener {
              */
             if ((null == event.getOldValue()) && (event.getNewValue() instanceof Case)) {
                 Case curCase = (Case) event.getNewValue();
-                IngestEventsListener.resetCeModuleInstanceCount();
 
-                if (!EamDb.isEnabled()) {
+                if (!CentralRepository.isEnabled()) {
                     return;
                 }
 
@@ -490,10 +631,47 @@ final class CaseEventListener implements PropertyChangeListener {
                     if (dbManager.getCase(curCase) == null) {
                         dbManager.newCase(curCase);
                     }
-                } catch (EamDbException ex) {
+                } catch (CentralRepoException ex) {
                     LOGGER.log(Level.SEVERE, "Error connecting to Central Repository database.", ex); //NON-NLS
                 }
             }
         } // CURRENT_CASE
     }
+
+    private final class DataSourceNameChangedTask implements Runnable {
+
+        private final CentralRepository dbManager;
+        private final PropertyChangeEvent event;
+
+        private DataSourceNameChangedTask(CentralRepository db, PropertyChangeEvent evt) {
+            dbManager = db;
+            event = evt;
+        }
+
+        @Override
+        public void run() {
+
+            final DataSourceNameChangedEvent dataSourceNameChangedEvent = (DataSourceNameChangedEvent) event;
+            Content dataSource = dataSourceNameChangedEvent.getDataSource();
+            String newName = (String) event.getNewValue();
+
+            if (!StringUtils.isEmpty(newName)) {
+
+                if (!CentralRepository.isEnabled()) {
+                    return;
+                }
+
+                try {
+                    CorrelationCase correlationCase = dbManager.getCase(Case.getCurrentCaseThrows());
+                    CorrelationDataSource existingEamDataSource = dbManager.getDataSource(correlationCase, dataSource.getId());
+                    dbManager.updateDataSourceName(existingEamDataSource, newName);
+                } catch (CentralRepoException ex) {
+                    LOGGER.log(Level.SEVERE, "Error updating data source with ID " + dataSource.getId() + " to " + newName, ex); //NON-NLS
+                } catch (NoCurrentCaseException ex) {
+                    LOGGER.log(Level.SEVERE, "No open case", ex);
+                }
+            }
+        }
+    }
+
 }

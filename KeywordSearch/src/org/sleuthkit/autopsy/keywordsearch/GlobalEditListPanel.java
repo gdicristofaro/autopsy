@@ -36,6 +36,7 @@ import org.netbeans.spi.options.OptionsPanelController;
 import org.openide.util.NbBundle;
 import org.sleuthkit.autopsy.corecomponents.OptionsPanel;
 import org.sleuthkit.autopsy.coreutils.Logger;
+import org.sleuthkit.autopsy.guiutils.SimpleTableCellRenderer;
 import org.sleuthkit.autopsy.ingest.IngestManager;
 
 /**
@@ -76,6 +77,7 @@ class GlobalEditListPanel extends javax.swing.JPanel implements ListSelectionLis
         }
         keywordTable.setCellSelectionEnabled(false);
         keywordTable.setRowSelectionAllowed(true);
+        keywordTable.setDefaultRenderer(String.class, new SimpleTableCellRenderer());
 
         final ListSelectionModel lsm = keywordTable.getSelectionModel();
         lsm.addListSelectionListener(new ListSelectionListener() {
@@ -109,7 +111,8 @@ class GlobalEditListPanel extends javax.swing.JPanel implements ListSelectionLis
     void setButtonStates() {
         boolean isIngestRunning = IngestManager.getInstance().isIngestRunning();
         boolean isListSelected = currentKeywordList != null;
-
+        
+        ingestWarningLabel.setVisible(isIngestRunning);
         // items that only need a selected list
         boolean canEditList = isListSelected && !isIngestRunning;
         ingestMessagesCheckbox.setEnabled(canEditList);
@@ -276,6 +279,7 @@ class GlobalEditListPanel extends javax.swing.JPanel implements ListSelectionLis
         newKeywordsButton = new javax.swing.JButton();
         deleteWordButton = new javax.swing.JButton();
         editWordButton = new javax.swing.JButton();
+        ingestWarningLabel = new javax.swing.JLabel();
 
         setMinimumSize(new java.awt.Dimension(0, 0));
 
@@ -325,6 +329,9 @@ class GlobalEditListPanel extends javax.swing.JPanel implements ListSelectionLis
             }
         });
 
+        ingestWarningLabel.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/sleuthkit/autopsy/modules/hashdatabase/warning16.png"))); // NOI18N
+        ingestWarningLabel.setText(org.openide.util.NbBundle.getMessage(GlobalEditListPanel.class, "GlobalEditListPanel.ingestWarningLabel.text")); // NOI18N
+
         javax.swing.GroupLayout listEditorPanelLayout = new javax.swing.GroupLayout(listEditorPanel);
         listEditorPanel.setLayout(listEditorPanelLayout);
         listEditorPanelLayout.setHorizontalGroup(
@@ -338,17 +345,18 @@ class GlobalEditListPanel extends javax.swing.JPanel implements ListSelectionLis
                     .addGroup(listEditorPanelLayout.createSequentialGroup()
                         .addGap(10, 10, 10)
                         .addGroup(listEditorPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 566, Short.MAX_VALUE)
                             .addGroup(listEditorPanelLayout.createSequentialGroup()
-                                .addGroup(listEditorPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(ingestMessagesCheckbox)
-                                    .addGroup(listEditorPanelLayout.createSequentialGroup()
-                                        .addComponent(newKeywordsButton)
-                                        .addGap(14, 14, 14)
-                                        .addComponent(editWordButton)
-                                        .addGap(14, 14, 14)
-                                        .addComponent(deleteWordButton)))
-                                .addGap(0, 0, Short.MAX_VALUE)))))
+                                .addComponent(newKeywordsButton)
+                                .addGap(14, 14, 14)
+                                .addComponent(editWordButton)
+                                .addGap(14, 14, 14)
+                                .addComponent(deleteWordButton)
+                                .addGap(0, 0, Short.MAX_VALUE))
+                            .addGroup(listEditorPanelLayout.createSequentialGroup()
+                                .addComponent(ingestMessagesCheckbox)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(ingestWarningLabel)))))
                 .addContainerGap())
         );
 
@@ -360,14 +368,16 @@ class GlobalEditListPanel extends javax.swing.JPanel implements ListSelectionLis
                 .addContainerGap()
                 .addComponent(keywordsLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 257, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 256, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(listEditorPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(deleteWordButton)
                     .addComponent(newKeywordsButton)
                     .addComponent(editWordButton))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(ingestMessagesCheckbox)
+                .addGroup(listEditorPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(ingestMessagesCheckbox)
+                    .addComponent(ingestWarningLabel))
                 .addGap(9, 9, 9))
         );
 
@@ -419,6 +429,7 @@ class GlobalEditListPanel extends javax.swing.JPanel implements ListSelectionLis
     private javax.swing.JButton deleteWordButton;
     private javax.swing.JButton editWordButton;
     private javax.swing.JCheckBox ingestMessagesCheckbox;
+    private javax.swing.JLabel ingestWarningLabel;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable keywordTable;
     private javax.swing.JLabel keywordsLabel;

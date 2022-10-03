@@ -98,7 +98,7 @@ class ProfileSettingsPanel extends IngestModuleGlobalSettingsPanel implements Op
         selectedModulesLabel = new javax.swing.JLabel();
         ingestWarningLabel = new javax.swing.JLabel();
         jSeparator2 = new javax.swing.JSeparator();
-        jScrollPane2 = new javax.swing.JScrollPane();
+        infoScrollPane = new javax.swing.JScrollPane();
         infoTextArea = new javax.swing.JTextArea();
         buttonEnclosingPanel = new javax.swing.JPanel();
         editProfileButton = new javax.swing.JButton();
@@ -151,23 +151,19 @@ class ProfileSettingsPanel extends IngestModuleGlobalSettingsPanel implements Op
 
         org.openide.awt.Mnemonics.setLocalizedText(selectedModulesLabel, org.openide.util.NbBundle.getMessage(ProfileSettingsPanel.class, "ProfileSettingsPanel.selectedModulesLabel.text")); // NOI18N
 
-        ingestWarningLabel.setFont(ingestWarningLabel.getFont().deriveFont(ingestWarningLabel.getFont().getStyle() & ~java.awt.Font.BOLD, 11));
         ingestWarningLabel.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/sleuthkit/autopsy/modules/hashdatabase/warning16.png"))); // NOI18N
         org.openide.awt.Mnemonics.setLocalizedText(ingestWarningLabel, org.openide.util.NbBundle.getMessage(ProfileSettingsPanel.class, "ProfileSettingsPanel.ingestWarningLabel.text")); // NOI18N
 
         jSeparator2.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
-        jScrollPane2.setFont(jScrollPane2.getFont().deriveFont(jScrollPane2.getFont().getStyle() & ~java.awt.Font.BOLD, 11));
-
         infoTextArea.setEditable(false);
         infoTextArea.setBackground(new java.awt.Color(240, 240, 240));
         infoTextArea.setColumns(20);
-        infoTextArea.setFont(infoTextArea.getFont().deriveFont(infoTextArea.getFont().getStyle() & ~java.awt.Font.BOLD, 11));
         infoTextArea.setLineWrap(true);
         infoTextArea.setRows(3);
         infoTextArea.setText(org.openide.util.NbBundle.getMessage(ProfileSettingsPanel.class, "ProfileSettingsPanel.infoTextArea.text")); // NOI18N
         infoTextArea.setWrapStyleWord(true);
-        jScrollPane2.setViewportView(infoTextArea);
+        infoScrollPane.setViewportView(infoTextArea);
 
         editProfileButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/sleuthkit/autopsy/images/edit16.png"))); // NOI18N
         org.openide.awt.Mnemonics.setLocalizedText(editProfileButton, org.openide.util.NbBundle.getMessage(ProfileSettingsPanel.class, "ProfileSettingsPanel.editProfileButton.text")); // NOI18N
@@ -239,7 +235,7 @@ class ProfileSettingsPanel extends IngestModuleGlobalSettingsPanel implements Op
                     .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                         .addGroup(layout.createSequentialGroup()
                             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 346, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(infoScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 346, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addComponent(profileListLabel))
                             .addGap(6, 6, 6))
                         .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
@@ -282,7 +278,7 @@ class ProfileSettingsPanel extends IngestModuleGlobalSettingsPanel implements Op
                         .addContainerGap())))
         );
 
-        layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {buttonEnclosingPanel, jScrollPane2, profileListPane});
+        layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {buttonEnclosingPanel, infoScrollPane, profileListPane});
 
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -306,11 +302,11 @@ class ProfileSettingsPanel extends IngestModuleGlobalSettingsPanel implements Op
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(selectedModulesPane, javax.swing.GroupLayout.DEFAULT_SIZE, 173, Short.MAX_VALUE))
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(infoScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(profileListLabel)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(profileListPane, javax.swing.GroupLayout.DEFAULT_SIZE, 332, Short.MAX_VALUE)))
+                                .addComponent(profileListPane, javax.swing.GroupLayout.DEFAULT_SIZE, 323, Short.MAX_VALUE)))
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
                                 .addGap(11, 11, 11)
@@ -395,7 +391,7 @@ class ProfileSettingsPanel extends IngestModuleGlobalSettingsPanel implements Op
      */
     private void doProfileDialog(IngestProfile selectedProfile) {
         // Create a files set defintion panel.
-         final AdvancedConfigurationDialog dialog = new AdvancedConfigurationDialog(true);
+        final AdvancedConfigurationDialog dialog = new AdvancedConfigurationDialog(true);
         this.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         //start wait cursor for ingest job settings construction
         if (selectedProfile != null) {
@@ -420,7 +416,7 @@ class ProfileSettingsPanel extends IngestModuleGlobalSettingsPanel implements Op
         do {
             option = JOptionPane.CANCEL_OPTION; 
             dialog.display(panel);
-        } while (option == JOptionPane.OK_OPTION && !panel.isValidDefinition());
+        } while (option == JOptionPane.OK_OPTION && !panel.isValidDefinition(true));
 
         if (option == JOptionPane.OK_OPTION) {
 
@@ -434,6 +430,15 @@ class ProfileSettingsPanel extends IngestModuleGlobalSettingsPanel implements Op
             }
             panel.saveSettings();
             load();
+        } else if (option == JOptionPane.CANCEL_OPTION) {
+            if (selectedProfile == null) {
+                // for new profiles, if user canlessed a profile create/edit then delete the temp empty profile that was created. 
+                // Otherwise it will remain in "config/ModuleSettings/IngestSettings" and then will get loaded
+                // next time we open ProfilePanel(), causing an NPE (JIRA-8404). This only needs to be done when creating
+                // a new ingest profile. If user cancelled editing of an existing profile, then we should not delete
+                // that profile.
+                IngestProfile.deleteProfile(panel.getIngestProfileName());
+            }
         }
     }
 
@@ -483,12 +488,17 @@ class ProfileSettingsPanel extends IngestModuleGlobalSettingsPanel implements Op
                     for (FilesSet fSet : FilesSetsManager.getStandardFileIngestFilters()) {
                         fileIngestFilters.put(fSet.getName(), fSet);
                     }
-                    filterDescArea.setText(fileIngestFilters.get(selectedProfile.getFileIngestFilter()).getDescription());
+                    String selectedFilter = selectedProfile.getFileIngestFilter();
+                    if (selectedFilter == null) {
+                        filterDescArea.setText(NbBundle.getMessage(ProfileSettingsPanel.class, "ProfileSettingsPanel.messages.filterLoadFailed"));
+                    } else {
+                        filterDescArea.setText(fileIngestFilters.get(selectedFilter).getDescription());
+                    }
                 } catch (FilesSetsManager.FilesSetsManagerException ex) {
                     filterDescArea.setText(NbBundle.getMessage(ProfileSettingsPanel.class, "ProfileSettingsPanel.messages.filterLoadFailed"));
                 }
                 selectedModulesArea.setText("");
-                for (String moduleName : IngestJobSettings.getEnabledModules(selectedProfile.getName())) {
+                for (String moduleName : IngestJobSettings.getEnabledModules(IngestProfiles.getExecutionContext(selectedProfile.getName()))) {
                     selectedModulesArea.append(moduleName + "\n");
                 }
             }
@@ -503,9 +513,9 @@ class ProfileSettingsPanel extends IngestModuleGlobalSettingsPanel implements Op
     private javax.swing.JScrollPane filterDescPane;
     private javax.swing.JLabel filterNameLabel;
     private javax.swing.JLabel filterNameText;
+    private javax.swing.JScrollPane infoScrollPane;
     private javax.swing.JTextArea infoTextArea;
     private javax.swing.JLabel ingestWarningLabel;
-    private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JButton newProfileButton;
     private javax.swing.JTextArea profileDescArea;

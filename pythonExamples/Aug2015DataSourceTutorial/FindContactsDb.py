@@ -40,7 +40,7 @@ from java.lang import Class
 from java.lang import System
 from java.sql  import DriverManager, SQLException
 from java.util.logging import Level
-from java.util import ArrayList
+from java.util import Arrays
 from java.io import File
 from org.sleuthkit.datamodel import SleuthkitCase
 from org.sleuthkit.datamodel import AbstractFile
@@ -98,22 +98,22 @@ class ContactsDbIngestModule(DataSourceIngestModule):
 
     # Where any setup and configuration is done
     # 'context' is an instance of org.sleuthkit.autopsy.ingest.IngestJobContext.
-    # See: http://sleuthkit.org/autopsy/docs/api-docs/4.4/classorg_1_1sleuthkit_1_1autopsy_1_1ingest_1_1_ingest_job_context.html
+    # See: http://sleuthkit.org/autopsy/docs/api-docs/latest/classorg_1_1sleuthkit_1_1autopsy_1_1ingest_1_1_ingest_job_context.html
     def startUp(self, context):
         self.context = context
 
     # Where the analysis is done.
     # The 'dataSource' object being passed in is of type org.sleuthkit.datamodel.Content.
-    # See: http://www.sleuthkit.org/sleuthkit/docs/jni-docs/4.4/interfaceorg_1_1sleuthkit_1_1datamodel_1_1_content.html
+    # See: http://www.sleuthkit.org/sleuthkit/docs/jni-docs/latest/interfaceorg_1_1sleuthkit_1_1datamodel_1_1_content.html
     # 'progressBar' is of type org.sleuthkit.autopsy.ingest.DataSourceIngestModuleProgress
-    # See: http://sleuthkit.org/autopsy/docs/api-docs/4.4/classorg_1_1sleuthkit_1_1autopsy_1_1ingest_1_1_data_source_ingest_module_progress.html
+    # See: http://sleuthkit.org/autopsy/docs/api-docs/latest/classorg_1_1sleuthkit_1_1autopsy_1_1ingest_1_1_data_source_ingest_module_progress.html
     def process(self, dataSource, progressBar):
 
         # we don't know how much work there is yet
         progressBar.switchToIndeterminate()
 
         # Use blackboard class to index blackboard artifacts for keyword search
-        blackboard = Case.getCurrentCase().getServices().getBlackboard()
+        blackboard = Case.getCurrentCase().getSleuthkitCase().getBlackboard()
 
         # Find files named contacts.db, regardless of parent path
         fileManager = Case.getCurrentCase().getServices().getFileManager()
@@ -162,30 +162,20 @@ class ContactsDbIngestModule(DataSourceIngestModule):
                 
                 
                 # Make an artifact on the blackboard, TSK_CONTACT and give it attributes for each of the fields
-                art = file.newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT)
-                attributes = ArrayList()
+                art = file.newDataArtifact(BlackboardArtifact.Type.TSK_CONTACT, Arrays.asList(
+                    BlackboardAttribute(BlackboardAttribute.Type.TSK_NAME_PERSON,
+                                        ContactsDbIngestModuleFactory.moduleName, name),
+                    BlackboardAttribute(BlackboardAttribute.Type.TSK_EMAIL,
+                                        ContactsDbIngestModuleFactory.moduleName, email),
+                    BlackboardAttribute(BlackboardAttribute.Type.TSK_PHONE_NUMBER,
+                                        ContactsDbIngestModuleFactory.moduleName, phone)
+                ))
 
-                attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME_PERSON.getTypeID(), 
-                    ContactsDbIngestModuleFactory.moduleName, name))
-                
-                attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL.getTypeID(), 
-                    ContactsDbIngestModuleFactory.moduleName, email))
-
-                attributes.add(BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER.getTypeID(), 
-                    ContactsDbIngestModuleFactory.moduleName, phone))
-                
-                art.addAttributes(attributes)
                 try:
-                    # index the artifact for keyword search
-                    blackboard.indexArtifact(art)
+                    blackboard.postArtifact(art, ContactsDbIngestModuleFactory.moduleName, context.getJobId())
                 except Blackboard.BlackboardException as e:
                     self.log(Level.SEVERE, "Error indexing artifact " + art.getDisplayName())
-                
-            # Fire an event to notify the UI and others that there are new artifacts
-            IngestServices.getInstance().fireModuleDataEvent(
-                ModuleDataEvent(ContactsDbIngestModuleFactory.moduleName, 
-                BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT, None))
-                
+
             # Clean up
             stmt.close()
             dbConn.close()

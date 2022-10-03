@@ -18,9 +18,7 @@
  */
 package org.sleuthkit.autopsy.coreutils;
 
-import java.util.Deque;
 import java.util.Objects;
-import javafx.beans.property.Property;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -43,18 +41,23 @@ import javax.annotation.concurrent.ThreadSafe;
 @ThreadSafe
 public class History<T> {
 
+    // Stack of things that were previously shown before an 'advance' was done
     @GuardedBy("this")
     private final ObservableStack<T> historyStack = new ObservableStack<>();
 
+    // stack of things that were previously shown before a 'retreat' (i.e. a back) was done
     @GuardedBy("this")
     private final ObservableStack<T> forwardStack = new ObservableStack<>();
 
+    // what is currently being shown
     @GuardedBy("this")
     private final ReadOnlyObjectWrapper<T> currentState = new ReadOnlyObjectWrapper<>();
 
+    // Is the forward stack empty?
     @GuardedBy("this")
     private final ReadOnlyBooleanWrapper canAdvance = new ReadOnlyBooleanWrapper();
 
+    // is the historyStack empty?
     @GuardedBy("this")
     private final ReadOnlyBooleanWrapper canRetreat = new ReadOnlyBooleanWrapper();
 

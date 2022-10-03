@@ -29,7 +29,7 @@
 # Moore for writing the shell bag parser for Registry Decoder, as well as 
 # assistance with some parsing.
 #
-# License: GPL v3 
+# 
 # copyright 2012 Quantum Analytics Research, LLC
 # Author: H. Carvey, keydet89@yahoo.com
 #-----------------------------------------------------------
@@ -397,9 +397,8 @@ sub parseVariableEntry {
 # 0x0e, 0x0f, 0x10 - mod date, create date, access date(?)
 # 0x0c - size
 #--------------------------------------------------------------	  	
-                        return %item unless (defined $sz); 
-                        if ($sz == 0x00) {
-	  			$tag = 0;
+            return %item unless (defined $sz); 
+            if ($sz == 0x00) {	  			$tag = 0;
 	  			next;
 	  		}
 	  		elsif ($id == 0x0a) {
@@ -421,6 +420,7 @@ sub parseVariableEntry {
 #	  		my $sz = unpack("V",substr($stuff,$cnt,4));
 #	  		my $id = unpack("V",substr($stuff,$cnt + 4,4));
 #	  		return %item unless (defined $sz); 
+#	  		
 #	  		if ($sz == 0x00) {
 #	  			$tag = 0;
 #	  			next;
@@ -726,7 +726,7 @@ sub parseFolderEntry {
 	my $str = "";
 	while($tag) {
 		my $s = substr($data,$ofs_shortname + $cnt,1);
-                return %item unless (defined $s); 
+        return %item unless (defined $s);   
 		if ($s =~ m/\x00/ && ((($cnt + 1) % 2) == 0)) {
 			$tag = 0;
 		}
@@ -742,8 +742,8 @@ sub parseFolderEntry {
 	$tag = 1;
 	$cnt = 0;
 	while ($tag) {
-                my $s = substr($data,$ofs + $cnt,2);
-                return %item unless (defined $s); 
+        my $s = substr($data,$ofs + $cnt,2);
+        return %item unless (defined $s); 
 		if (unpack("v",$s) == 0xbeef) {
 			$tag = 0;
 		}
@@ -776,13 +776,13 @@ sub parseFolderEntry {
 	
 	$str = substr($data,$ofs,length($data) - 30);
 	my $longname = (split(/\x00\x00/,$str,2))[0];
-	$longname =~ s/\x00//g;
-	
+	$longname = $longname.chr 0x00;
+
 	if ($longname ne "") {
-		$item{name} = $longname;
+		$item{name} = Utf16ToUtf8($longname);
 	}
 	else {
-		$item{name} = $shortname;
+		$item{name} = Utf16ToUtf8($shortname);
 	}
 	return %item;
 }
@@ -833,8 +833,8 @@ sub parseFolderEntry2 {
 	my $tag = 1;
 
 	while ($tag) {
-                my $s = substr($data,$ofs,2);
-                return %item unless (defined $s); 
+        my $s = substr($data,$ofs,2);
+		return %item unless (defined $s); 
 		if (unpack("v",$s) == 0xbeef) {
 			$tag = 0;
 		}
@@ -871,7 +871,7 @@ sub parseFolderEntry2 {
 	
 	$item{name} = (split(/\x00\x00/,$str,2))[0];
 	$item{name} =~ s/\x13\x20/\x2D\x00/;
-	$item{name} =~ s/\x00//g;
+	$item{name} = Utf16ToUtf8($item{name});
 	
 	return %item;
 }
@@ -929,6 +929,16 @@ sub printData {
 		$display[$cnt] = sprintf "0x%08x: %-47s  ".$str,($cnt * 16),$h;
 	}
 	return @display;
+}
+
+#---------------------------------------------------------------------
+# Utf16ToUtf8()
+#---------------------------------------------------------------------
+sub Utf16ToUtf8 {
+  my $str = $_[0];
+  Encode::from_to($str,'UTF-16LE','utf8');
+  my $str2 = Encode::decode_utf8($str);
+  return $str;
 }
 
 1;

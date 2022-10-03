@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2013-2018 Basis Technology Corp.
+ * Copyright 2013-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,40 +18,42 @@
  */
 package org.sleuthkit.autopsy.modules.filetypeid;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
 import org.openide.util.NbBundle;
 import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
-import org.sleuthkit.autopsy.casemodule.services.Blackboard;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.ingest.FileIngestModule;
 import org.sleuthkit.autopsy.ingest.IngestJobContext;
 import org.sleuthkit.autopsy.ingest.IngestMessage;
-import org.sleuthkit.autopsy.ingest.IngestServices;
-import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.autopsy.ingest.IngestModule.ProcessResult;
 import org.sleuthkit.autopsy.ingest.IngestModuleReferenceCounter;
+import org.sleuthkit.autopsy.ingest.IngestServices;
+import org.sleuthkit.autopsy.modules.filetypeid.CustomFileTypesManager.CustomFileTypesException;
+import org.sleuthkit.datamodel.AbstractFile;
+import org.sleuthkit.datamodel.Blackboard;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
+import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_CATEGORY;
+import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME;
+import org.sleuthkit.datamodel.Score;
 import org.sleuthkit.datamodel.TskCoreException;
 
 /**
  * Detects the type of a file based on signature (magic) values. Posts results
  * to the blackboard.
  */
-@NbBundle.Messages({
-    "CannotRunFileTypeDetection=Unable to run file type detection."
-})
+@NbBundle.Messages({"CannotRunFileTypeDetection=Unable to run file type detection."})
 public class FileTypeIdIngestModule implements FileIngestModule {
-
+    
     private static final Logger logger = Logger.getLogger(FileTypeIdIngestModule.class.getName());
-    private long jobId;
     private static final HashMap<Long, IngestJobTotals> totalsForIngestJobs = new HashMap<>();
     private static final IngestModuleReferenceCounter refCounter = new IngestModuleReferenceCounter();
+
+    private long jobId;
     private FileTypeDetector fileTypeDetector;
 
     /**
@@ -103,7 +105,7 @@ public class FileTypeIdIngestModule implements FileIngestModule {
             String mimeType = fileTypeDetector.getMIMEType(file);
             file.setMIMEType(mimeType);
             FileType fileType = detectUserDefinedFileType(file);
-            if (fileType != null && fileType.createInterestingFileHit()) {
+            if (fileType != null && fileType.shouldCreateInterestingFileHit()) {
                 createInterestingFileHit(file, fileType);
             }
             addToTotals(jobId, (System.currentTimeMillis() - startTime));
@@ -125,12 +127,44 @@ public class FileTypeIdIngestModule implements FileIngestModule {
      *                                  of CustomFileTypesManager.
      */
     private FileType detectUserDefinedFileType(AbstractFile file) throws CustomFileTypesManager.CustomFileTypesException {
+        
+        if (CustomFileTypesManager.getInstance().getUserDefinedFileTypes().isEmpty()) {
+            return null;
+        }
+        
+        /*
+         * Read in the beginning of the file once.
+         */
+        byte[] buf = new byte[1024];
+        int bufLen;
+        try {
+            bufLen = file.read(buf, 0, 1024);
+        } catch (TskCoreException ex) {
+            // Proceed for now - the error will likely get logged next time the file is read.
+            bufLen = 0; 
+        }
+        return detectUserDefinedFileType(file, buf, bufLen);
+    }
+
+    /**
+     * Determines whether or not a file matches a user-defined custom file type.
+     *
+     * @param file The file to test.
+     * @param startOfFileBuffer  The beginning of the file data.
+     * @param bufLen The length of startOfFileBuffer.
+     *
+     * @return The file type if a match is found; otherwise null.
+     *
+     * @throws CustomFileTypesException If there is an issue getting an instance
+     *                                  of CustomFileTypesManager.
+     */
+    private FileType detectUserDefinedFileType(AbstractFile file, byte[] startOfFileBuffer, int bufLen) throws CustomFileTypesManager.CustomFileTypesException {    
         FileType retValue = null;
 
         CustomFileTypesManager customFileTypesManager = CustomFileTypesManager.getInstance();
         List<FileType> fileTypesList = customFileTypesManager.getUserDefinedFileTypes();
         for (FileType fileType : fileTypesList) {
-            if (fileType.matches(file)) {
+            if (fileType.matches(file, startOfFileBuffer, bufLen)) {
                 retValue = fileType;
                 break;
             }
@@ -146,24 +180,41 @@ public class FileTypeIdIngestModule implements FileIngestModule {
      * @param fileType The file type rule for categorizing the hit.
      */
     private void createInterestingFileHit(AbstractFile file, FileType fileType) {
+
+        List<BlackboardAttribute> attributes = Arrays.asList(
+                new BlackboardAttribute(
+                        TSK_SET_NAME, FileTypeIdModuleFactory.getModuleName(),
+                        fileType.getInterestingFilesSetName()),
+                new BlackboardAttribute(
+                        TSK_CATEGORY, FileTypeIdModuleFactory.getModuleName(),
+                        fileType.getMimeType()));
         try {
-            BlackboardArtifact artifact;
-            artifact = file.newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_FILE_HIT);
-            Collection<BlackboardAttribute> attributes = new ArrayList<>();
-            BlackboardAttribute setNameAttribute = new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME, FileTypeIdModuleFactory.getModuleName(), fileType.getInterestingFilesSetName());
-            attributes.add(setNameAttribute);
-            BlackboardAttribute ruleNameAttribute = new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_CATEGORY, FileTypeIdModuleFactory.getModuleName(), fileType.getMimeType());
-            attributes.add(ruleNameAttribute);
-            artifact.addAttributes(attributes);
-            try {
-                Case.getCurrentCaseThrows().getServices().getBlackboard().indexArtifact(artifact);
-            } catch (Blackboard.BlackboardException ex) {
-                logger.log(Level.SEVERE, String.format("Unable to index TSK_INTERESTING_FILE_HIT blackboard artifact %d (file obj_id=%d)", artifact.getArtifactID(), file.getId()), ex); //NON-NLS
-            } catch (NoCurrentCaseException ex) {
-                logger.log(Level.SEVERE, "Exception while getting open case.", ex); //NON-NLS
+            Case currentCase = Case.getCurrentCaseThrows();
+
+            Blackboard tskBlackboard = currentCase.getSleuthkitCase().getBlackboard();
+            // Create artifact if it doesn't already exist.
+            if (!tskBlackboard.artifactExists(file, BlackboardArtifact.Type.TSK_INTERESTING_ITEM, attributes)) {
+                BlackboardArtifact artifact = file.newAnalysisResult(
+                        BlackboardArtifact.Type.TSK_INTERESTING_ITEM, Score.SCORE_LIKELY_NOTABLE, 
+                        null, fileType.getInterestingFilesSetName(), null, 
+                        attributes)
+                        .getAnalysisResult();
+                try {
+                    /*
+                     * post the artifact which will index the artifact for
+                     * keyword search, and fire an event to notify UI of this
+                     * new artifact
+                     */
+                    tskBlackboard.postArtifact(artifact, FileTypeIdModuleFactory.getModuleName(), jobId);
+                } catch (Blackboard.BlackboardException ex) {
+                    logger.log(Level.SEVERE, String.format("Unable to index TSK_INTERESTING_ITEM blackboard artifact %d (file obj_id=%d)", artifact.getArtifactID(), file.getId()), ex); //NON-NLS
+                }
             }
+
         } catch (TskCoreException ex) {
-            logger.log(Level.SEVERE, String.format("Unable to create TSK_INTERESTING_FILE_HIT artifact for file (obj_id=%d)", file.getId()), ex); //NON-NLS
+            logger.log(Level.SEVERE, String.format("Unable to create TSK_INTERESTING_ITEM artifact for file (obj_id=%d)", file.getId()), ex); //NON-NLS
+        } catch (NoCurrentCaseException ex) {
+            logger.log(Level.SEVERE, "Exception while getting open case.", ex); //NON-NLS
         }
     }
 
@@ -221,5 +272,4 @@ public class FileTypeIdIngestModule implements FileIngestModule {
         long matchTime = 0;
         long numFiles = 0;
     }
-
 }

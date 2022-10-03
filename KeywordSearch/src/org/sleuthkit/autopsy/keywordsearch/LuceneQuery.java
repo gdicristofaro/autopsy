@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011-2018 Basis Technology Corp.
+ * Copyright 2011-2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,18 +32,15 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CursorMarkParams;
-import org.sleuthkit.autopsy.casemodule.Case;
-import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
 import org.sleuthkit.autopsy.coreutils.EscapeUtil;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.coreutils.Version;
-import org.sleuthkit.datamodel.Blackboard;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.Content;
-import org.sleuthkit.datamodel.SleuthkitCase;
+import org.sleuthkit.datamodel.Score;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskException;
 
@@ -138,6 +135,7 @@ class LuceneQuery implements KeywordSearchQuery {
         String cursorMark = CursorMarkParams.CURSOR_MARK_START;
         boolean allResultsProcessed = false;
         List<KeywordHit> matches = new ArrayList<>();
+        LanguageSpecificContentQueryHelper.QueryResults languageSpecificQueryResults = new LanguageSpecificContentQueryHelper.QueryResults();
         while (!allResultsProcessed) {
             solrQuery.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
             QueryResponse response = solrServer.query(solrQuery, SolrRequest.METHOD.POST);
@@ -145,7 +143,18 @@ class LuceneQuery implements KeywordSearchQuery {
             // objectId_chunk -> "text" -> List of previews
             Map<String, Map<String, List<String>>> highlightResponse = response.getHighlighting();
 
+            if (2.2 <= indexSchemaVersion) {
+                languageSpecificQueryResults.highlighting.putAll(response.getHighlighting());
+            }
+
             for (SolrDocument resultDoc : resultList) {
+                if (2.2 <= indexSchemaVersion) {
+                    Object language = resultDoc.getFieldValue(Server.Schema.LANGUAGE.toString());
+                    if (language != null) {
+                        LanguageSpecificContentQueryHelper.updateQueryResults(languageSpecificQueryResults, resultDoc);
+                    }
+                }
+
                 try {
                     /*
                      * for each result doc, check that the first occurence of
@@ -156,6 +165,11 @@ class LuceneQuery implements KeywordSearchQuery {
                     final String docId = resultDoc.getFieldValue(Server.Schema.ID.toString()).toString();
                     final Integer chunkSize = (Integer) resultDoc.getFieldValue(Server.Schema.CHUNK_SIZE.toString());
                     final Collection<Object> content = resultDoc.getFieldValues(Server.Schema.CONTENT_STR.toString());
+
+                    // if the document has language, it should be hit in language specific content fields. So skip here.
+                    if (resultDoc.containsKey(Server.Schema.LANGUAGE.toString())) {
+                        continue;
+                    }
 
                     if (indexSchemaVersion < 2.0) {
                         //old schema versions don't support chunk_size or the content_str fields, so just accept hits
@@ -183,9 +197,16 @@ class LuceneQuery implements KeywordSearchQuery {
             cursorMark = nextCursorMark;
         }
 
+        List<KeywordHit> mergedMatches;
+        if (2.2 <= indexSchemaVersion) {
+            mergedMatches = LanguageSpecificContentQueryHelper.mergeKeywordHits(matches, originalKeyword, languageSpecificQueryResults);
+        } else {
+            mergedMatches = matches;
+        }
+
         QueryResults results = new QueryResults(this);
         //in case of single term literal query there is only 1 term
-        results.addResult(new Keyword(originalKeyword.getSearchTerm(), true, true, originalKeyword.getListName(), originalKeyword.getOriginalTerm()), matches);
+        results.addResult(new Keyword(originalKeyword.getSearchTerm(), true, true, originalKeyword.getListName(), originalKeyword.getOriginalTerm()), mergedMatches);
 
         return results;
     }
@@ -196,7 +217,7 @@ class LuceneQuery implements KeywordSearchQuery {
     }
 
     /**
-     * Posts a keyword hit artifact to the blackboard for a given keyword hit.
+     *Add a keyword hit artifact for a given keyword hit.
      *
      * @param content      The text source object for the hit.
      * @param foundKeyword The keyword that was found by the search, this may be
@@ -207,64 +228,48 @@ class LuceneQuery implements KeywordSearchQuery {
      * @param listName     The name of the keyword list that contained the
      *                     keyword for which the hit was found.
      *
-     * @return The newly created artifact, or null if one wasn't created due to
-     *         either the artifact already existing or an error while trying to
-     *         create it.
+     *
+     * @return The newly created artifact or null if there was a problem
+     *         creating it.
      */
     @Override
-    public BlackboardArtifact postKeywordHitToBlackboard(Content content, Keyword foundKeyword, KeywordHit hit, String snippet, String listName) {
+    public BlackboardArtifact createKeywordHitArtifact(Content content, Keyword foundKeyword, KeywordHit hit, String snippet, String listName, Long ingestJobId) {
         final String MODULE_NAME = KeywordSearchModuleFactory.getModuleName();
 
-        List<BlackboardAttribute> attributesList = new ArrayList<>();
-        attributesList.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_KEYWORD, MODULE_NAME, foundKeyword.getSearchTerm()));
+        Collection<BlackboardAttribute> attributes = new ArrayList<>();
+        if (snippet != null) {
+            attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_KEYWORD_PREVIEW, MODULE_NAME, snippet));
+        }
+        attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_KEYWORD, MODULE_NAME, foundKeyword.getSearchTerm()));
+        if (StringUtils.isNotBlank(listName)) {
+            attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_SET_NAME, MODULE_NAME, listName));
+        }
+
         if (originalKeyword != null) {
             BlackboardAttribute.ATTRIBUTE_TYPE selType = originalKeyword.getArtifactAttributeType();
             if (selType != null) {
-                attributesList.add(new BlackboardAttribute(selType, MODULE_NAME, foundKeyword.getSearchTerm()));
+                attributes.add(new BlackboardAttribute(selType, MODULE_NAME, foundKeyword.getSearchTerm()));
             }
 
             if (originalKeyword.searchTermIsWholeWord()) {
-                attributesList.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD_SEARCH_TYPE, MODULE_NAME, KeywordSearch.QueryType.LITERAL.ordinal()));
+                attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD_SEARCH_TYPE, MODULE_NAME, KeywordSearch.QueryType.LITERAL.ordinal()));
             } else {
-                attributesList.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD_SEARCH_TYPE, MODULE_NAME, KeywordSearch.QueryType.SUBSTRING.ordinal()));
+                attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD_SEARCH_TYPE, MODULE_NAME, KeywordSearch.QueryType.SUBSTRING.ordinal()));
             }
         }
-        if (StringUtils.isNotBlank(listName)) {
-            attributesList.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_SET_NAME, MODULE_NAME, listName));
-        }
+
         hit.getArtifactID().ifPresent(artifactID
-                -> attributesList.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT, MODULE_NAME, artifactID))
+                -> attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT, MODULE_NAME, artifactID))
         );
 
         try {
-            SleuthkitCase tskCase = Case.getCurrentCaseThrows().getSleuthkitCase();
-            Blackboard blackboard = tskCase.getBlackboard();
-            if (blackboard.artifactExists(content, BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT, attributesList)) {
-                return null;
-            }
-        } catch (NoCurrentCaseException | TskCoreException ex) {
-            logger.log(Level.SEVERE, String.format(
-                    "A problem occurred while checking for existing artifacts for file '%s' (id=%d).",
-                    content.getName(), content.getId()), ex); //NON-NLS
-        }
-
-        BlackboardArtifact bba;
-        try {
-            bba = content.newArtifact(ARTIFACT_TYPE.TSK_KEYWORD_HIT);
+            return content.newAnalysisResult(
+                    BlackboardArtifact.Type.TSK_KEYWORD_HIT, Score.SCORE_LIKELY_NOTABLE, 
+                    null, listName, null, 
+                    attributes)
+                    .getAnalysisResult();
         } catch (TskCoreException e) {
             logger.log(Level.WARNING, "Error adding bb artifact for keyword hit", e); //NON-NLS
-            return null;
-        }
-
-        if (snippet != null) {
-            attributesList.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_KEYWORD_PREVIEW, MODULE_NAME, snippet));
-        }
-
-        try {
-            bba.addAttributes(attributesList); //write out to bb
-            return bba;
-        } catch (TskCoreException e) {
-            logger.log(Level.WARNING, "Error adding bb attributes to artifact", e); //NON-NLS
             return null;
         }
     }
@@ -277,19 +282,25 @@ class LuceneQuery implements KeywordSearchQuery {
      *
      * @return
      */
-    private SolrQuery createAndConfigureSolrQuery(boolean snippets) {
+    private SolrQuery createAndConfigureSolrQuery(boolean snippets) throws NoOpenCoreException, KeywordSearchModuleException {
+        double indexSchemaVersion = NumberUtils.toDouble(KeywordSearch.getServer().getIndexInfo().getSchemaVersion());
+
         SolrQuery q = new SolrQuery();
         q.setShowDebugInfo(DEBUG); //debug
         // Wrap the query string in quotes if this is a literal search term.
         String queryStr = originalKeyword.searchTermIsLiteral()
-                ? KeywordSearchUtil.quoteQuery(keywordStringEscaped) : keywordStringEscaped;
+            ? KeywordSearchUtil.quoteQuery(keywordStringEscaped) : keywordStringEscaped;
 
         // Run the query against an optional alternative field. 
         if (field != null) {
             //use the optional field
             queryStr = field + ":" + queryStr;
+            q.setQuery(queryStr);
+        } else if (2.2 <= indexSchemaVersion && originalKeyword.searchTermIsLiteral()) {
+            q.setQuery(LanguageSpecificContentQueryHelper.expandQueryString(queryStr));
+        } else {
+            q.setQuery(queryStr);
         }
-        q.setQuery(queryStr);
         q.setRows(MAX_RESULTS_PER_CURSOR_MARK);
         // Setting the sort order is necessary for cursor based paging to work.
         q.setSort(SolrQuery.SortClause.asc(Server.Schema.ID.toString()));
@@ -297,6 +308,11 @@ class LuceneQuery implements KeywordSearchQuery {
         q.setFields(Server.Schema.ID.toString(),
                 Server.Schema.CHUNK_SIZE.toString(),
                 Server.Schema.CONTENT_STR.toString());
+
+        if (2.2 <= indexSchemaVersion && originalKeyword.searchTermIsLiteral()) {
+            q.addField(Server.Schema.LANGUAGE.toString());
+            LanguageSpecificContentQueryHelper.configureTermfreqQuery(q, keywordStringEscaped);
+        }
 
         for (KeywordQueryFilter filter : filters) {
             q.addFilterQuery(filter.toString());
@@ -315,8 +331,16 @@ class LuceneQuery implements KeywordSearchQuery {
      *
      * @param q The SolrQuery to configure.
      */
-    private static void configurwQueryForHighlighting(SolrQuery q) {
-        q.addHighlightField(HIGHLIGHT_FIELD);
+    private static void configurwQueryForHighlighting(SolrQuery q) throws NoOpenCoreException {
+        double indexSchemaVersion = NumberUtils.toDouble(KeywordSearch.getServer().getIndexInfo().getSchemaVersion());
+        if (2.2 <= indexSchemaVersion) {
+            for (Server.Schema field : LanguageSpecificContentQueryHelper.getQueryFields()) {
+                q.addHighlightField(field.toString());
+            }
+        } else {
+            q.addHighlightField(HIGHLIGHT_FIELD);
+        }
+
         q.setHighlightSnippets(1);
         q.setHighlightFragsize(SNIPPET_LENGTH);
 
@@ -419,7 +443,13 @@ class LuceneQuery implements KeywordSearchQuery {
             if (responseHighlightID == null) {
                 return "";
             }
-            List<String> contentHighlights = responseHighlightID.get(LuceneQuery.HIGHLIGHT_FIELD);
+            double indexSchemaVersion = NumberUtils.toDouble(solrServer.getIndexInfo().getSchemaVersion());
+            List<String> contentHighlights;
+            if (2.2 <= indexSchemaVersion) {
+                contentHighlights = LanguageSpecificContentQueryHelper.getHighlights(responseHighlightID).orElse(null);
+            } else {
+                contentHighlights = responseHighlightID.get(LuceneQuery.HIGHLIGHT_FIELD);
+            }
             if (contentHighlights == null) {
                 return "";
             } else {

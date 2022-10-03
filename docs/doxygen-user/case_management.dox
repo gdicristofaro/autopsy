@@ -1,5 +1,8 @@
 /*! \page cases_page Cases
 
+[TOC]
+
+
 You need to create a case before you can analyze data in Autopsy.  A case can contain one or more data sources (disk images, disk devices, logical files). The data sources can be from multiple drives in a single computer or from multiple computers.  It's up to you. 
 
 Each case has its own directory that is named based on the case name. The directory will contain configuration files, a database, reports, and other files that modules generates. The main Autopsy case configuration file has an ".aut" extension. 
@@ -38,15 +41,16 @@ To open a case, either:
 
 \image html multi_user_case_select.png
 
-\section case_properties Viewing Case Properties
-You can view the case properties by going to the "Case" menu and clicking "Case Properties".
+\section case_properties Viewing Case Details and the Data Source Summary
+You can view the case properties by going to the "Case" menu and clicking "Case Details".
 
 \image html case_properties.png
 
-You can use the "Ingest History" tab to view which data sources had which modules run upon them, and when, as shown in the screenshot below.
+Most of the case properties can be edited through the "Edit Details" button.
 
-\image html case-properties-history-tab.PNG
+You can view the data source summary by going to the "Case" menu and clicking "Data Source Summary" or by selecting the data source in the \ref tree_viewer_page and then the "Summary" tab. More information can be found on the \ref data_source_summary_page page.
 
+\image html ds_summary_window.png
 
 
 */

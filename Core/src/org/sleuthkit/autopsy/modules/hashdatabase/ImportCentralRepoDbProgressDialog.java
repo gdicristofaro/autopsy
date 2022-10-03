@@ -30,23 +30,25 @@ import javax.swing.WindowConstants;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.Executors;
 import org.openide.util.NbBundle;
 import org.openide.windows.WindowManager;
-import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationAttribute;
-import org.sleuthkit.autopsy.centralrepository.datamodel.EamDb;
-import org.sleuthkit.autopsy.centralrepository.datamodel.EamDbException;
-import org.sleuthkit.autopsy.centralrepository.datamodel.EamGlobalFileInstance;
-import org.sleuthkit.autopsy.centralrepository.datamodel.EamGlobalSet;
+import org.sleuthkit.autopsy.centralrepository.datamodel.CorrelationAttributeInstance;
+import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepoException;
+import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepoFileInstance;
+import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepoFileSet;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskData;
+import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepository;
+import org.sleuthkit.datamodel.HashEntry;
 
 /**
  * Imports a hash set into the central repository and updates a progress dialog
  */
 @SuppressWarnings("PMD.SingularField") // UI widgets cause lots of false positives
 class ImportCentralRepoDbProgressDialog extends javax.swing.JDialog implements PropertyChangeListener {
+
+    private static final long serialVersionUID = 1L;
 
     private CentralRepoImportWorker worker;   // Swing worker that will import the file and send updates to the dialog
 
@@ -184,7 +186,7 @@ class ImportCentralRepoDbProgressDialog extends javax.swing.JDialog implements P
          * Get the newly created database
          *
          * @return the imported database. May be null if an error occurred or
-         * the user canceled
+         *         the user canceled
          */
         synchronized HashDbManager.CentralRepoHashSet getDatabase() {
             return newHashDb;
@@ -203,7 +205,7 @@ class ImportCentralRepoDbProgressDialog extends javax.swing.JDialog implements P
          * Check if the import was successful or if there was an error.
          *
          * @return true if the import process completed without error, false
-         * otherwise
+         *         otherwise
          */
         boolean getImportSuccess() {
             return importSuccess.get();
@@ -229,38 +231,33 @@ class ImportCentralRepoDbProgressDialog extends javax.swing.JDialog implements P
 
             try {
                 // Conver to the FileKnown enum used by EamGlobalSet
-                TskData.FileKnown knownStatus;
-                if (knownFilesType.equals(HashDbManager.HashDb.KnownFilesType.KNOWN)) {
-                    knownStatus = TskData.FileKnown.KNOWN;
-                } else {
-                    knownStatus = TskData.FileKnown.BAD;
-                }
+                TskData.FileKnown knownStatus = knownFilesType.getFileKnown();
 
                 // Create an empty hashset in the central repository
-                EamDb dbManager = EamDb.getInstance();
-                referenceSetID.set(dbManager.newReferenceSet(new EamGlobalSet(orgId, hashSetName, version, knownStatus, 
-                        readOnly, EamDb.getInstance().getCorrelationTypeById(CorrelationAttribute.FILES_TYPE_ID))));
+                CentralRepository dbManager = CentralRepository.getInstance();
+                referenceSetID.set(dbManager.newReferenceSet(new CentralRepoFileSet(orgId, hashSetName, version, knownStatus,
+                        readOnly, CentralRepository.getInstance().getCorrelationTypeById(CorrelationAttributeInstance.FILES_TYPE_ID))));
 
                 // Get the "FILES" content type. This is a database lookup so we
                 // only want to do it once.
-                CorrelationAttribute.Type contentType = dbManager.getCorrelationTypeById(CorrelationAttribute.FILES_TYPE_ID);
+                CorrelationAttributeInstance.Type contentType = dbManager.getCorrelationTypeById(CorrelationAttributeInstance.FILES_TYPE_ID);
 
                 // Holds the current batch of hashes that need to be written to the central repo
-                Set<EamGlobalFileInstance> globalInstances = new HashSet<>();
+                Set<CentralRepoFileInstance> globalInstances = new HashSet<>();
 
                 while (!hashSetParser.doneReading()) {
                     if (isCancelled()) {
                         return null;
                     }
 
-                    String newHash = hashSetParser.getNextHash();
+                    HashEntry newHash = hashSetParser.getNextHashEntry();
 
                     if (newHash != null) {
-                        EamGlobalFileInstance eamGlobalFileInstance = new EamGlobalFileInstance(
+                        CentralRepoFileInstance eamGlobalFileInstance = new CentralRepoFileInstance(
                                 referenceSetID.get(),
-                                newHash,
+                                newHash.getMd5Hash(),
                                 knownStatus,
-                                "");
+                                newHash.getComment());
 
                         globalInstances.add(eamGlobalFileInstance);
 
@@ -293,16 +290,13 @@ class ImportCentralRepoDbProgressDialog extends javax.swing.JDialog implements P
             if (referenceSetID.get() >= 0) {
 
                 // This can be slow on large reference sets
-                Executors.newSingleThreadExecutor().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            EamDb.getInstance().deleteReferenceSet(referenceSetID.get());
-                        } catch (EamDbException ex2) {
-                            Logger.getLogger(ImportCentralRepoDbProgressDialog.class.getName()).log(Level.SEVERE, "Error deleting incomplete hash set from central repository", ex2);
-                        }
+                new Thread(() -> {
+                    try {
+                        CentralRepository.getInstance().deleteReferenceSet(referenceSetID.get());
+                    } catch (CentralRepoException ex2) {
+                        Logger.getLogger(ImportCentralRepoDbProgressDialog.class.getName()).log(Level.SEVERE, "Error deleting incomplete hash set from central repository", ex2);
                     }
-                });
+                }).start();
             }
         }
 

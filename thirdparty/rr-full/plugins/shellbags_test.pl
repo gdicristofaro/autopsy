@@ -2,7 +2,7 @@
 # shellbags_test.pl
 #
 #
-# License: GPL v3 
+#  
 # copyright 2012 Quantum Analytics Research, LLC
 # Author: H. Carvey, keydet89@yahoo.com
 #-----------------------------------------------------------
@@ -100,7 +100,7 @@ sub traverse {
  		my $type = unpack("C",substr($values{$v},2,1));
 		my $size = unpack("v",substr($values{$v},0,2));
 #		probe($values{$v});
-		
+
 # Need to first check to see if the parent of the item was a zip folder
 # and if the 'zipsubfolder' value is set to 1		
 		if (exists ${$parent}{zipsubfolder} && ${$parent}{zipsubfolder} == 1) {
@@ -358,7 +358,7 @@ sub parseFolderItem {
 	my $str = "";
 	while($tag) {
 		my $s = substr($data,$ofs_shortname + $cnt,1);
-                return %item unless (defined $s); 
+        return %item unless (defined $s);
 		if ($s =~ m/\x00/ && ((($cnt + 1) % 2) == 0)) {
 			$tag = 0;
 		}
@@ -374,8 +374,8 @@ sub parseFolderItem {
 	$tag = 1;
 	$cnt = 0;
 	while ($tag) {
-                my $s = substr($data,$ofs + $cnt,2);
-                return %item unless (defined $s); 
+        my $s = substr($data,$ofs + $cnt,2);
+        return %item unless (defined $s); 
 		if (unpack("v",$s) == 0xbeef) {
 			$tag = 0;
 		}
@@ -411,12 +411,13 @@ sub parseFolderItem {
 	$longname =~ s/\x00//g;
 	
 	if ($longname ne "") {
-		$item{name} = $longname;
+		$item{name} = Utf16ToUtf8($longname);
 	}
 	else {
-		$item{name} = $shortname;
+		$item{name} = Utf16ToUtf8($shortname);
 	}
 	return %item;
 }
+
 
 1;

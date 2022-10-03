@@ -23,6 +23,8 @@
 #-----------------------------------------------------------
 package samparse;
 use strict;
+use Encode::Unicode;
+use JSON::PP;
 
 my %config = (hive          => "SAM",
               hivemask      => 2,
@@ -79,6 +81,24 @@ sub pluginmain {
 	::rptMsg("-" x 25);
 	my $key_path = 'SAM\\Domains\\Account\\Users';
 	my $key;
+	my $local_sid = "";
+	my $account_key = $root_key->get_subkey("SAM\\Domains\\Account");
+	if (defined $account_key) {
+		my $account_value = $account_key->get_value("V");
+		if (defined $account_value) {
+			my $account_data = $account_value->get_data();
+			if (defined $account_data) {
+				my $data_len = length($account_data);
+				if ($data_len >= 12) {
+					my @vArray  = unpack("VVV",substr($account_data, $data_len-12, 12));
+					my $vArray_len = @vArray;
+					if ($vArray_len == 3) {
+						$local_sid = "S-1-5-21-".$vArray[0]."-".$vArray[1]."-".$vArray[2];
+					}
+				}
+			}
+		}
+	}
 	if ($key = $root_key->get_subkey($key_path)) {
 		my @user_list = $key->get_list_of_subkeys();
 		if (scalar(@user_list) > 0) {
@@ -102,6 +122,7 @@ sub pluginmain {
 					};
 				
 					::rptMsg("Username        : ".$v_val{name}." [".$rid."]");
+					::rptMsg("SID             : ".$local_sid."-".$rid);
 					::rptMsg("Full Name       : ".$v_val{fullname});
 					::rptMsg("User Comment    : ".$v_val{comment});
 					::rptMsg("Account Type    : ".$v_val{type});
@@ -111,6 +132,23 @@ sub pluginmain {
 					my $f = $f_value->get_data();
 					my %f_val = parseF($f);
 					
+					eval {
+					    my $reset_data_value = $u->get_value("ResetData");
+						my $reset_data = $reset_data_value->get_data();
+    					my $reset_data_hash = decode_json($reset_data);
+						my $reset_data_question_1 = $reset_data_hash->{'questions'}[0];
+						my $reset_data_question_2 = $reset_data_hash->{'questions'}[1];
+						my $reset_data_question_3 = $reset_data_hash->{'questions'}[2];
+						my $question_1 = $reset_data_question_1->{'question'};
+                        ::rptMsg("Security Questions:");
+						::rptMsg("    Question 1  : ".$question_1);
+						::rptMsg("    Answer 1    : ".$reset_data_question_1->{'answer'});
+						::rptMsg("    Question 2  : ".$reset_data_question_2->{'question'});
+						::rptMsg("    Answer 2    : ".$reset_data_question_2->{'answer'});
+						::rptMsg("    Question 3  : ".$reset_data_question_3->{'question'});
+						::rptMsg("    Answer 3    : ".$reset_data_question_3->{'answer'});
+					};
+										
 					my $lastlogin;
 					my $pwdreset;
 					my $pwdfail;
@@ -345,7 +383,8 @@ sub _translateSID {
 #---------------------------------------------------------------------
 sub _uniToAscii {
   my $str = $_[0];
-  $str =~ s/\x00//g;
+  Encode::from_to($str,'UTF-16LE','utf8');
+  $str = Encode::decode_utf8($str);
   return $str;
 }
 

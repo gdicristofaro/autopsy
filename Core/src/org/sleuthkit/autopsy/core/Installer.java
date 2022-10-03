@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011-2018 Basis Technology Corp.
+ * Copyright 2011-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,8 +18,12 @@
  */
 package org.sleuthkit.autopsy.core;
 
+import com.sun.jna.platform.win32.Kernel32;
 import java.awt.Cursor;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -29,16 +33,26 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
+import javax.imageio.ImageIO;
+import net.sf.sevenzipjbinding.SevenZip;
+import net.sf.sevenzipjbinding.SevenZipNativeInitializationException;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.openide.modules.InstalledFileLocator;
 import org.openide.modules.ModuleInstall;
 import org.openide.util.NbBundle;
 import org.openide.windows.WindowManager;
 import org.sleuthkit.autopsy.actions.IngestRunningCheck;
 import org.sleuthkit.autopsy.casemodule.Case;
 import static org.sleuthkit.autopsy.core.UserPreferences.SETTINGS_PROPERTIES;
+import org.sleuthkit.autopsy.corelibs.OpenCvLoader;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.coreutils.MessageNotifyUtil;
 import org.sleuthkit.autopsy.coreutils.ModuleSettings;
 import org.sleuthkit.autopsy.coreutils.PlatformUtil;
+import org.sleuthkit.autopsy.modules.filetypeid.FileTypeDetector;
+import org.sleuthkit.autopsy.python.JythonModuleLoader;
+import org.sleuthkit.autopsy.texttranslation.TextTranslationService;
 
 /**
  * Wrapper over Installers in packages in Core module. This is the main
@@ -54,6 +68,13 @@ public class Installer extends ModuleInstall {
 
     static {
         loadDynLibraries();
+        
+        // This call was moved from MediaViewImagePanel so that it is 
+        // not called during top level component construction.
+        ImageIO.scanForPlugins();
+        
+        // This will cause OpenCvLoader to load its library instead of 
+        OpenCvLoader.openCvIsLoaded();
     }
 
     private static void loadDynLibraries() {
@@ -71,6 +92,8 @@ public class Installer extends ModuleInstall {
          */
         if (PlatformUtil.isWindowsOS()) {
             try {
+                addGstreamerPathsToEnv();
+
                 //Note: if shipping with a different CRT version, this will only print a warning
                 //and try to use linker mechanism to find the correct versions of libs.
                 //We should update this if we officially switch to a new version of CRT/compiler
@@ -151,50 +174,23 @@ public class Installer extends ModuleInstall {
             } catch (UnsatisfiedLinkError e) {
                 logger.log(Level.SEVERE, "Error loading VHDI library, ", e); //NON-NLS
             }
+            
+            // Only attempt to load OpenSSL if we're in 64 bit mode
+            if(System.getProperty("sun.arch.data.model").contains("64")) {
+                // libcrypto must be loaded before libssl to make sure it's the correct version
+                try {
+                    System.loadLibrary("libcrypto-1_1-x64"); //NON-NLS
+                    logger.log(Level.INFO, "Crypto library loaded"); //NON-NLS
+                } catch (UnsatisfiedLinkError e) {
+                    logger.log(Level.SEVERE, "Error loading Crypto library, ", e); //NON-NLS
+                }  
 
-            /*
-             * PostgreSQL
-             */
-            try {
-                System.loadLibrary("msvcr120"); //NON-NLS
-                logger.log(Level.INFO, "MSVCR 120 library loaded"); //NON-NLS
-            } catch (UnsatisfiedLinkError e) {
-                logger.log(Level.SEVERE, "Error loading MSVCR120 library, ", e); //NON-NLS
-            }
-
-            try {
-                System.loadLibrary("libeay32"); //NON-NLS
-                logger.log(Level.INFO, "LIBEAY32 library loaded"); //NON-NLS
-            } catch (UnsatisfiedLinkError e) {
-                logger.log(Level.SEVERE, "Error loading LIBEAY32 library, ", e); //NON-NLS
-            }
-
-            try {
-                System.loadLibrary("ssleay32"); //NON-NLS
-                logger.log(Level.INFO, "SSLEAY32 library loaded"); //NON-NLS
-            } catch (UnsatisfiedLinkError e) {
-                logger.log(Level.SEVERE, "Error loading SSLEAY32 library, ", e); //NON-NLS
-            }
-
-            try {
-                System.loadLibrary("libiconv-2"); //NON-NLS
-                logger.log(Level.INFO, "libiconv-2 library loaded"); //NON-NLS
-            } catch (UnsatisfiedLinkError e) {
-                logger.log(Level.SEVERE, "Error loading libiconv-2 library, ", e); //NON-NLS
-            }
-
-            try {
-                System.loadLibrary("libintl-8"); //NON-NLS
-                logger.log(Level.INFO, "libintl-8 library loaded"); //NON-NLS
-            } catch (UnsatisfiedLinkError e) {
-                logger.log(Level.SEVERE, "Error loading libintl-8 library, ", e); //NON-NLS
-            }
-
-            try {
-                System.loadLibrary("libpq"); //NON-NLS
-                logger.log(Level.INFO, "LIBPQ library loaded"); //NON-NLS
-            } catch (UnsatisfiedLinkError e) {
-                logger.log(Level.SEVERE, "Error loading LIBPQ library, ", e); //NON-NLS
+                try {
+                    System.loadLibrary("libssl-1_1-x64"); //NON-NLS
+                    logger.log(Level.INFO, "OpenSSL library loaded"); //NON-NLS
+                } catch (UnsatisfiedLinkError e) {
+                    logger.log(Level.SEVERE, "Error loading OpenSSL library, ", e); //NON-NLS
+                }
             }
         }
     }
@@ -208,6 +204,7 @@ public class Installer extends ModuleInstall {
         System.setProperty("prism.allowhidpi", "false");
 
         // Update existing configuration in case of unsupported settings
+        UserPreferences.updateConfig();
         updateConfig();
 
         packageInstallers = new ArrayList<>();
@@ -217,6 +214,24 @@ public class Installer extends ModuleInstall {
         packageInstallers.add(org.sleuthkit.autopsy.ingest.Installer.getDefault());
         packageInstallers.add(org.sleuthkit.autopsy.centralrepository.eventlisteners.Installer.getDefault());
         packageInstallers.add(org.sleuthkit.autopsy.healthmonitor.Installer.getDefault());
+        packageInstallers.add(org.sleuthkit.autopsy.casemodule.Installer.getDefault());
+        packageInstallers.add(org.sleuthkit.autopsy.modules.hashdatabase.infrastructure.Installer.getDefault());
+        packageInstallers.add(org.sleuthkit.autopsy.report.infrastructure.Installer.getDefault());
+
+        /**
+         * This is a temporary workaround for the following bug in Tika that
+         * results in a null pointer exception when used from the Image Gallery.
+         * The current hypothesis is that the Image Gallery is cancelling the
+         * thumbnail task that Tika initialization is happening on. Once the
+         * Tika issue has been fixed we should no longer need this workaround.
+         *
+         * https://issues.apache.org/jira/browse/TIKA-2896
+         */
+        try {
+            FileTypeDetector fileTypeDetector = new FileTypeDetector();
+        } catch (FileTypeDetector.FileTypeDetectorInitException ex) {
+            logger.log(Level.SEVERE, "Failed to load file type detector.", ex);
+        }
     }
 
     /**
@@ -269,8 +284,49 @@ public class Installer extends ModuleInstall {
     }
 
     /**
-     * Make a folder in the config directory for object detection classifiers if one does not
-     * exist.
+     * Add the Gstreamer bin and lib paths to the PATH environment variable so
+     * that the correct plugins and libraries are found when Gstreamer is
+     * initialized later.
+     */
+    private static void addGstreamerPathsToEnv() {
+        if (System.getProperty("jna.nosys") == null) {
+            System.setProperty("jna.nosys", "true");
+        }
+
+        Path gstreamerPath = InstalledFileLocator.getDefault().locate("gstreamer", Installer.class.getPackage().getName(), false).toPath();
+
+        if (gstreamerPath == null) {
+            logger.log(Level.SEVERE, "Failed to find GStreamer.");
+        } else {
+            String arch = "x86_64";
+            if (!PlatformUtil.is64BitJVM()) {
+                arch = "x86";
+            }
+
+            Path gstreamerBasePath = Paths.get(gstreamerPath.toString(), "1.0", arch);
+            Path gstreamerBinPath = Paths.get(gstreamerBasePath.toString(), "bin");
+            Path gstreamerLibPath = Paths.get(gstreamerBasePath.toString(), "lib", "gstreamer-1.0");
+
+            // Update the PATH environment variable to contain the GStreamer
+            // lib and bin paths.
+            Kernel32 k32 = Kernel32.INSTANCE;
+            String path = System.getenv("PATH");
+            if (StringUtils.isBlank(path)) {
+                k32.SetEnvironmentVariable("PATH", gstreamerLibPath.toString());
+            } else {
+                /*
+                 * Note that we *prepend* the paths so that the Gstreamer
+                 * binaries associated with the current release are found rather
+                 * than binaries associated with an earlier version of Autopsy.
+                 */
+                k32.SetEnvironmentVariable("PATH", gstreamerBinPath.toString() + File.pathSeparator + gstreamerLibPath.toString() + path);
+            }
+        }
+    }
+
+    /**
+     * Make a folder in the config directory for object detection classifiers if
+     * one does not exist.
      */
     private static void ensureClassifierFolderExists() {
         File objectDetectionClassifierDir = new File(PlatformUtil.getObjectDetectionClassifierPath());
@@ -286,12 +342,35 @@ public class Installer extends ModuleInstall {
         pythonModulesDir.mkdir();
     }
 
+    /**
+     * Make a folder in the config directory for Ocr Language Packs if one does
+     * not exist.
+     */
+    private static void ensureOcrLanguagePacksFolderExists() {
+        File ocrLanguagePacksDir = new File(PlatformUtil.getOcrLanguagePacksPath());
+        boolean createDirectory = ocrLanguagePacksDir.mkdir();
+
+        //If the directory did not exist, copy the tessdata folder over so we 
+        //support english.
+        if (createDirectory) {
+            File tessdataDir = InstalledFileLocator.getDefault().locate(
+                    "Tesseract-OCR/tessdata", Installer.class.getPackage().getName(), false);
+            try {
+                FileUtils.copyDirectory(tessdataDir, ocrLanguagePacksDir);
+            } catch (IOException ex) {
+                logger.log(Level.SEVERE, "Copying over default language packs for Tesseract failed.", ex);
+            }
+        }
+    }
+
     @Override
     public void restored() {
         super.restored();
         ensurePythonModulesFolderExists();
         ensureClassifierFolderExists();
+        ensureOcrLanguagePacksFolderExists();
         initJavaFx();
+        initializeSevenZip();
         for (ModuleInstall mi : packageInstallers) {
             try {
                 mi.restored();
@@ -301,8 +380,59 @@ public class Installer extends ModuleInstall {
                 logger.log(Level.WARNING, msg, e);
             }
         }
-        logger.log(Level.INFO, "Autopsy Core restore completed"); //NON-NLS        
+        logger.log(Level.INFO, "Autopsy Core restore completed"); //NON-NLS    
+        preloadJython();
+        preloadTranslationServices();
     }
+
+    /**
+     * Initializes 7zip-java bindings. We are performing initialization once
+     * because we encountered issues related to file locking when initialization
+     * was performed closer to where the bindings are used. See JIRA-6528.
+     */
+    private static void initializeSevenZip() {
+        try {
+            SevenZip.initSevenZipFromPlatformJAR();
+            logger.log(Level.INFO, "7zip-java bindings loaded"); //NON-NLS
+        } catch (SevenZipNativeInitializationException e) {
+            logger.log(Level.SEVERE, "Error loading 7zip-java bindings", e); //NON-NLS
+        }
+    }
+
+    /**
+     * Runs an initial load of the Jython modules to speed up subsequent loads.
+     */
+    private static void preloadJython() {
+        Runnable loader = () -> {
+            try {
+                JythonModuleLoader.getIngestModuleFactories();
+                JythonModuleLoader.getGeneralReportModules();
+                JythonModuleLoader.getDataSourceProcessorModules();
+            } catch (Exception ex) {
+                // This is a firewall exception to ensure that any possible exception caused
+                // by this initial load of the Jython modules are caught and logged.
+                logger.log(Level.SEVERE, "There was an error while doing an initial load of python plugins.", ex);
+            }
+
+        };
+        new Thread(loader).start();
+    }
+    
+    /**
+     * Runs an initial load of the translation services to speed up subsequent loads.
+     */
+    private static void preloadTranslationServices() {
+        Runnable loader = () -> {
+            try {
+                TextTranslationService.getInstance();
+            } catch (Exception ex) {
+                // This is a firewall exception to ensure that any possible exception caused
+                // by this initial load of the translation modules are caught and logged.
+                logger.log(Level.SEVERE, "There was an error while doing an initial load of translation services.", ex);
+            }
+        };
+        new Thread(loader).start();
+    }    
 
     @Override
     public void validate() throws IllegalStateException {

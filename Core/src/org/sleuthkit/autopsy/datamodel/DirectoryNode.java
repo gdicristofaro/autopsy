@@ -19,6 +19,7 @@
 package org.sleuthkit.autopsy.datamodel;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +29,7 @@ import org.openide.util.Utilities;
 import org.sleuthkit.autopsy.actions.AddContentTagAction;
 import org.sleuthkit.autopsy.actions.DeleteFileContentTagAction;
 import org.sleuthkit.autopsy.coreutils.ContextMenuExtensionPoint;
+import org.sleuthkit.autopsy.directorytree.ExportCSVAction;
 import org.sleuthkit.autopsy.directorytree.ExtractAction;
 import org.sleuthkit.autopsy.directorytree.NewWindowViewAction;
 import org.sleuthkit.autopsy.directorytree.ViewContextAction;
@@ -77,9 +79,6 @@ public class DirectoryNode extends AbstractFsContentNode<AbstractFile> {
     @Override
     public Action[] getActions(boolean popup) {
         List<Action> actionsList = new ArrayList<>();
-        for (Action a : super.getActions(true)) {
-            actionsList.add(a);
-        }
         if (!getDirectoryBrowseMode()) {
             actionsList.add(new ViewContextAction(
                     NbBundle.getMessage(this.getClass(), "DirectoryNode.getActions.viewFileInDir.text"), this));
@@ -89,6 +88,7 @@ public class DirectoryNode extends AbstractFsContentNode<AbstractFile> {
         actionsList.add(ViewFileInTimelineAction.createViewFileAction(content));
         actionsList.add(null); // creates a menu separator
         actionsList.add(ExtractAction.getInstance());
+        actionsList.add(ExportCSVAction.getInstance());
         actionsList.add(null); // creates a menu separator
         actionsList.add(new RunIngestModulesAction(content));
         actionsList.add(null); // creates a menu separator
@@ -100,6 +100,8 @@ public class DirectoryNode extends AbstractFsContentNode<AbstractFile> {
         }
 
         actionsList.addAll(ContextMenuExtensionPoint.getActions());
+        actionsList.add(null);
+        actionsList.addAll(Arrays.asList(super.getActions(true)));
         return actionsList.toArray(new Action[actionsList.size()]);
     }
 

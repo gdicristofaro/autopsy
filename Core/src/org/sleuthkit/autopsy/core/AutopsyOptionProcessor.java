@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2013-2017 Basis Technology Corp.
+ * Copyright 2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.sleuthkit.autopsy.coreutils.Logger;
 import org.netbeans.api.sendopts.CommandException;
 import org.netbeans.spi.sendopts.Env;
 import org.netbeans.spi.sendopts.Option;
@@ -40,7 +40,8 @@ import org.sleuthkit.autopsy.coreutils.PlatformUtil;
 public class AutopsyOptionProcessor extends OptionProcessor {
     
     private static final Logger logger = Logger.getLogger(AutopsyOptionProcessor.class.getName());
-    private final Option liveAutopsyOption = Option.withoutArgument('l', "liveAutopsy");
+    private final Option liveAutopsyOption = Option.optionalArgument('l', "liveAutopsy");
+    // @@@ We should centralize where we store this.  It is defined in 2 other places. 
     private final static String PROP_BASECASE = "LBL_BaseCase_PATH";
 
 
@@ -56,11 +57,20 @@ public class AutopsyOptionProcessor extends OptionProcessor {
        if(values.containsKey(liveAutopsyOption)){
            try {
                RuntimeProperties.setRunningInTarget(true);
-               ModuleSettings.setConfigSetting(ModuleSettings.MAIN_SETTINGS, PROP_BASECASE , PlatformUtil.getUserDirectory().toString());
+               
+               // get the starting folder to store cases in
+               String[] argDirs= values.get(liveAutopsyOption);
+               String startingCaseDir;
+               if (argDirs == null || argDirs.length == 0) {
+                   startingCaseDir = PlatformUtil.getUserDirectory().toString();
+               }
+               else {
+                   startingCaseDir = argDirs[0];
+               }
+               ModuleSettings.setConfigSetting(ModuleSettings.MAIN_SETTINGS, PROP_BASECASE, startingCaseDir);
            } catch (RuntimeProperties.RuntimePropertiesException ex) {
                logger.log(Level.SEVERE, ex.getMessage(), ex);
            }
        }
     }
-    
 }

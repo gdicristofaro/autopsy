@@ -32,7 +32,7 @@ import org.openide.util.NbBundle;
 final class UnpinAccountsAction extends AbstractCVTAction {
 
     static final private ImageIcon ICON = ImageUtilities.loadImageIcon(
-            "/org/sleuthkit/autopsy/communications/images/marker--minus.png", false);
+            "org/sleuthkit/autopsy/communications/images/marker--minus.png", false);
     private static final String SINGULAR_TEXT = Bundle.UnpinAccountsAction_singularText();
     private static final String PLURAL_TEXT = Bundle.UnpinAccountsAction_pluralText();
 
@@ -46,7 +46,7 @@ final class UnpinAccountsAction extends AbstractCVTAction {
     public void actionPerformed(final ActionEvent event) {
         CVTEvents.getCVTEventBus().post(new CVTEvents.UnpinAccountsEvent(getSelectedAccounts()));
     }
-
+    
     @Override
     String getActionDisplayName() {
         return getSelectedAccounts().size() > 1 ? PLURAL_TEXT : SINGULAR_TEXT;

@@ -43,8 +43,14 @@ class EmailMessage {
     private String localPath = "";
     private boolean hasAttachment = false;
     private long sentDate = 0L;
-    private List<Attachment> attachments = new ArrayList<>();
+    private final List<Attachment> attachments = new ArrayList<>();
     private long id = -1L;
+    private String messageID = "";
+    private String inReplyToID = "";
+    private List<String> references = new ArrayList<>();
+    private String simplifiedSubject = "";
+    private boolean replySubject = false;
+    private String messageThreadID = "";
 
     boolean hasAttachment() {
         return hasAttachment;
@@ -77,7 +83,33 @@ class EmailMessage {
     void setSubject(String subject) {
         if (subject != null) {
             this.subject = subject;
+            if (subject.matches("^[R|r][E|e].*?:.*")) {
+                this.simplifiedSubject = subject.replaceAll("[R|r][E|e].*?:", "").trim();
+                replySubject = true;
+            } else {
+                this.simplifiedSubject = subject;
+            }
+        } else {
+            this.simplifiedSubject = "";
         }
+    }
+
+    /**
+     * Returns the orginal subject with the "RE:" stripped off".
+     *
+     * @return Message subject with the "RE" stripped off
+     */
+    String getSimplifiedSubject() {
+        return simplifiedSubject;
+    }
+
+    /**
+     * Returns whether or not the message subject started with "RE:"
+     *
+     * @return true if the original subject started with RE otherwise false.
+     */
+    boolean isReplySubject() {
+        return replySubject;
     }
 
     String getHeaders() {
@@ -89,6 +121,7 @@ class EmailMessage {
             this.headers = headers;
         }
     }
+
     String getTextBody() {
         return textBody;
     }
@@ -181,6 +214,85 @@ class EmailMessage {
     }
 
     /**
+     * Returns the value of the Message-ID header field of this message or empty
+     * string if it is not present.
+     *
+     * @return the identifier of this message.
+     */
+    String getMessageID() {
+        return messageID;
+    }
+
+    /**
+     * Sets the identifier of this message.
+     *
+     * @param messageID identifer of this message
+     */
+    void setMessageID(String messageID) {
+        if (messageID != null) {
+            this.messageID = messageID;
+        } else {
+            this.messageID = "";
+        }
+    }
+
+    /**
+     * Returns the messageID of the parent message or empty String if not
+     * present.
+     *
+     * @return the idenifier of the message parent
+     */
+    String getInReplyToID() {
+        return inReplyToID;
+    }
+
+    /**
+     * Sets the messageID of the parent message.
+     *
+     * @param inReplyToID messageID of the parent message.
+     */
+    void setInReplyToID(String inReplyToID) {
+        this.inReplyToID = inReplyToID;
+    }
+
+    /**
+     * Returns a list of Message-IDs listing the parent, grandparent,
+     * great-grandparent, and so on, of this message.
+     *
+     * @return The reference list or empty string if none is available.
+     */
+    List<String> getReferences() {
+        return references;
+    }
+
+    /**
+     * Set the list of reference message-IDs from the email message header.
+     *
+     * @param references
+     */
+    void setReferences(List<String> references) {
+        this.references = references;
+    }
+
+    /**
+     * Sets the ThreadID of this message.
+     *
+     * @param threadID - the thread ID to set
+     */
+    void setMessageThreadID(String threadID) {
+        this.messageThreadID = threadID;
+    }
+
+    /**
+     * Returns the ThreadID for this message.
+     *
+     * @return - the message thread ID or "" is non is available
+     */
+    String getMessageThreadID() {
+        return this.messageThreadID;
+    }
+
+    /**
      * A Record to hold generic information about attachments.
      *
      * Used to populate the fields of a derived file.
@@ -202,7 +314,7 @@ class EmailMessage {
         private long aTime = 0L;
 
         private long mTime = 0L;
-        
+
         private TskData.EncodingType encodingType = TskData.EncodingType.NONE;
 
         String getName() {
@@ -288,14 +400,26 @@ class EmailMessage {
                 this.mTime = mTime.getTime() / 1000;
             }
         }
-        
-        void setEncodingType(TskData.EncodingType encodingType){
+
+        void setEncodingType(TskData.EncodingType encodingType) {
             this.encodingType = encodingType;
         }
-        
-        TskData.EncodingType getEncodingType(){
+
+        TskData.EncodingType getEncodingType() {
             return encodingType;
         }
+
+    }
+    
+    static class AttachedEmailMessage extends Attachment {
+        private final EmailMessage emailMessage;
         
+        AttachedEmailMessage(EmailMessage emailMessage) {
+            this.emailMessage = emailMessage;
+        }
+        
+        EmailMessage getEmailMessage() {
+            return emailMessage;
+        }
     }
 }

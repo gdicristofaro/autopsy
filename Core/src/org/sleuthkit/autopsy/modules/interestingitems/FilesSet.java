@@ -20,12 +20,15 @@ package org.sleuthkit.autopsy.modules.interestingitems;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import org.openide.util.NbBundle;
+import org.openide.util.NbBundle.Messages;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.TskData;
 
@@ -44,7 +47,14 @@ public final class FilesSet implements Serializable {
     private final String description;
     private final boolean ignoreKnownFiles;
     private final boolean ignoreUnallocatedSpace;
-    private final Map<String, Rule> rules = new HashMap<>();
+
+    private final boolean standardSet;
+    private final int versionNumber;
+
+    private final Map<String, Rule> rules;
+    
+    private final Map<String, Rule> inclusiveRules;
+    private final Map<String, Rule> exclusiveRules;
 
     /**
      * Constructs an interesting files set.
@@ -59,16 +69,73 @@ public final class FilesSet implements Serializable {
      *                               but a set with no rules is the empty set.
      */
     public FilesSet(String name, String description, boolean ignoreKnownFiles, boolean ignoreUnallocatedSpace, Map<String, Rule> rules) {
+        this(name, description, ignoreKnownFiles, ignoreUnallocatedSpace, rules, false, 0);
+    }
+
+    /**
+     * Constructs an interesting files set.
+     *
+     * @param name                   The name of the set.
+     * @param description            A description of the set, may be null.
+     * @param ignoreKnownFiles       Whether or not to exclude known files from
+     *                               the set.
+     * @param ignoreUnallocatedSpace Whether or not to exclude unallocated space
+     *                               from the set.
+     * @param standardSet            Whether or not the FilesSet is considered a
+     *                               standard interesting set file.
+     * @param versionNumber          The versionNumber for the FilesSet so that
+     *                               older versions can be replaced with newer
+     *                               versions.
+     * @param rules                  The rules that define the set. May be null,
+     *                               but a set with no rules is the empty set.
+     */
+    public FilesSet(String name, String description, boolean ignoreKnownFiles, boolean ignoreUnallocatedSpace, Map<String, Rule> rules,
+            boolean standardSet, int versionNumber) {
         if ((name == null) || (name.isEmpty())) {
             throw new IllegalArgumentException("Interesting files set name cannot be null or empty");
         }
+
+        if (versionNumber < 0) {
+            throw new IllegalArgumentException("version number must be >= 0");
+        }
+
+        this.standardSet = standardSet;
+        this.versionNumber = versionNumber;
+
         this.name = name;
         this.description = (description != null ? description : "");
         this.ignoreKnownFiles = ignoreKnownFiles;
         this.ignoreUnallocatedSpace = ignoreUnallocatedSpace;
-        if (rules != null) {
-            this.rules.putAll(rules);
+        this.rules = rules == null ? Collections.emptyMap() : new HashMap<>(rules);
+        
+        Map<String, Rule> inclusiveRules = new HashMap<>();
+        Map<String, Rule> exclusiveRules = new HashMap<>();
+        for (Entry<String, Rule> ruleEntry : rules.entrySet()) {
+            if (ruleEntry.getValue().isExclusive()) {
+                exclusiveRules.put(ruleEntry.getKey(), ruleEntry.getValue());
+            } else {
+                inclusiveRules.put(ruleEntry.getKey(), ruleEntry.getValue());
+            }
         }
+        
+        this.inclusiveRules = inclusiveRules;
+        this.exclusiveRules = exclusiveRules;
+    }
+
+    /**
+     * @return Whether or not the FilesSet is considered a standard interesting
+     *         set file.
+     */
+    boolean isStandardSet() {
+        return standardSet;
+    }
+
+    /**
+     * @return The versionNumber for the FilesSet so that older versions can be
+     *         replaced with newer versions.
+     */
+    int getVersionNumber() {
+        return versionNumber;
     }
 
     /**
@@ -120,7 +187,8 @@ public final class FilesSet implements Serializable {
     public Map<String, Rule> getRules() {
         return new HashMap<>(this.rules);
     }
-
+    
+    
     /**
      * Determines whether a file is a member of this interesting files set.
      *
@@ -129,6 +197,9 @@ public final class FilesSet implements Serializable {
      * @return The name of the first set membership rule satisfied by the file,
      *         will be null if the file does not belong to the set.
      */
+     @Messages({
+         "FileSet_fileIsMemberOf_noInclusiveRules_ruleName=Not Excluded"
+     })
     public String fileIsMemberOf(AbstractFile file) {
         if ((this.ignoreKnownFiles) && (file.getKnown() == TskData.FileKnown.KNOWN)) {
             return null;
@@ -141,12 +212,35 @@ public final class FilesSet implements Serializable {
             return null;
         }
 
-        for (Rule rule : rules.values()) {
-            if (rule.isSatisfied(file)) {
-                return rule.getName();
+
+        String ruleName;
+        if (inclusiveRules.isEmpty()) {
+            // in the event there are no rules, return null for no match
+            if (exclusiveRules.isEmpty()) {
+                return null;
+            // in the event there are exclusion rules, rely on those
+            } else {
+                ruleName = Bundle.FileSet_fileIsMemberOf_noInclusiveRules_ruleName();
+            }
+            
+        } else {
+            // if there are inclusive rules, at least one should be matched
+            ruleName = null;
+            for (Rule rule : inclusiveRules.values()) {
+                if (rule.isSatisfied(file)) {
+                    ruleName = rule.getName();
+                    break;
+                }
             }
         }
-        return null;
+        
+        for (Rule rule : exclusiveRules.values()) {
+            if (rule.isSatisfied(file)) {
+                return null;
+            }
+        }
+        
+        return ruleName;
     }
 
     @Override
@@ -165,6 +259,7 @@ public final class FilesSet implements Serializable {
         private static final long serialVersionUID = 1L;
         private final String uuid;
         private final String ruleName;
+        private final Boolean exclusive;
         private final FileNameCondition fileNameCondition;
         private final MetaTypeCondition metaTypeCondition;
         private final ParentPathCondition pathCondition;
@@ -184,8 +279,14 @@ public final class FilesSet implements Serializable {
          * @param fileSizeCondition A file size condition, may be null.
          * @param dateCondition     A file date created or modified condition,
          *                          may be null
+         * @param exclusive         Whether or not the rule excludes items 
+         *                          matching the rule otherwise including them.
          */
-        public Rule(String ruleName, FileNameCondition fileNameCondition, MetaTypeCondition metaTypeCondition, ParentPathCondition pathCondition, MimeTypeCondition mimeTypeCondition, FileSizeCondition fileSizeCondition, DateCondition dateCondition) {
+        public Rule(String ruleName, FileNameCondition fileNameCondition, MetaTypeCondition metaTypeCondition, 
+                ParentPathCondition pathCondition, MimeTypeCondition mimeTypeCondition, 
+                FileSizeCondition fileSizeCondition, DateCondition dateCondition, 
+                Boolean exclusive) {
+            
             // since ruleName is optional, ruleUUID can be used to uniquely identify a rule.
             this.uuid = UUID.randomUUID().toString();
             if (metaTypeCondition == null) {
@@ -224,6 +325,8 @@ public final class FilesSet implements Serializable {
             if (this.dateCondition != null) {
                 this.conditions.add(this.dateCondition);
             }
+            
+            this.exclusive = exclusive;
         }
 
         /**
@@ -264,6 +367,15 @@ public final class FilesSet implements Serializable {
 
         public DateCondition getDateCondition() {
             return this.dateCondition;
+        }
+
+        /**
+         * @return True if this rule should exclude certain files matching
+         *         criteria, otherwise including files matching criteria if
+         *         false.
+         */
+        public boolean isExclusive() {
+            return exclusive != null && exclusive == true;
         }
 
         /**
@@ -624,7 +736,6 @@ public final class FilesSet implements Serializable {
              * To ensure compatibility with existing serialized configuration
              * settings, this class cannot have a 'serialVersionUID'.
              */
-            
             private final TextMatcher textMatcher;
 
             /**
@@ -647,6 +758,15 @@ public final class FilesSet implements Serializable {
              */
             AbstractTextCondition(Pattern regex) {
                 this.textMatcher = new FilesSet.Rule.RegexMatcher(regex);
+            }
+
+            /**
+             * Construct a case-insensitive multi-value text condition.
+             *
+             * @param values The list of values in which to look for a match.
+             */
+            AbstractTextCondition(List<String> values) {
+                this.textMatcher = new FilesSet.Rule.CaseInsensitiveMultiValueStringComparisionMatcher(values);
             }
 
             /**
@@ -774,7 +894,6 @@ public final class FilesSet implements Serializable {
              * To ensure compatibility with existing serialized configuration
              * settings, this class cannot have a 'serialVersionUID'.
              */
-            
             private final static long SECS_PER_DAY = 60 * 60 * 24;
 
             private int daysIncluded;
@@ -824,7 +943,19 @@ public final class FilesSet implements Serializable {
                 // If there is a leading ".", strip it since 
                 // AbstractFile.getFileNameExtension() returns just the 
                 // extension chars and not the dot.
-                super(extension.startsWith(".") ? extension.substring(1) : extension, false);
+                super(normalize(extension), false);
+            }
+
+            /**
+             * Construct a case-insensitive file name extension condition.
+             *
+             * @param extensions The file name extensions to be matched.
+             */
+            public ExtensionCondition(List<String> extensions) {
+                // If there is a leading "." in any list value, strip it since 
+                // AbstractFile.getFileNameExtension() returns just the 
+                // extension chars and not the dot.
+                super(normalize(extensions));
             }
 
             /**
@@ -840,6 +971,34 @@ public final class FilesSet implements Serializable {
             @Override
             public boolean passes(AbstractFile file) {
                 return this.textMatches(file.getNameExtension());
+            }
+
+            /**
+             * Strip "." from the start of extensions in the provided list.
+             *
+             * @param extensions The list of extensions to be processed.
+             *
+             * @return A post-processed list of extensions.
+             */
+            private static List<String> normalize(List<String> extensions) {
+                List<String> values = new ArrayList<>(extensions);
+
+                for (int i = 0; i < values.size(); i++) {
+                    values.set(i, normalize(values.get(i)));
+                }
+
+                return values;
+            }
+
+            /**
+             * Strip "." from the start of the provided extension.
+             *
+             * @param extension The extension to be processed.
+             *
+             * @return A post-processed extension.
+             */
+            private static String normalize(String extension) {
+                return extension.startsWith(".") ? extension.substring(1) : extension;
             }
 
         }
@@ -946,6 +1105,48 @@ public final class FilesSet implements Serializable {
             public boolean textMatches(String subject) {
                 return pattern.matcher(subject).find();
             }
+        }
+
+        /**
+         * A text matcher that looks for a single case-insensitive string match
+         * in a multi-value list.
+         */
+        private static class CaseInsensitiveMultiValueStringComparisionMatcher implements TextMatcher {
+
+            private static final long serialVersionUID = 1L;
+            private final List<String> valuesToMatch;
+
+            /**
+             * Construct a text matcher that looks for a single case-insensitive
+             * string match in a multi-value list.
+             *
+             * @param valuesToMatch The list of values in which to look for a
+             *                      match.
+             */
+            CaseInsensitiveMultiValueStringComparisionMatcher(List<String> valuesToMatch) {
+                this.valuesToMatch = valuesToMatch;
+            }
+
+            @Override
+            public String getTextToMatch() {
+                return String.join(",", this.valuesToMatch);
+            }
+
+            @Override
+            public boolean isRegex() {
+                return false;
+            }
+
+            @Override
+            public boolean textMatches(String subject) {
+                for (String value : valuesToMatch) {
+                    if (value.equalsIgnoreCase(subject)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
         }
 
         /**

@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011-2018 Basis Technology Corp.
+ * Copyright 2014-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.autopsy.timeline;
 
+import com.google.common.collect.ImmutableList;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.KeyboardFocusManager;
@@ -58,6 +59,7 @@ import org.openide.windows.RetainLocation;
 import org.openide.windows.TopComponent;
 import org.openide.windows.WindowManager;
 import org.sleuthkit.autopsy.actions.AddBookmarkTagAction;
+import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
 import org.sleuthkit.autopsy.corecomponentinterfaces.DataContent;
 import org.sleuthkit.autopsy.corecomponents.DataContentPanel;
@@ -65,6 +67,7 @@ import org.sleuthkit.autopsy.corecomponents.DataResultPanel;
 import org.sleuthkit.autopsy.corecomponents.TableFilterNode;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.coreutils.ThreadConfined;
+import org.sleuthkit.autopsy.directorytree.ExternalViewerShortcutAction;
 import org.sleuthkit.autopsy.timeline.actions.Back;
 import org.sleuthkit.autopsy.timeline.actions.Forward;
 import org.sleuthkit.autopsy.timeline.explorernodes.EventNode;
@@ -77,6 +80,7 @@ import org.sleuthkit.autopsy.timeline.ui.detailview.tree.EventsTree;
 import org.sleuthkit.autopsy.timeline.ui.filtering.FilterSetPanel;
 import org.sleuthkit.autopsy.timeline.zooming.ZoomSettingsPane;
 import org.sleuthkit.datamodel.TskCoreException;
+import org.sleuthkit.datamodel.VersionNumber;
 
 /**
  * TopComponent for the Timeline feature.
@@ -90,6 +94,7 @@ import org.sleuthkit.datamodel.TskCoreException;
 @SuppressWarnings("PMD.SingularField") // UI widgets cause lots of false positives
 public final class TimeLineTopComponent extends TopComponent implements ExplorerManager.Provider {
 
+    private static final long serialVersionUID = 1L;
     private static final Logger logger = Logger.getLogger(TimeLineTopComponent.class.getName());
 
     @ThreadConfined(type = ThreadConfined.ThreadType.AWT)
@@ -101,9 +106,11 @@ public final class TimeLineTopComponent extends TopComponent implements Explorer
     @ThreadConfined(type = ThreadConfined.ThreadType.AWT)
     private final ExplorerManager explorerManager = new ExplorerManager();
 
-    private final TimeLineController controller;
+    private TimeLineController controller;
 
-    /** Lookup that will be exposed through the (Global Actions Context) */
+    /**
+     * Lookup that will be exposed through the (Global Actions Context)
+     */
     private final ModifiableProxyLookup proxyLookup = new ModifiableProxyLookup();
 
     private final PropertyChangeListener focusPropertyListener = new PropertyChangeListener() {
@@ -161,7 +168,9 @@ public final class TimeLineTopComponent extends TopComponent implements Explorer
          */
         @Override
         public void invalidated(Observable observable) {
-            List<Long> selectedEventIDs = controller.getSelectedEventIDs();
+            // make a copy because this list gets updated as the user navigates around
+            // and causes concurrent access exceptions
+            List<Long> selectedEventIDs = ImmutableList.copyOf(controller.getSelectedEventIDs());
 
             //depending on the active view mode, we either update the dataResultPanel, or update the contentViewerPanel directly.
             switch (controller.getViewMode()) {
@@ -192,9 +201,6 @@ public final class TimeLineTopComponent extends TopComponent implements Explorer
                                 contentViewerPanel.setNode(null);
                             }
                         });
-                    } catch (NoCurrentCaseException ex) {
-                        //Since the case is closed, the user probably doesn't care about this, just log it as a precaution.
-                        logger.log(Level.SEVERE, "There was no case open to lookup the Sleuthkit object backing a SingleEvent.", ex); // NON-NLS
                     } catch (TskCoreException ex) {
                         logger.log(Level.SEVERE, "Failed to lookup Sleuthkit object backing a SingleEvent.", ex); // NON-NLS
                         Platform.runLater(() -> {
@@ -250,19 +256,21 @@ public final class TimeLineTopComponent extends TopComponent implements Explorer
     }
 
     /**
-     * Constructor
+     * Constructs a "shell" version of the top component for this Timeline feature
+     * which has only Swing components, no controller, and no listeners.
+     * This constructor conforms to the NetBeans window system requirements that
+     * all top components have a public, no argument constructor.
      *
-     * @param controller The TimeLineController for this topcomponent.
      */
-    public TimeLineTopComponent(TimeLineController controller) {
+    public TimeLineTopComponent() {
         initComponents();
         associateLookup(proxyLookup);
         setName(NbBundle.getMessage(TimeLineTopComponent.class, "CTL_TimeLineTopComponent"));
 
         getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(AddBookmarkTagAction.BOOKMARK_SHORTCUT, "addBookmarkTag"); //NON-NLS
         getActionMap().put("addBookmarkTag", new AddBookmarkTagAction()); //NON-NLS
-
-        this.controller = controller;
+        getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(ExternalViewerShortcutAction.EXTERNAL_VIEWER_SHORTCUT, "useExternalViewer"); //NON-NLS 
+        getActionMap().put("useExternalViewer", ExternalViewerShortcutAction.getInstance()); //NON-NLS
 
         //create linked result and content views
         contentViewerPanel = new DataContentExplorerPanel();
@@ -274,11 +282,22 @@ public final class TimeLineTopComponent extends TopComponent implements Explorer
 
         dataResultPanel.open(); //get the explorermanager
         contentViewerPanel.initialize();
-
+    }
+    
+    /**
+     * Constructs a full functional top component for the Timeline feature.
+     * 
+     * @param controller The TimeLineController for ths top compenent.
+     */
+    public TimeLineTopComponent(TimeLineController controller) {
+        this();
+        
+        this.controller = controller;
+        
         Platform.runLater(this::initFXComponents);
 
         //set up listeners 
-        TimeLineController.getTimeZone().addListener(timeZone -> dataResultPanel.setPath(getResultViewerSummaryString()));
+        TimeLineController.timeZoneProperty().addListener(timeZone -> dataResultPanel.setPath(getResultViewerSummaryString()));
         controller.getSelectedEventIDs().addListener(selectedEventsListener);
 
         //Listen to ViewMode and adjust GUI componenets as needed.
@@ -316,7 +335,9 @@ public final class TimeLineTopComponent extends TopComponent implements Explorer
         eventsTreeTab.setGraphic(new ImageView("org/sleuthkit/autopsy/timeline/images/timeline_marker.png")); // NON-NLS
         eventsTreeTab.disableProperty().bind(controller.viewModeProperty().isNotEqualTo(ViewMode.DETAIL));
 
-        final TabPane leftTabPane = new TabPane(filterTab, eventsTreeTab);
+        // There is a bug in the sort of the EventsTree, it doesn't seem to 
+        //sort anything.  For now removing from tabpane until fixed
+        final TabPane leftTabPane = new TabPane(filterTab);
         VBox.setVgrow(leftTabPane, Priority.ALWAYS);
         controller.viewModeProperty().addListener(viewMode -> {
             if (controller.getViewMode() != ViewMode.DETAIL) {
@@ -337,13 +358,9 @@ public final class TimeLineTopComponent extends TopComponent implements Explorer
         scene.addEventFilter(KeyEvent.KEY_PRESSED, keyEvent -> {
             if (new KeyCodeCombination(KeyCode.LEFT, KeyCodeCombination.ALT_DOWN).match(keyEvent)) {
                 new Back(controller).handle(null);
-            } else if (new KeyCodeCombination(KeyCode.BACK_SPACE).match(keyEvent)) {
-                new Back(controller).handle(null);
             } else if (new KeyCodeCombination(KeyCode.RIGHT, KeyCodeCombination.ALT_DOWN).match(keyEvent)) {
                 new Forward(controller).handle(null);
-            } else if (new KeyCodeCombination(KeyCode.BACK_SPACE, KeyCodeCombination.SHIFT_DOWN).match(keyEvent)) {
-                new Forward(controller).handle(null);
-            }
+            } 
         });
 
         //add ui componenets to JFXPanels
@@ -443,6 +460,9 @@ public final class TimeLineTopComponent extends TopComponent implements Explorer
     private javax.swing.JSplitPane splitYPane;
     // End of variables declaration//GEN-END:variables
 
+    @NbBundle.Messages ({
+        "Timeline.old.version= This Case was created with an older version of Autopsy.\nThe Timeline with not show events from data sources added with the older version of Autopsy"
+    })
     @Override
     public void componentOpened() {
         super.componentOpened();
@@ -451,6 +471,18 @@ public final class TimeLineTopComponent extends TopComponent implements Explorer
         //add listener that maintains correct selection in the Global Actions Context
         KeyboardFocusManager.getCurrentKeyboardFocusManager()
                 .addPropertyChangeListener("focusOwner", focusPropertyListener);
+        
+        VersionNumber version = Case.getCurrentCase().getSleuthkitCase().getDBSchemaCreationVersion();
+        int major = version.getMajor();
+        int minor = version.getMinor();
+
+        if(major < 8 || (major == 8 && minor <= 2)) {
+            Platform.runLater(() -> {
+                Notifications.create()
+                        .owner(jFXViewPanel.getScene().getWindow())
+                        .text(Bundle.Timeline_old_version()).showInformation();
+            });
+        }
     }
 
     @Override

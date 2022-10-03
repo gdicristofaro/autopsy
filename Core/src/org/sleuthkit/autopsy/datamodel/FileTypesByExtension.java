@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011-2018 Basis Technology Corp.
+ * Copyright 2011-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,6 +21,7 @@ package org.sleuthkit.autopsy.datamodel;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Observable;
@@ -33,6 +34,7 @@ import org.openide.nodes.ChildFactory;
 import org.openide.nodes.Children;
 import org.openide.nodes.Node;
 import org.openide.nodes.Sheet;
+import org.openide.util.Exceptions;
 import org.openide.util.NbBundle;
 import org.openide.util.NbBundle.Messages;
 import org.openide.util.lookup.Lookups;
@@ -42,9 +44,12 @@ import org.sleuthkit.autopsy.core.UserPreferences;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.datamodel.FileTypes.FileTypesKey;
 import org.sleuthkit.autopsy.ingest.IngestManager;
+import org.sleuthkit.autopsy.ingest.ModuleContentEvent;
+import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskData;
+import org.sleuthkit.autopsy.guiutils.RefreshThrottler;
 
 /**
  * Filters database results by file extension.
@@ -52,16 +57,20 @@ import org.sleuthkit.datamodel.TskData;
 public final class FileTypesByExtension implements AutopsyVisitableItem {
 
     private final static Logger logger = Logger.getLogger(FileTypesByExtension.class.getName());
-    private final SleuthkitCase skCase;
+    private static final Set<IngestManager.IngestJobEvent> INGEST_JOB_EVENTS_OF_INTEREST = EnumSet.of(IngestManager.IngestJobEvent.COMPLETED, IngestManager.IngestJobEvent.CANCELLED);
+    private static final Set<IngestManager.IngestModuleEvent> INGEST_MODULE_EVENTS_OF_INTEREST = EnumSet.of(IngestManager.IngestModuleEvent.CONTENT_CHANGED);
     private final FileTypes typesRoot;
 
     public FileTypesByExtension(FileTypes typesRoot) {
-        this.skCase = typesRoot.getSleuthkitCase();
         this.typesRoot = typesRoot;
     }
 
     public SleuthkitCase getSleuthkitCase() {
-        return this.skCase;
+        try {
+            return Case.getCurrentCaseThrows().getSleuthkitCase();
+        } catch (NoCurrentCaseException ex) {
+            return null;
+        }
     }
 
     @Override
@@ -71,26 +80,32 @@ public final class FileTypesByExtension implements AutopsyVisitableItem {
 
     long filteringDataSourceObjId() {
         return typesRoot.filteringDataSourceObjId();
-    } 
-    
+    }
+
     /**
      * Listens for case and ingest invest. Updates observers when events are
      * fired. FileType and FileTypes nodes are all listening to this.
      */
-    private class FileTypesByExtObservable extends Observable {
+    private class FileTypesByExtObservable extends Observable implements RefreshThrottler.Refresher {
 
         private final PropertyChangeListener pcl;
         private final Set<Case.Events> CASE_EVENTS_OF_INTEREST;
+        /**
+         * RefreshThrottler is used to limit the number of refreshes performed
+         * when CONTENT_CHANGED and DATA_ADDED ingest module events are
+         * received.
+         */
+        private final RefreshThrottler refreshThrottler = new RefreshThrottler(this);
 
         private FileTypesByExtObservable() {
             super();
             this.CASE_EVENTS_OF_INTEREST = EnumSet.of(Case.Events.DATA_SOURCE_ADDED, Case.Events.CURRENT_CASE);
             this.pcl = (PropertyChangeEvent evt) -> {
                 String eventType = evt.getPropertyName();
-                if (eventType.equals(IngestManager.IngestModuleEvent.CONTENT_CHANGED.toString())
-                        || eventType.equals(IngestManager.IngestJobEvent.COMPLETED.toString())
+                if (eventType.equals(IngestManager.IngestJobEvent.COMPLETED.toString())
                         || eventType.equals(IngestManager.IngestJobEvent.CANCELLED.toString())
                         || eventType.equals(Case.Events.DATA_SOURCE_ADDED.toString())) {
+
                     /**
                      * Checking for a current case is a stop gap measure until a
                      * different way of handling the closing of cases is worked
@@ -114,15 +129,15 @@ public final class FileTypesByExtension implements AutopsyVisitableItem {
                 }
             };
 
-            IngestManager.getInstance().addIngestJobEventListener(pcl);
-            IngestManager.getInstance().addIngestModuleEventListener(pcl);
+            IngestManager.getInstance().addIngestJobEventListener(INGEST_JOB_EVENTS_OF_INTEREST, pcl);
+            refreshThrottler.registerForIngestModuleEvents();
             Case.addEventTypeSubscriber(CASE_EVENTS_OF_INTEREST, pcl);
         }
 
         private void removeListeners() {
             deleteObservers();
             IngestManager.getInstance().removeIngestJobEventListener(pcl);
-            IngestManager.getInstance().removeIngestModuleEventListener(pcl);
+            refreshThrottler.unregisterEventListener();
             Case.removeEventTypeSubscriber(CASE_EVENTS_OF_INTEREST, pcl);
         }
 
@@ -130,7 +145,52 @@ public final class FileTypesByExtension implements AutopsyVisitableItem {
             setChanged();
             notifyObservers();
         }
+
+        @Override
+        public void refresh() {
+            typesRoot.updateShowCounts();
+            update();
+        }
+
+        @Override
+        public boolean isRefreshRequired(PropertyChangeEvent evt) {
+            String eventType = evt.getPropertyName();
+            if (eventType.equals(IngestManager.IngestModuleEvent.CONTENT_CHANGED.toString())) {
+
+                /**
+                 * Checking for a current case is a stop gap measure until a
+                 * different way of handling the closing of cases is worked out.
+                 * Currently, remote events may be received for a case that is
+                 * already closed.
+                 */
+                try {
+                    Case.getCurrentCaseThrows();
+                    /**
+                     * If a new file has been added but does not have an
+                     * extension there is nothing to do.
+                     */
+                    if ((evt.getOldValue() instanceof ModuleContentEvent) == false) {
+                        return false;
+                    }
+                    ModuleContentEvent moduleContentEvent = (ModuleContentEvent) evt.getOldValue();
+                    if ((moduleContentEvent.getSource() instanceof AbstractFile) == false) {
+                        return false;
+                    }
+                    AbstractFile abstractFile = (AbstractFile) moduleContentEvent.getSource();
+                    if (!abstractFile.getNameExtension().isEmpty()) {
+                        return true;
+                    }
+                } catch (NoCurrentCaseException ex) {
+                    /**
+                     * Case is closed, no refresh needed.
+                     */
+                    return false;
+                }
+            }
+            return false;
+        }
     }
+
     private static final String FNAME = NbBundle.getMessage(FileTypesByExtNode.class, "FileTypesByExtNode.fname.text");
 
     /**
@@ -278,7 +338,7 @@ public final class FileTypesByExtension implements AutopsyVisitableItem {
      * Node for a specific file type / extension. Children of it will be the
      * files of that type.
      */
-    class FileExtensionNode extends FileTypes.BGCountUpdatingNode {
+    final class FileExtensionNode extends FileTypes.BGCountUpdatingNode {
 
         private final FileTypesByExtension.SearchFilterInterface filter;
 
@@ -290,7 +350,7 @@ public final class FileTypesByExtension implements AutopsyVisitableItem {
          *               should refresh
          */
         FileExtensionNode(FileTypesByExtension.SearchFilterInterface filter, SleuthkitCase skCase, FileTypesByExtObservable o) {
-            super(typesRoot, Children.create(new FileExtensionNodeChildren(filter, skCase, o), true),
+            super(typesRoot, Children.create(new FileExtensionNodeChildren(filter, skCase, o, filter.getDisplayName()), true),
                     Lookups.singleton(filter.getDisplayName()));
             this.filter = filter;
             super.setName(filter.getDisplayName());
@@ -347,7 +407,11 @@ public final class FileTypesByExtension implements AutopsyVisitableItem {
 
         @Override
         long calculateChildCount() throws TskCoreException {
-            return skCase.countFilesWhere(createQuery(filter));
+            try {
+                return Case.getCurrentCaseThrows().getSleuthkitCase().countFilesWhere(createQuery(filter));
+            } catch (NoCurrentCaseException ex) {
+                throw new TskCoreException("No open case.", ex);
+            }
         }
     }
 
@@ -363,19 +427,19 @@ public final class FileTypesByExtension implements AutopsyVisitableItem {
                 + (UserPreferences.hideKnownFilesInViewsTree()
                 ? " AND (known IS NULL OR known != " + TskData.FileKnown.KNOWN.getFileKnownValue() + ")"
                 : " ")
-                + (UserPreferences.groupItemsInTreeByDatasource()
-                ? " AND data_source_obj_id = " + filteringDataSourceObjId()
-                : " ")
+                + (filteringDataSourceObjId() > 0
+                        ? " AND data_source_obj_id = " + filteringDataSourceObjId()
+                        : " ")
                 + " AND (extension IN (" + filter.getFilter().stream()
                         .map(String::toLowerCase)
-                        .map(s -> "'"+StringUtils.substringAfter(s, ".")+"'")
+                        .map(s -> "'" + StringUtils.substringAfter(s, ".") + "'")
                         .collect(Collectors.joining(", ")) + "))";
     }
 
     /**
      * Child node factory for a specific file type - does the database query.
      */
-    private class FileExtensionNodeChildren extends ChildFactory.Detachable<FileTypesKey> implements Observer {
+    private class FileExtensionNodeChildren extends BaseChildFactory<FileTypesKey> implements Observer {
 
         private final SleuthkitCase skCase;
         private final FileTypesByExtension.SearchFilterInterface filter;
@@ -383,27 +447,28 @@ public final class FileTypesByExtension implements AutopsyVisitableItem {
 
         /**
          *
-         * @param filter Extensions to display
+         * @param filter   Extensions to display
          * @param skCase
-         * @param o      Observable that will notify when there could be new
-         *               data to display
+         * @param o        Observable that will notify when there could be new
+         *                 data to display
+         * @param nodeName
          */
-        private FileExtensionNodeChildren(FileTypesByExtension.SearchFilterInterface filter, SleuthkitCase skCase, Observable o) {
-            super();
+        private FileExtensionNodeChildren(FileTypesByExtension.SearchFilterInterface filter, SleuthkitCase skCase, Observable o, String nodeName) {
+            super(nodeName, new ViewsKnownAndSlackFilter<>());
             this.filter = filter;
             this.skCase = skCase;
             notifier = o;
         }
 
         @Override
-        protected void addNotify() {
+        protected void onAdd() {
             if (notifier != null) {
                 notifier.addObserver(this);
             }
         }
 
         @Override
-        protected void removeNotify() {
+        protected void onRemove() {
             if (notifier != null) {
                 notifier.deleteObserver(this);
             }
@@ -411,23 +476,23 @@ public final class FileTypesByExtension implements AutopsyVisitableItem {
 
         @Override
         public void update(Observable o, Object arg) {
-            refresh(true);
-        }
-
-        @Override
-        protected boolean createKeys(List<FileTypesKey> list) {
-            try {
-                list.addAll(skCase.findAllFilesWhere(createQuery(filter))
-                        .stream().map(f -> new FileTypesKey(f)).collect(Collectors.toList()));
-            } catch (TskCoreException ex) {
-                logger.log(Level.SEVERE, "Couldn't get search results", ex); //NON-NLS
-            }
-            return true;
+            refresh(false);
         }
 
         @Override
         protected Node createNodeForKey(FileTypesKey key) {
             return key.accept(new FileTypes.FileNodeCreationVisitor());
+        }
+
+        @Override
+        protected List<FileTypesKey> makeKeys() {
+            try {
+                return skCase.findAllFilesWhere(createQuery(filter))
+                        .stream().map(f -> new FileTypesKey(f)).collect(Collectors.toList());
+            } catch (TskCoreException ex) {
+                logger.log(Level.SEVERE, "Couldn't get search results", ex); //NON-NLS
+            }
+            return Collections.emptyList();
         }
     }
 
@@ -491,7 +556,7 @@ public final class FileTypesByExtension implements AutopsyVisitableItem {
 
         @Override
         public List<String> getFilter() {
-            return this.filter;
+            return Collections.unmodifiableList(this.filter);
         }
     }
 
@@ -548,7 +613,7 @@ public final class FileTypesByExtension implements AutopsyVisitableItem {
 
         @Override
         public List<String> getFilter() {
-            return this.filter;
+            return Collections.unmodifiableList(this.filter);
         }
     }
 
@@ -595,7 +660,7 @@ public final class FileTypesByExtension implements AutopsyVisitableItem {
 
         @Override
         public List<String> getFilter() {
-            return this.filter;
+            return Collections.unmodifiableList(this.filter);
         }
     }
 

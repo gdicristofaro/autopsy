@@ -1,7 +1,7 @@
 /*
  * Central Repository
  *
- * Copyright 2015-2017 Basis Technology Corp.
+ * Copyright 2015-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,9 +34,9 @@ public class CorrelationCase implements Serializable {
     private static long serialVersionUID = 1L;
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss (z)");
 
-    private int databaseId; 
+    private int databaseId;
     private String caseUUID;    // globally unique
-    private EamOrganization org;
+    private CentralRepoOrganization org;
     private String displayName;
     private String creationDate;
     private String caseNumber;
@@ -46,21 +46,17 @@ public class CorrelationCase implements Serializable {
     private String notes;
 
     /**
-     * 
-     * @param caseUUID Globally unique identifier
-     * @param displayName 
-     */    
+     *
+     * @param caseUUID    Globally unique identifier
+     * @param displayName
+     */
     public CorrelationCase(String caseUUID, String displayName) {
-        this(-1, caseUUID, displayName);
-    }
-    
-    CorrelationCase(int ID, String caseUUID, String displayName) {
-        this(ID, caseUUID, null, displayName, DATE_FORMAT.format(new Date()), null, null, null, null, null);
+        this(-1, caseUUID, null, displayName, DATE_FORMAT.format(new Date()), null, null, null, null, null);
     }
 
     CorrelationCase(int ID,
             String caseUUID,
-            EamOrganization org,
+            CentralRepoOrganization org,
             String displayName,
             String creationDate,
             String caseNumber,
@@ -158,13 +154,13 @@ public class CorrelationCase implements Serializable {
     }
 
     /**
-     * @return the database ID for the case or -1 if it is unknown (or not in the DB)
+     * @return the database ID for the case or -1 if it is unknown (or not in
+     *         the DB)
      */
     public int getID() {
         // @@@ Should probably have some lazy logic here to lead the ID from the DB if it is -1
         return databaseId;
     }
-
 
     /**
      * @return the caseUUID
@@ -173,18 +169,17 @@ public class CorrelationCase implements Serializable {
         return caseUUID;
     }
 
-
     /**
      * @return the org
      */
-    public EamOrganization getOrg() {
+    public CentralRepoOrganization getOrg() {
         return org;
     }
 
     /**
      * @param org the org to set
      */
-    public void setOrg(EamOrganization org) {
+    public void setOrg(CentralRepoOrganization org) {
         this.org = org;
     }
 

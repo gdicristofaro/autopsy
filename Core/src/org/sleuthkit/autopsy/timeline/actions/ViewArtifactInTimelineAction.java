@@ -19,14 +19,14 @@
 package org.sleuthkit.autopsy.timeline.actions;
 
 import java.awt.event.ActionEvent;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.logging.Level;
 import javax.swing.AbstractAction;
 import org.openide.util.NbBundle;
 import org.openide.util.actions.SystemAction;
+import org.sleuthkit.autopsy.coreutils.Logger;
+import org.sleuthkit.autopsy.coreutils.MessageNotifyUtil;
+import org.sleuthkit.autopsy.coreutils.ModuleSettings;
 import org.sleuthkit.autopsy.timeline.OpenTimelineAction;
-import org.sleuthkit.autopsy.timeline.datamodel.eventtype.ArtifactEventType;
-import org.sleuthkit.autopsy.timeline.datamodel.eventtype.EventType;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -36,44 +36,55 @@ import org.sleuthkit.datamodel.TskCoreException;
  */
 public final class ViewArtifactInTimelineAction extends AbstractAction {
 
-    private static final long serialVersionUID = 1L;
-
-    private static final Set<ArtifactEventType> ARTIFACT_EVENT_TYPES =
-            EventType.allTypes.stream()
-            .filter((EventType t) -> t instanceof ArtifactEventType)
-            .map(ArtifactEventType.class::cast)
-            .collect(Collectors.toSet());
+    private static final Logger logger = Logger.getLogger(ViewFileInTimelineAction.class.getName());
 
     private final BlackboardArtifact artifact;
 
+    /**
+     * Constructor.
+     * @param artifact The artifact to navigate to in the timeline.
+     */
     @NbBundle.Messages({"ViewArtifactInTimelineAction.displayName=View Result in Timeline... "})
     public ViewArtifactInTimelineAction(BlackboardArtifact artifact) {
-        super(Bundle.ViewArtifactInTimelineAction_displayName());
+        this(artifact, Bundle.ViewArtifactInTimelineAction_displayName());
+    }
+
+        /**
+     * Constructor.
+     * @param artifact The artifact to navigate to in the timeline.
+     * @param displayName The display name for the action.
+     */
+    public ViewArtifactInTimelineAction(BlackboardArtifact artifact, String displayName) {
+        super(displayName);
         this.artifact = artifact;
+        // If timeline functionality is not available this action is disabled.
+        if ("false".equals(ModuleSettings.getConfigSetting("timeline", "enable_timeline"))) {
+            setEnabled(false);
+        }
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        SystemAction.get(OpenTimelineAction.class).showArtifactInTimeline(artifact);
+        try {
+            SystemAction.get(OpenTimelineAction.class).showArtifactInTimeline(artifact);
+        } catch (TskCoreException ex) {
+            MessageNotifyUtil.Message.error("Error opening Timeline");
+            logger.log(Level.SEVERE, "Error showing timeline.", ex);
+        }
     }
 
     /**
-     * Does the given artifact have a type that Timeline supports, and does it
-     * have a positive timestamp in the supported attribute?
+     * Does the given artifact have a datetime attribute?
      *
      * @param artifact The artifact to test for a supported timestamp
      *
      * @return True if this artifact has a timestamp supported by Timeline.
      */
     public static boolean hasSupportedTimeStamp(BlackboardArtifact artifact) throws TskCoreException {
-        //see if the given artifact is a supported type ...
-        for (ArtifactEventType artEventType : ARTIFACT_EVENT_TYPES) {
-            if (artEventType.getArtifactTypeID() == artifact.getArtifactTypeID()) {
-                //... and has a non-bogus timestamp in the supported attribute
-                BlackboardAttribute attribute = artifact.getAttribute(artEventType.getDateTimeAttributeType());
-                if (null != attribute && attribute.getValueLong() > 0) {
-                    return true;
-                }
+
+        for (BlackboardAttribute attr : artifact.getAttributes()) {
+            if (attr.getValueType() == BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME) {
+                return true;
             }
         }
         return false;

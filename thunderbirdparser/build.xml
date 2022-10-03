@@ -19,10 +19,7 @@
     
     <target name="get-thirdparty-jars" description="get third-party jar dependencies"> 
         <mkdir dir="${ext.dir}"/>
-        <copy file="${thirdparty.dir}/java-libpst/java-libpst-1.0-SNAPSHOT.jar" todir="${ext.dir}" />
-        <copy file="${thirdparty.dir}/apache-mime4j/apache-mime4j-core-0.8.0-SNAPSHOT.jar" todir="${ext.dir}" />
-        <copy file="${thirdparty.dir}/apache-mime4j/apache-mime4j-dom-0.8.0-SNAPSHOT.jar" todir="${ext.dir}" />
-        <copy file="${thirdparty.dir}/apache-mime4j/apache-mime4j-mbox-iterator-0.8.0-SNAPSHOT.jar" todir="${ext.dir}" />
+        <copy file="${thirdparty.dir}/java-libpst/java-libpst-0.9.5-SNAPSHOT.jar" todir="${ext.dir}" />
     </target>
 
     <target name="get-deps" depends="init-ivy, get-thirdparty-jars">
@@ -32,5 +29,21 @@
     </target>
     
     <target name="init" depends="get-deps,harness.init"/>
+    
+    <target name="compile" depends="projectized-common.compile">
+        <antcall target="copy-bundle" />
+    </target>
+
+    <target name="copy-bundle">
+        <!-- the externalized strings in 'src' are in both the java files as annotations and in the Bundle.property files.
+          The strings get merged during compilation.  This target copies that merged file into src so that it can be checked
+          in and used as a basis for translation efforts -->
+        <copy todir="src">
+            <fileset dir="build/classes">
+                <include name="**/Bundle.properties"/>
+            </fileset>
+            <globmapper from="*" to="*-MERGED"/>
+        </copy>
+    </target>
 </project>
 

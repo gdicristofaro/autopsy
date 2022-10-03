@@ -117,6 +117,7 @@ class GroupCellFactory {
         final Node graphic = (group.getGroupByAttribute() == DrawableAttribute.TAGS)
                 ? controller.getTagsManager().getGraphic((TagName) group.getGroupByValue())
                 : group.getGroupKey().getGraphic();
+
         final String text = getCellText(cell);
         final String style = getSeenStyleClass(cell);
 
@@ -157,10 +158,10 @@ class GroupCellFactory {
      */
     private String getCountsText(GroupCell<?> cell) {
         return cell.getGroup()
-                .map(group ->
-                        " (" + (sortOrder.get() == GroupComparators.ALPHABETICAL
-                                ? group.getSize()
-                                : sortOrder.get().getFormattedValueOfGroup(group)) + ")"
+                .map(group
+                        -> " (" + (sortOrder.get() == GroupComparators.ALPHABETICAL
+                ? group.getSize()
+                : sortOrder.get().getFormattedValueOfGroup(group)) + ")"
                 ).orElse(""); //if item is null or group is null
     }
 
@@ -173,7 +174,7 @@ class GroupCellFactory {
         private final InvalidationListener groupListener = new GroupListener<>(this);
 
         /**
-         * reference to group files listener that allows us to remove it from a
+         * Reference to group files listener that allows us to remove it from a
          * group when a new group is assigned to this Cell
          */
         @Override
@@ -189,7 +190,7 @@ class GroupCellFactory {
         @Override
         public String getGroupName() {
             return Optional.ofNullable(getItem())
-                    .map(treeNode -> StringUtils.defaultIfBlank(treeNode.getPath(), DrawableGroup.getBlankGroupName()))
+                    .map(treeNode -> StringUtils.defaultIfBlank(treeNode.getDisplayName(), DrawableGroup.getBlankGroupName()))
                     .orElse("");
         }
 
@@ -249,7 +250,7 @@ class GroupCellFactory {
         @Override
         public String getGroupName() {
             return Optional.ofNullable(getItem())
-                    .map(group -> group.getGroupByValueDislpayName())
+                    .map(group -> StringUtils.defaultIfBlank(group.getGroupByValueDislpayName(), DrawableGroup.getBlankGroupName()))
                     .orElse("");
         }
 
