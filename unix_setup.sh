@@ -84,7 +84,7 @@ if [ -f "/usr/share/java/sleuthkit-$TSK_VERSION.jar" ]; then
 elif [ -f "/usr/local/share/java/sleuthkit-$TSK_VERSION.jar" ]; then
     sleuthkit_jar_filepath=/usr/local/share/java/sleuthkit-$TSK_VERSION.jar
     echo "found in $(dirname $sleuthkit_jar_filepath)"
-elif [ -n $TSK_JAVA_LIB_PATH && -f "$TSK_JAVA_LIB_PATH/sleuthkit-$TSK_VERSION.jar" ]
+elif [ -n $TSK_JAVA_LIB_PATH && -f "$TSK_JAVA_LIB_PATH/sleuthkit-$TSK_VERSION.jar" ]; then
     sleuthkit_jar_filepath=/usr/local/share/java/sleuthkit-$TSK_VERSION.jar
     echo "found in $(dirname $sleuthkit_jar_filepath)"
 else
