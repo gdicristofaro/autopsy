@@ -19,53 +19,79 @@ package-repositories:
 layout:
   /usr/lib/jvm/bellsoft-java8-full-amd64:
     bind: $SNAP/usr/lib/jvm/bellsoft-java8-full-amd64
+  /usr/bin:
+    bind: $SNAP/usr/bin
+  /usr/local/bin:
+    bind: $SNAP/usr/local/bin
+  /usr/local/lib:
+    bind: $SNAP/usr/local/lib
+  # ~/.autopsy:
+  #   bind: ~/$SNAP/.autopsy
+
+plugs:
+  system-files-autopsy:
+    interface: system-files
+    read: [/dev]
 
 apps:
   autopsy:
     environment: 
       jdkhome: /usr/lib/jvm/bellsoft-java8-full-amd64
-      # LD_LIBRARY_PATH to get sleuthkit binaries loaded right
-      LD_LIBRARY_PATH: $SNAP/usr/local/lib:$LD_LIBRARY_PATH
+      # LD_LIBRARY_PATH: $SNAP/usr/local/lib:$LD_LIBRARY_PATH
+      # PATH: $SNAP/usr/local/bin:$PATH
     command: autopsy/bin/autopsy
     common-id: org.sleuthkit.autopsy
-    # TODO these need review
     plugs:
+      # TODO verify these: 
       # taken from https://snapcraft.io/docs/supported-interfaces
       - audio-playback
+      - avahi-observe
       - block-devices
-        # TODO not sure these next two lines are necessary
-      - browser-support
       - cifs-mount
-      - custom-device
+      # - custom-device
+      - daemon-notify
+      # - dbus
       - desktop
+      - desktop-launch
+      - desktop-legacy
       - dm-crypt
+      - firewall-control
       - fuse-support
       - hardware-observe
       - home
-      - mount-control
+      - kernel-crypto-api
+      #- locale-control
+      - log-observe
+      #- mount-control
       - mount-observe
       - network
+      # - network-bind
+      # - network-manager
       - network-observe
       - network-setup-observe
       - network-status
+      # - online-accounts-service
       - opengl
       - optical-drive
       - personal-files
+      # - posix-mq
       - pulseaudio
-      - rawinput
-      - rawusb
-      - raw-volume
+      - raw-input
+      - raw-usb
+      # - raw-volume
       - removable-media
       - sd-control
-      # TODO not sure this next line is necessary
-      # - system-files
+      - system-files-autopsy
+      - system-observe
+      - system-trace
+      - udisks2
+      - unity7
+      - unity8
       - wayland
       - x11 
 
-
 parts:
   sleuthkit:
-    # plugin: nil
     plugin: autotools
     source: https://github.com/sleuthkit/sleuthkit.git
     source-branch: develop
@@ -106,6 +132,7 @@ parts:
       - libde265-dev
       - libheif-dev
       - libpq-dev
+      - testdisk
       - libgstreamer1.0-0
       - gstreamer1.0-plugins-base
       - gstreamer1.0-plugins-good 
@@ -121,7 +148,6 @@ parts:
       - gstreamer1.0-pulseaudio
       - bellsoft-java8-full
     plugin: nil
-    # TODO fix this
     source: https://github.com/gdicristofaro/autopsy.git
     source-branch: 8425-unixSetupMod
     # source: https://github.com/sleuthkit/autopsy.git
@@ -154,6 +180,8 @@ parts:
       chmod +x $UNIX_SETUP_SCRIPT
       $UNIX_SETUP_SCRIPT
       chmod 755 "$AUTOPSY_LOCATION/bin/autopsy"
+      find "$AUTOPSY_LOCATION/autopsy/markmckinnon" -name "Export*" -o -name "parse*" | xargs -I{} chmod a+x {}
+      chmod -R a+x "$AUTOPSY_LOCATION/autopsy/solr/bin"
 
-# include this line to print all set variables
-# sed -i '129 i set -o posix ; echo $(set) >&2' "$AUTOPSY_LOCATION/platform/lib/nbexec"
+      # include this line to print all set variables
+      sed -i '129 i set -o posix ; echo $(set) >&2' "$AUTOPSY_LOCATION/platform/lib/nbexec"
