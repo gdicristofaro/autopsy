@@ -23,8 +23,8 @@ layout:
     bind: $SNAP/usr/bin
   /usr/local/bin:
     bind: $SNAP/usr/local/bin
-  /usr/local/lib:
-    bind: $SNAP/usr/local/lib
+  # /usr/local/lib:
+  #   bind: $SNAP/usr/local/lib
   # ~/.autopsy:
   #   bind: ~/$SNAP/.autopsy
 
@@ -32,13 +32,16 @@ plugs:
   system-files-autopsy:
     interface: system-files
     read: [/dev]
+  # personal-files-autopsy:
+  #   interface: personal-files
+  #   read: [$HOME/.autopsy]
 
 apps:
   autopsy:
     environment: 
       jdkhome: /usr/lib/jvm/bellsoft-java8-full-amd64
-      # LD_LIBRARY_PATH: $SNAP/usr/local/lib:$LD_LIBRARY_PATH
-      # PATH: $SNAP/usr/local/bin:$PATH
+      LD_LIBRARY_PATH: $SNAP/usr/local/lib:$LD_LIBRARY_PATH
+      PATH: $SNAP/usr/local/bin:$PATH
     command: autopsy/bin/autopsy
     common-id: org.sleuthkit.autopsy
     plugs:
@@ -73,7 +76,7 @@ apps:
       # - online-accounts-service
       - opengl
       - optical-drive
-      - personal-files
+      # - personal-files-autopsy
       # - posix-mq
       - pulseaudio
       - raw-input
