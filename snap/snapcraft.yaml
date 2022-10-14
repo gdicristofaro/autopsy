@@ -4,7 +4,8 @@ version: '0.1' # just for humans, typically '1.2+git' or '1.3.2'
 summary: A graphical interface to The Sleuth Kit and other digital forensics tools. # 79 char long summary
 description: Autopsy is a graphical interface to The Sleuth Kit and other open source digital forensics tools.
 grade: stable # must be 'stable' to release into candidate/stable channels
-confinement: strict # use 'strict' once you have the right plugs and slots
+# TODO look into turning back to strict for store inclusion
+confinement: classic # use 'strict' once you have the right plugs and slots
 architectures: [amd64, arm64]
 
 # Java package repo to use with snapcraft
@@ -19,22 +20,25 @@ package-repositories:
 layout:
   /usr/lib/jvm/bellsoft-java8-full-amd64:
     bind: $SNAP/usr/lib/jvm/bellsoft-java8-full-amd64
-  /usr/bin:
-    bind: $SNAP/usr/bin
+  /usr/bin/photorec:
+    symlink: $SNAP/usr/bin/photorec
   /usr/local/bin:
     bind: $SNAP/usr/local/bin
   # /usr/local/lib:
   #   bind: $SNAP/usr/local/lib
-  # ~/.autopsy:
-  #   bind: ~/$SNAP/.autopsy
+  # $HOME/.autopsy:
+  #   bind: $HOME/$SNAP/.autopsy
 
 plugs:
-  system-files-autopsy:
-    interface: system-files
-    read: [/dev]
+  home-autopsy:
+    interface: home
+    read: all
   # personal-files-autopsy:
   #   interface: personal-files
   #   read: [$HOME/.autopsy]
+  system-files-autopsy:
+    interface: system-files
+    read: [/dev]
 
 apps:
   autopsy:
@@ -150,6 +154,7 @@ parts:
       - gstreamer1.0-qt5
       - gstreamer1.0-pulseaudio
       - bellsoft-java8-full
+      - perl
     plugin: nil
     source: https://github.com/gdicristofaro/autopsy.git
     source-branch: 8425-unixSetupMod
@@ -183,8 +188,11 @@ parts:
       chmod +x $UNIX_SETUP_SCRIPT
       $UNIX_SETUP_SCRIPT
       chmod 755 "$AUTOPSY_LOCATION/bin/autopsy"
+      # TODO is this necessary?
       find "$AUTOPSY_LOCATION/autopsy/markmckinnon" -name "Export*" -o -name "parse*" | xargs -I{} chmod a+x {}
+      # TODO is this necessary?
       chmod -R a+x "$AUTOPSY_LOCATION/autopsy/solr/bin"
 
       # include this line to print all set variables
+      # TODO remove after debugging
       sed -i '129 i set -o posix ; echo $(set) >&2' "$AUTOPSY_LOCATION/platform/lib/nbexec"
