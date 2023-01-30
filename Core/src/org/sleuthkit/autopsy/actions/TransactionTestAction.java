@@ -96,11 +96,11 @@ public final class TransactionTestAction implements ActionListener {
 
                 logger.log(Level.INFO, "Thread 1: inserting account type for Ann...");
                 Account.Type annAccountType = tskCase.getCommunicationsManager().addAccountType("Ann", "Ann's Account Type", trans);
-                logger.log(Level.INFO, "Thread 1: ID For Ann's account type: " + CommManagerHelp.getAccountType(tskCase, annAccountType));
+                logger.log(Level.INFO, "Thread 1: ID For Ann's account type: " + CommManagerHelp.getAccountType(tskCase, trans, annAccountType));
 
                 logger.log(Level.INFO, "Thread 1: inserting account type for Bob...");
                 Account.Type bobAccountType = tskCase.getCommunicationsManager().addAccountType("Bob", "Bob's Account Type", trans);
-                logger.log(Level.INFO, "Thread 1: ID For Bob's account type: " + CommManagerHelp.getAccountType(tskCase, bobAccountType));
+                logger.log(Level.INFO, "Thread 1: ID For Bob's account type: " + CommManagerHelp.getAccountType(tskCase, trans, bobAccountType));
                 Thread.sleep(millisBetweenSteps);
 
                 logger.log(Level.INFO, "Thread 1: inserting reference for account type Ann...");
@@ -209,7 +209,7 @@ public final class TransactionTestAction implements ActionListener {
 
                 logger.log(Level.INFO, "Thread 2: inserting account type for Bob...");
                 Account.Type bobAccountType = tskCase.getCommunicationsManager().addAccountType("Bob", "Bob's Account Type", trans);
-                logger.log(Level.INFO, "Thread 2: ID For Bob's account type: " + CommManagerHelp.getAccountType(tskCase, bobAccountType));
+                logger.log(Level.INFO, "Thread 2: ID For Bob's account type: " + CommManagerHelp.getAccountType(tskCase, trans, bobAccountType));
                 Thread.sleep(millisBetweenSteps);
 
                 logger.log(Level.INFO, "Thread 2: inserting reference for account type Bob...");
@@ -249,13 +249,13 @@ public final class TransactionTestAction implements ActionListener {
                 trans = null;
 
             } catch (InterruptedException | TskCoreException ex) {
-                logger.log(Level.SEVERE, "Thread 1: There was an exception that occurred while running", ex);
+                logger.log(Level.SEVERE, "Thread 2: There was an exception that occurred while running", ex);
             } finally {
                 if (trans != null) {
                     try {
                         trans.rollback();
                     } catch (TskCoreException ex) {
-                        logger.log(Level.SEVERE, "Thread 1: There was an exception that occurred while rolling back transaction", ex);
+                        logger.log(Level.SEVERE, "Thread 2: There was an exception that occurred while rolling back transaction", ex);
                     }
                 }
             }

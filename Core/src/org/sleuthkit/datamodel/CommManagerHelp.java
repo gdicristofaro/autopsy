@@ -5,12 +5,14 @@
  */
 package org.sleuthkit.datamodel;
 
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
+
 /**
  *
  * @author gregd
  */
 public class CommManagerHelp {
-    public static long getAccountType(SleuthkitCase tskCase, Account.Type accountType) throws TskCoreException {
-        return tskCase.getCommunicationsManager().getAccountTypeId(accountType);
+    public static long getAccountType(SleuthkitCase tskCase, CaseDbTransaction trans, Account.Type accountType) throws TskCoreException {
+        return tskCase.getCommunicationsManager().getAccountTypeId(trans.getConnection(), accountType);
     }
 }
