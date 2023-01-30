@@ -263,24 +263,14 @@ public final class TransactionTestAction implements ActionListener {
     }
 
     /*
-    
-    I think (and maybe it would be a good use of your time to do some controlled experiments) that the risk here though is that we could have out of sync row ids. 
-    This is where my knowledge is foggy though with implementation details. But a scenario whereby:
-    
+
 - thread one inserts two accounts (ann and bob) in a transaction. Ann gets ID 1 and Bob 2. 
     That transaction also adds other files and uses the 1 and 2 references.
     
-- Thread two also inserts bob in a parallel transaction.  I honestly don't know what ID it 
-    gets while there are two writer transactionsn open on the same table.  Maybe it gets 3
-    - we should test. Then all of its file/artifact inserts use 3 as the foreign key. 
+- Thread two also inserts bob in a parallel transaction. 
     
 - Thread 1 commits.
-- When thread 2 commits, bob should get ignored.  But what about the files/artifacts that are
-    referring to ID 3?  I think they fail because of foreign key constraints. 
-
-These are all scenarios we've mentally thought about, but would be good to test to see what actually happens. 
-
-If the above does happen, we should certainly change my text above to remind ourselves of this situation.
+- When thread 2 commits, bob should get ignored. 
 
      */
 }
