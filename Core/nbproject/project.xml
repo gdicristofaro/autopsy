@@ -445,10 +445,6 @@
                 <binary-origin>release/modules/ext/c3p0-0.9.5.5.jar</binary-origin>
             </class-path-extension>
             <class-path-extension>
-                <runtime-relative-path>ext/checker-qual-3.12.0.jar</runtime-relative-path>
-                <binary-origin>release/modules/ext/checker-qual-3.12.0.jar</binary-origin>
-            </class-path-extension>
-            <class-path-extension>
                 <runtime-relative-path>ext/commons-dbcp2-2.9.0.jar</runtime-relative-path>
                 <binary-origin>release/modules/ext/commons-dbcp2-2.9.0.jar</binary-origin>
             </class-path-extension>
@@ -489,14 +485,6 @@
                 <binary-origin>release/modules/ext/decodetect-core-0.3.jar</binary-origin>
             </class-path-extension>
             <class-path-extension>
-                <runtime-relative-path>ext/error_prone_annotations-2.11.0.jar</runtime-relative-path>
-                <binary-origin>release/modules/ext/error_prone_annotations-2.11.0.jar</binary-origin>
-            </class-path-extension>
-            <class-path-extension>
-                <runtime-relative-path>ext/failureaccess-1.0.1.jar</runtime-relative-path>
-                <binary-origin>release/modules/ext/failureaccess-1.0.1.jar</binary-origin>
-            </class-path-extension>
-            <class-path-extension>
                 <runtime-relative-path>ext/guava-31.1-jre.jar</runtime-relative-path>
                 <binary-origin>release/modules/ext/guava-31.1-jre.jar</binary-origin>
             </class-path-extension>
@@ -511,10 +499,6 @@
             <class-path-extension>
                 <runtime-relative-path>ext/istack-commons-runtime-3.0.11.jar</runtime-relative-path>
                 <binary-origin>release/modules/ext/istack-commons-runtime-3.0.11.jar</binary-origin>
-            </class-path-extension>
-            <class-path-extension>
-                <runtime-relative-path>ext/j2objc-annotations-1.3.jar</runtime-relative-path>
-                <binary-origin>release/modules/ext/j2objc-annotations-1.3.jar</binary-origin>
             </class-path-extension>
             <class-path-extension>
                 <runtime-relative-path>ext/jackcess-4.0.1.jar</runtime-relative-path>
@@ -595,10 +579,6 @@
             <class-path-extension>
                 <runtime-relative-path>ext/libphonenumber-8.12.45.jar</runtime-relative-path>
                 <binary-origin>release/modules/ext/libphonenumber-8.12.45.jar</binary-origin>
-            </class-path-extension>
-            <class-path-extension>
-                <runtime-relative-path>ext/listenablefuture-1.0.jar</runtime-relative-path>
-                <binary-origin>release/modules/ext/listenablefuture-1.0.jar</binary-origin>
             </class-path-extension>
             <class-path-extension>
                 <runtime-relative-path>ext/logback-classic-1.2.10.jar</runtime-relative-path>
@@ -695,6 +675,10 @@
             <class-path-extension>
                 <runtime-relative-path>ext/sleuthkit-caseuco-4.12.0.jar</runtime-relative-path>
                 <binary-origin>release/modules/ext/sleuthkit-caseuco-4.12.0.jar</binary-origin>
+            </class-path-extension>
+            <class-path-extension>
+                <runtime-relative-path>ext/slf4j-api-1.7.36.jar</runtime-relative-path>
+                <binary-origin>release/modules/ext/slf4j-api-1.7.36.jar</binary-origin>
             </class-path-extension>
             <class-path-extension>
                 <runtime-relative-path>ext/snakeyaml-1.30.jar</runtime-relative-path>
