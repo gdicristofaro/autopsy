@@ -23,11 +23,6 @@
     <property name="modules.dir" value="${basedir}/release/modules/" />
      
     <target name="get-thirdparty-dependencies" description="get third-party dependencies"> 
-        <!--Copy openCV dependencies to release-->
-        <copy todir="${modules.dir}" >
-            <fileset dir="${thirdparty.dir}/opencv" />
-        </copy>
-
         <!--Copy libheif dependencies to release-->
         <copy todir="${modules.dir}" >
             <fileset dir="${thirdparty.dir}/libheif/Release" />

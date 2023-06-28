@@ -35,7 +35,7 @@ import org.opencv.core.MatOfByte;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
-import org.opencv.highgui.Highgui;
+import org.opencv.highgui.HighGui;
 import org.opencv.imgproc.Imgproc;
 import org.sleuthkit.autopsy.coreutils.ImageUtils;
 import org.sleuthkit.datamodel.AbstractFile;
@@ -124,7 +124,7 @@ public final class ImageTagsUtil {
 
             byte[] imageBytes = outStream.toByteArray();
             MatOfByte rawSourceBytes = new MatOfByte(imageBytes);
-            Mat sourceImage = Highgui.imdecode(rawSourceBytes, Highgui.IMREAD_COLOR);
+            Mat sourceImage = HighGui.imdecode(rawSourceBytes, HighGui.IMREAD_COLOR);
             rawSourceBytes.release();
 
             return sourceImage;
@@ -155,7 +155,7 @@ public final class ImageTagsUtil {
         }
 
         MatOfByte taggedMatrix = new MatOfByte();
-        Highgui.imencode(OPENCV_PNG, sourceImage, taggedMatrix);
+        HighGui.imencode(OPENCV_PNG, sourceImage, taggedMatrix);
 
         return taggedMatrix;
     }
@@ -200,13 +200,13 @@ public final class ImageTagsUtil {
      */
     private static MatOfByte getResizedMatrix(MatOfByte taggedMatrix, IconSize size) {
         Size resizeDimensions = new Size(size.getSize(), size.getSize());
-        Mat taggedImage = Highgui.imdecode(taggedMatrix, Highgui.IMREAD_COLOR);
+        Mat taggedImage = HighGui.imdecode(taggedMatrix, HighGui.IMREAD_COLOR);
 
         Mat thumbnailImage = new Mat();
         Imgproc.resize(taggedImage, thumbnailImage, resizeDimensions);
 
         MatOfByte thumbnailMatrix = new MatOfByte();
-        Highgui.imencode(OPENCV_PNG, thumbnailImage, thumbnailMatrix);
+        HighGui.imencode(OPENCV_PNG, thumbnailImage, thumbnailMatrix);
 
         thumbnailImage.release();
         taggedImage.release();
