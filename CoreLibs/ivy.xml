@@ -134,12 +134,14 @@
         
         <dependency conf="autopsy_core->default" org="org.apache.logging.log4j" name="log4j-api" rev="2.17.2" transitive="false"/>
         <dependency conf="autopsy_core->default" org="org.apache.logging.log4j" name="log4j-core" rev="2.17.2" transitive="false"/>
-        
+        <dependency conf="autopsy_core->default" org="org.openpnp" name="opencv" rev="2.4.13-0"/>
+
         <exclude org="*" ext="*" type="javadoc"/>
         <exclude org="log4j" module="log4j"/>
 
         <override org="org.slf4j" module="slf4j-api" rev="1.7.36"/>
-        
+        <override org="junit" module="junit" rev="4.13.2"/>
+
         <override org="com.google.code.gson" module="gson" rev="2.9.0"/>
         <override org="com.google.guava" module="guava" rev="31.1-jre"/>
         <override org="com.fasterxml.jackson.core" module="jackson-databind" rev="2.13.2"/>

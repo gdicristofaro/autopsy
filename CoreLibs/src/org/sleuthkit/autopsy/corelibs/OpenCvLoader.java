@@ -20,7 +20,6 @@ package org.sleuthkit.autopsy.corelibs;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.opencv.core.Core;
 
 /**
  * A utility class that loads the core OpenCV library and allows clients to
@@ -36,7 +35,7 @@ public final class OpenCvLoader {
     static {
         openCvLoaded = false;
         try {
-            System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+            nu.pattern.OpenCV.loadLocally();
             openCvLoaded = true;
         } catch (UnsatisfiedLinkError ex) {
             logger.log(Level.WARNING, "Failed to load core OpenCV library", ex);
