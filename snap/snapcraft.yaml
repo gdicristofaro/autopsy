@@ -12,6 +12,7 @@ architectures: [amd64]
 compression: lzo
 icon: snap/gui/autopsy.png
 
+# NOTE: plug interfaces are only necessary if switching to 'strict' confinement
 plugs:
   system-files-autopsy:
     interface: system-files
@@ -23,7 +24,6 @@ apps:
       jdkhome: $SNAP/usr/lib/jvm/java-17-openjdk-amd64
       # provide means for java gstreamer to find gstreamer libs
       jreflags: $jreflags "-Djna.library.path=$SNAP/usr/lib/x86_64-linux-gnu"
-      #LD_LIBRARY_PATH: ${SNAP}/usr/local/lib:${SNAP}/usr/lib/x86_64-linux-gnu/gstreamer-1.0:${SNAP}/usr/lib/x86_64-linux-gnu:${SNAP}/lib/x86_64-linux-gnu:${SNAP}/usr/lib/x86_64-linux-gnu/glib-2.0:${LD_LIBRARY_PATH}
       # make sure path is set up to ensure things like photorec are found
       PATH: $SNAP/usr/bin:$SNAP/usr/local/bin:$PATH
       # gstreamer scans for plugins (i.e. app integration plugins).  this tells gstreamer where to look for the scanner and libraries
@@ -83,7 +83,7 @@ parts:
       - enable-patchelf
     # override-build: |
     #  snapcraftctl build
-    # NOTE: could potentially do other patching
+    # NOTE: could potentially do other patching if necessary here
     build-packages:
       - build-essential
       - autoconf
@@ -145,9 +145,9 @@ parts:
       - openjdk-17-jre
       - openjdk-17-jdk
       - perl
-    # TODO this might not be necessary
-    stage-snaps:
-      - openjdk/latest/stable # currently pinned to jdk 17
+    # could attempt to use openjdk snap
+    # stage-snaps:
+    #  - openjdk/latest/stable # currently pinned to jdk 17
     plugin: nil
     # source: https://github.com/sleuthkit/autopsy.git
     source: https://github.com/gdicristofaro/autopsy.git
