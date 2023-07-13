@@ -1,5 +1,5 @@
 name: autopsy
-base: core22
+base: core20
 version: 4.20.0
 summary: A graphical interface to The Sleuth Kit and other digital forensics tools. # 79 char long summary
 description: Autopsy is a graphical interface to The Sleuth Kit and other open source digital forensics tools.
@@ -25,6 +25,7 @@ apps:
       # provide means for java gstreamer to find gstreamer libs
       jreflags: $jreflags "-Djna.library.path=$SNAP/usr/lib/x86_64-linux-gnu"
       # make sure path is set up to ensure things like photorec are found
+      LD_LIBRARY_PATH: $SNAP/usr/lib/local
       PATH: $SNAP/usr/bin:$SNAP/usr/local/bin:$PATH
       # gstreamer scans for plugins (i.e. app integration plugins).  this tells gstreamer where to look for the scanner and libraries
       GST_PLUGIN_SYSTEM_PATH: $SNAP/usr/lib/x86_64-linux-gnu/gstreamer-1.0
