@@ -25,7 +25,8 @@ apps:
       # provide means for java gstreamer to find gstreamer libs
       jreflags: $jreflags "-Djna.library.path=$SNAP/usr/lib/x86_64-linux-gnu"
       # make sure path is set up to ensure things like photorec are found
-      LD_LIBRARY_PATH: $SNAP/usr/lib/local
+      LD_LIBRARY_PATH: $SNAP/usr/lib/local:$SNAP/usr/local/lib
+      # others may be necessary for LD_LIBRARY_PATH/jna.library.path like $SNAP/usr/lib/x86_64-linux-gnu:$SNAP/lib/x86_64-linux-gnu:$SNAP/usr/lib:$SNAP/lib:/snap/core20/current/usr/lib/x86_64-linux-gnu:/snap/core20/current/lib/x86_64-linux-gnu:/snap/core20/current/usr/lib:/snap/core20/current/lib
       PATH: $SNAP/usr/bin:$SNAP/usr/local/bin:$PATH
       # gstreamer scans for plugins (i.e. app integration plugins).  this tells gstreamer where to look for the scanner and libraries
       GST_PLUGIN_SYSTEM_PATH: $SNAP/usr/lib/x86_64-linux-gnu/gstreamer-1.0
@@ -33,6 +34,7 @@ apps:
       SOLR_LOGS_DIR: $HOME/.autopsy/dev/solr/logs
       SOLR_PID_DIR: $HOME/.autopsy/dev/solr/logs
     command: autopsy/bin/autopsy
+    extensions: [gnome-3-38]
     common-id: org.sleuthkit.autopsy
     plugs:
       # taken from https://snapcraft.io/docs/supported-interfaces
