@@ -22,12 +22,11 @@ apps:
   autopsy:
     environment:
       jdkhome: $SNAP/usr/lib/jvm/java-17-openjdk-amd64
-      # provide means for java gstreamer to find gstreamer libs
-      jreflags: $jreflags "-Djna.library.path=$SNAP/usr/lib/x86_64-linux-gnu"
       # make sure path is set up to ensure things like photorec are found
-      LD_LIBRARY_PATH: $SNAP/usr/lib/local:$SNAP/usr/local/lib
-      # others may be necessary for LD_LIBRARY_PATH/jna.library.path like $SNAP/usr/lib/x86_64-linux-gnu:$SNAP/lib/x86_64-linux-gnu:$SNAP/usr/lib:$SNAP/lib:/snap/core20/current/usr/lib/x86_64-linux-gnu:/snap/core20/current/lib/x86_64-linux-gnu:/snap/core20/current/usr/lib:/snap/core20/current/lib
-      PATH: $SNAP/usr/bin:$SNAP/usr/local/bin:$PATH
+      LD_LIBRARY_PATH: $SNAP/usr/lib/local:$SNAP/usr/local/lib:$SNAP/usr/local/lib:$SNAP/usr/lib/x86_64-linux-gnu:$SNAP/lib/x86_64-linux-gnu:$SNAP/usr/lib:$SNAP/lib:/snap/core20/current/usr/lib/x86_64-linux-gnu:/snap/core20/current/lib/x86_64-linux-gnu:/snap/core20/current/usr/lib:/snap/core20/current/lib:$LD_LIBRARY_PATH
+      # provide means for java gstreamer to find gstreamer libs
+      jreflags: $jreflags "-Djna.library.path=$SNAP/usr/lib/local:$SNAP/usr/local/lib:$SNAP/usr/local/lib:$SNAP/usr/lib/x86_64-linux-gnu:$SNAP/lib/x86_64-linux-gnu:$SNAP/usr/lib:$SNAP/lib:/snap/core20/current/usr/lib/x86_64-linux-gnu:/snap/core20/current/lib/x86_64-linux-gnu:/snap/core20/current/usr/lib:/snap/core20/current/lib"
+      PATH: $SNAP/usr/bin:$SNAP/usr/local/bin:/snap/core20/current/usr/bin:/snap/core20/current/usr/local/bin:$PATH
       # gstreamer scans for plugins (i.e. app integration plugins).  this tells gstreamer where to look for the scanner and libraries
       GST_PLUGIN_SYSTEM_PATH: $SNAP/usr/lib/x86_64-linux-gnu/gstreamer-1.0
       GST_PLUGIN_SCANNER: $SNAP/usr/lib/x86_64-linux-gnu/gstreamer1.0/gstreamer-1.0/gst-plugin-scanner
@@ -148,7 +147,7 @@ parts:
       - openjdk-17-jdk
       # not sure this is necessary
       - perl
-      # graphics/windowing libraries
+      # graphics libraries
       - libgtk-3-dev
       - libgtk2.0-0
       - libxrender-dev
