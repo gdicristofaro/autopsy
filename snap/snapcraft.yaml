@@ -152,7 +152,6 @@ parts:
       - libgtk-3-dev
       - libgtk2.0-0
       - libxrender-dev
-      - libgtk2.0-0-libxrender-dev
       - libfreetype-dev
     # could attempt to use openjdk snap
     # stage-snaps:
