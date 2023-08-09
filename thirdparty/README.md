@@ -17,7 +17,7 @@ Each subfolder in one of the [immediate folders](#folders) has the following str
 - `src`: Location for any source code to be used during build.
 - `doc`: Any documentation on the project.
 - `dist`: Location of files to be directly utilized by Autopsy or tools.
-  - `resources`: The contents of this folder will be placed directly into the `thirdparty` directory of the Autopsy build (i.e. `<AUTOPSY_INSTALL>/thirdparty/<subfolder name>`).
+  - `resources`: The contents of this folder will be placed directly into the `autopsy` directory of the Autopsy build (i.e. `<AUTOPSY_INSTALL>/autopsy/<subfolder name>`).
   - `ext`: This includes any java jar files to be added to the classpath.
   - `native`: This includes any OS/arch-dependent files.
-    - `<os>_<arch>`: This includes resources for a specific os and architecture.  OS value could be `windows`, `linux`, or `macos`. Currently, the supported arch value is `x64`.
+    - `<os>_<arch>`: This includes resources for a specific os and architecture.  OS value could be `windows`, `unix` (used for linux), or `mac`. Currently, the supported arch value is `amd64`.  These will be placed in the folder `<AUTOPSY_INSTALL>/autopsy/<subfolder name>`.
