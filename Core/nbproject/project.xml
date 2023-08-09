@@ -750,8 +750,8 @@
                 <binary-origin>release/modules/ext/txw2-2.3.3.jar</binary-origin>
             </class-path-extension>
             <class-path-extension>
-                <runtime-relative-path>ext/xalan-2.7.2.jar</runtime-relative-path>
-                <binary-origin>release/modules/ext/xalan-2.7.2.jar</binary-origin>
+                <runtime-relative-path>ext/xalan-2.7.3.jar</runtime-relative-path>
+                <binary-origin>release/modules/ext/xalan-2.7.3.jar</binary-origin>
             </class-path-extension>
             <class-path-extension>
                 <runtime-relative-path>ext/xml-apis-1.4.01.jar</runtime-relative-path>
