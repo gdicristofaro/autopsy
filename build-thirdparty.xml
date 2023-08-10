@@ -4,39 +4,113 @@
     <description>Utilities for building third party structured folders</description>
 
     <import file="${basedir}/build-include-ant-contrib.xml"/>
-    <property name="thirdparty.dir" value="${basedir}/thirdparty" />
 
-    <!-- get path -->
+    <property name="thirdparty.dir" value="${basedir}/thirdparty" />
+    <property name="thirdparty.ext-rel-path" value="dist/ext" />
 
     <!-- copy resources to loc -->
-
     <target name="copy-thirdparty-folders">
-        <fail message="The variable 'thirdparty-folders' must be defined." unless="thirdparty-folders"/>
+        <fail message="The variable 'thirdparty.folders' must be defined." unless="thirdparty.folders"/>
 
-        <for list="${thirdparty-folders}" param="thirdparty-folder" delimiter=",">
+        <for list="${thirdparty.folders}" param="thirdparty.folder" delimiter=",">
             <sequential>
                 <antcall target="copy-thirdparty-folder" inheritAll="true" />
             </sequential>
         </for>
     </target>
 
+    <!-- optional: thirdparty.target-os-versions, thirdparty.processor-architecture which will filter to the specified os versions (windows, unix, mac) and architectures -->
+    <target name="copy-thirdparty-folder" depends="-set-trigger-thirdparty-build, build-thirdparty-folder">
+        <fail message="The variable 'thirdparty.folder' must be defined." unless="thirdparty.folder"/>
+        <fail message="The variable 'thirdparty.target-dir' must be defined." unless="thirdparty.target-dir"/>
+        <fail message="The variable 'thirdparty.target-ext-dir' must be defined." unless="thirdparty.target-ext-dir"/>
+        <fail message="The variable 'thirdparty.target-lib-dir' must be defined." unless="thirdparty.target-lib-dir"/>
 
-    <target name="copy-thirdparty-folder" depends="build-thirdparty-folder">
-        <fail message="The variable 'thirdparty-folder' must be defined." unless="thirdparty-folder"/>
-        <property name="build-thirdparty" value="true" />
+        <!-- copy bin dir if exists -->
+        <antcall target="-copy-thirdparty-os-dependent" inheritAll="true">
+            <param name="thirdparty.os-dependent-target-dir" value="${thirdparty.target-dir}/${thirdparty.folder}" />
+            <param name="thirdparty.os-dependent-src-dir" value="${thirdparty.dir}/${thirdparty-folder}/dist/bin" />
+        </antcall>
 
-        <!-- TODO -->
+        <!-- copy lib dir if exists -->
+        <antcall target="-copy-thirdparty-os-dependent" inheritAll="true">
+            <param name="thirdparty.os-dependent-target-dir" value="${thirdparty.target-lib-dir}" />
+            <param name="thirdparty.os-dependent-src-dir" value="${thirdparty.dir}/${thirdparty-folder}/dist/lib" />
+        </antcall>
+
+        <!-- copy resources dir if exists -->
+        <if>
+            <available file="${thirdparty.dir}/${thirdparty-folder}/dist/resources}" type="dir"/>
+            <then>
+                <copy todir="${thirdparty.target-dir}/${thirdparty-folder}">
+                    <fileset dir="${thirdparty.dir}/${thirdparty-folder}/dist/resources/**"/>
+                </copy>
+            </then>
+        </if>
+
+        <!-- copy ext dir if exists -->
+        <if>
+            <available file="${thirdparty.dir}/${thirdparty-folder}/${thirdparty.ext-rel-path}" type="dir"/>
+            <then>
+                <copy todir="${thirdparty.target-ext-dir}">
+                    <fileset dir="${thirdparty.dir}/${thirdparty-folder}/${thirdparty.ext-rel-path}/**"/>
+                </copy>
+            </then>
+        </if>
+    </target>
+
+    <target name="-copy-thirdparty-os-dependent">
+        <if>
+            <available file="${thidparty.os-dependent-src-dir}" type="dir"/>
+            <then>
+                <if>
+                    <and>
+                        <isset property="thirdparty.target-os-versions"/>
+                        <isset property="thirdparty.target-processor-architectures"/>
+                    </and>
+                    <then>
+                        <for list="${thirdparty.target-os-versions}" param="thirdparty.os-version" delimiter=",">
+                            <sequential>
+                                <for list="${thirdparty.target-processor-architectures}" param="thirdparty.processor-architecture" delimiter=",">
+                                    <sequential>
+                                        <if>
+                                            <available file="${thirdparty.os-dependent-target-dir}/${thirdparty.os-version}_${thirdparty.processor-architecture}" type="dir"/>
+                                            <then>
+                                                <copy todir="${thirdparty.os-dependent-target-dir}/${thirdparty.os-version}_${thirdparty.processor-architecture}">
+                                                    <fileset dir="${thidparty.os-dependent-src-dir}/${thirdparty.os-version}_${thirdparty.processor-architecture}/**"/>
+                                                </copy>
+                                            </then>
+                                        </if>
+                                    </sequential>
+                                </for>
+                            </sequential>
+                        </for>
+                    </then>
+                    <else>
+                        <copy todir="${thirdparty.os-dependent-target-dir}">
+                            <fileset dir="${thidparty.os-dependent-src-dir}/**"/>
+                        </copy>
+                    </else>
+                </if>
+            </then>
+        </if>
+    </target>
+
+
+    <target name="-set-trigger-thirdparty-build">
+        <!-- build third party items unless otherwise specified -->
+        <property name="thirdparty.trigger-build" value="true" />
     </target>
 
     <target name="build-thirdparty-folder">
-        <fail message="The variable 'thirdparty-folder' must be defined." unless="thirdparty-folder"/>
+        <fail message="The variable 'thirdparty.folder' must be defined." unless="thirdparty.folder"/>
         <if>
             <and>
-                <equals arg1="${build-thirdparty}" arg2="true" />
-                <available file="${thirdparty.dir}/${thidparty-folder}/build.xml" />
+                <equals arg1="${thirdparty.trigger-build}" arg2="true" />
+                <available file="${thirdparty.dir}/${thirdparty.folder}/build.xml" />
             </and>
             <then>
-                <subant antfile="${thirdparty.dir}/${thidparty-folder}/build.xml" target="build" />
+                <subant antfile="${thirdparty.dir}/${thirdparty.folder}/build.xml" target="build" />
             </then>
         </if>
     </target>

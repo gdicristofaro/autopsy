@@ -2,111 +2,50 @@
 <!-- You may freely edit this file. See harness/README in the NetBeans platform -->
 <!-- for some information on what you could do (e.g. targets to override). -->
 <!-- If you delete this file and reopen the project it will be recreated. -->
-<project name="org.sleuthkit.autopsy.core" default="netbeans" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant" >
+<project name="org.sleuthkit.autopsy.core" default="netbeans" basedir="."
+    xmlns:ivy="antlib:org.apache.ivy.ant">
     <description>Builds, tests, and runs the project org.sleuthkit.autopsy.core</description>
     <import file="nbproject/build-impl.xml"/>
     <import file="../BootstrapIvy.xml"/>
     <import file="../TSKVersion.xml"/>
-    <import file="${basedir}/../build-include-ant-contrib.xml"/> 
+    <import file="${basedir}/../build-include-ant-contrib.xml"/>
     <import file="${basedir}/build-thirdparty.xml"/>
-     
-    <property name="thirdparty.dir" value="${basedir}/../thirdparty" />
-    
+
     <property name="modules.dir" value="${basedir}/release/modules/" />
     <property name="ext.dir" value="${modules.dir}/ext" />
+    <property name="lib.dir" value="${modules.dir}/lib" />
     <property name="test-input" location="test/qa-functional/data"/>
 
-    <target name="get-InternalPythonModules" description="get internal python modules"> 
-        <copy todir="release/InternalPythonModules" >
+    <target name="get-InternalPythonModules" description="get internal python modules">
+        <copy todir="release/InternalPythonModules">
             <fileset dir="{basedir}/../../InternalPythonModules"/>
         </copy>
     </target>
 
-    <target name="get-thirdparty-dependencies" description="get third-party dependencies"> 
+    <target name="get-thirdparty-dependencies" description="get third-party dependencies">
         <!--
             Copy netbeans localization jars: 
             This contains jars provided in Netbeans 8 RCP that provide localization bundles.  
             They do not appear to be included in Netbeans >= 9.  
             See VIK-7434 for more information.
         -->
+
+        <!-- TODO convert this as well -->
         <mkdir dir="${modules.dir}/locale"/>
-        <copy todir="${modules.dir}/locale" >
+        <copy todir="${modules.dir}/locale">
             <fileset dir="${thirdparty.dir}/NetbeansLocalization"/>
         </copy>
 
-        <!--Copy photorec to release-->
-        <copy todir="${basedir}/release/photorec_exec" >
-            <fileset dir="${thirdparty.dir}/photorec_exec"/>
-        </copy>
-        <!--Copy ewfexport to release-->
-        <copy todir="${basedir}/release/ewfexport_exec" >
-            <fileset dir="${thirdparty.dir}/ewfexport_exec"/>
-        </copy>
-
-        <!--Copy Volatility to release-->
-        <copy todir="${basedir}/release/Volatility" >
-            <fileset dir="${thirdparty.dir}/Volatility"/>
-        </copy>
-        
-        <!--Copy Tesseract OCR to release-->
-        <copy todir="${basedir}/release/Tesseract-OCR" >
-            <fileset dir="${thirdparty.dir}/Tesseract-OCR"/>
-        </copy>
-        
-        <!--Copy Plaso to release-->
-        <copy todir="${basedir}/release/plaso" >
-            <fileset dir="${thirdparty.dir}/plaso"/>
-        </copy>     
-        <!--Copy GStreamer to release-->
-        <copy todir="${basedir}/release/gstreamer" >
-            <fileset dir="${thirdparty.dir}/gstreamer"/>
-        </copy>
-        
-        <!--Copy iLeapp to release-->
-        <copy todir="${basedir}/release/iLeapp" >
-            <fileset dir="${thirdparty.dir}/iLeapp"/>
-        </copy>
-		
-        <!--Copy aLeapp to release-->
-        <copy todir="${basedir}/release/aLeapp" >
-            <fileset dir="${thirdparty.dir}/aLeapp"/>
-        </copy>
-		
-        <!--Copy 7-Zip to release-->
-        <copy todir="${basedir}/release/7-Zip" >
-            <fileset dir="${thirdparty.dir}/7-Zip"/>
-        </copy>
-
-        <!--Copy InterestingFileSetRules to release-->
-        <copy todir="${basedir}/release/InterestingFileSetRules" >
-            <fileset dir="${thirdparty.dir}/InterestingFileSetRules"/>
-        </copy>
-
-        <!--Copy OfficialHashSets to release-->
-        <copy todir="${basedir}/release/OfficialHashSets" >
-            <fileset dir="${thirdparty.dir}/OfficialHashSets"/>
-        </copy>
-
-        <!--Copy DomainCategorization to release-->
-        <copy todir="${basedir}/release/DomainCategorization" >
-            <fileset dir="${thirdparty.dir}/DomainCategorization"/>
-        </copy>
-
-        <!--Copy other jars-->
-        <copy file="${thirdparty.dir}/rejistry/Rejistry-1.1-SNAPSHOT.jar" todir="${ext.dir}" />
-        <copy file="${thirdparty.dir}/sevenzip/sevenzipjbinding.jar" todir="${ext.dir}" />
-        <copy file="${thirdparty.dir}/sevenzip/sevenzipjbinding-AllPlatforms.jar" todir="${ext.dir}" />
-
-		<copy file="${thirdparty.dir}/DatCon/3.6.9/DatCon.jar" todir="${ext.dir}" />
-        <!--Copy YARA to release-->
-        <copy todir="${basedir}/release/yara" >
-            <fileset dir="${thirdparty.dir}/yara/bin"/>
-        </copy>
-        <copy file="${thirdparty.dir}/yara/bin/YaraJNIWrapper.jar" todir="${ext.dir}" />
+        <antcall target="copy-thirdparty-folders" inheritAll="true">
+            <param name="thirdparty.folders" value="photorec_exec,ewfexport_exec,Volatility,Tesseract-OCR,plaso,gstreamer,iLeapp,aLeapp,7-Zip,InterestingFileSetRules,OfficialHashSets,DomainCategorization,rejistry,DatCon,sevenzip,yara" />
+            <param name="thirdparty.target-dir" value="${basedir}/release"/>
+            <param name="thirdparty.thirdparty.target-ext-dir" value="${ext.dir}"/>
+            <param name="thirdparty.thirdparty.target-lib-dir" value="${ext.lib}"/>
+        </antcall>
     </target>
-    
-    
-    
+
+
+
     <!-- Verify that the TSK_HOME env variable is set -->
     <target name="findTSK">
         <property environment="env"/>
@@ -115,31 +54,21 @@
         </condition>
         <fail unless="tskFound" message="TSK_HOME must be set as an environment variable."/>
         <echo> TSK_HOME: ${env.TSK_HOME}</echo>
-    </target>  
-    
+    </target>
+
     <target name="getTSKJars" depends="findTSK">
         <property environment="env"/>
-        <copy file="${env.TSK_HOME}/bindings/java/dist/sleuthkit-${TSK_VERSION}.jar" 
-              tofile="${ext.dir}/sleuthkit-${TSK_VERSION}.jar"/>
-        <copy file="${env.TSK_HOME}/bindings/java/lib/sqlite-jdbc-3.42.0.0.jar"
-              tofile="${ext.dir}/sqlite-jdbc-3.42.0.0.jar"/>
-		<copy file="${env.TSK_HOME}/bindings/java/lib/postgresql-42.3.5.jar" 
-              tofile="${ext.dir}/postgresql-42.3.5.jar"/>
-        <copy file="${env.TSK_HOME}/bindings/java/lib/c3p0-0.9.5.5.jar"
-              tofile="${ext.dir}/c3p0-0.9.5.5.jar"/>
-        <copy file="${env.TSK_HOME}/bindings/java/lib/mchange-commons-java-0.2.20.jar"
-              tofile="${ext.dir}/mchange-commons-java-0.2.20.jar"/>
-        <copy file="${env.TSK_HOME}/bindings/java/lib/SparseBitSet-1.1.jar"
-              tofile="${ext.dir}/SparseBitSet-1.1.jar"/>	
-        <copy file="${env.TSK_HOME}/case-uco/java/dist/sleuthkit-caseuco-${TSK_VERSION}.jar" 
-              tofile="${ext.dir}/sleuthkit-caseuco-${TSK_VERSION}.jar"/>  
+        <copy file="${env.TSK_HOME}/bindings/java/dist/sleuthkit-${TSK_VERSION}.jar" tofile="${ext.dir}/sleuthkit-${TSK_VERSION}.jar"/>
+        <copy file="${env.TSK_HOME}/bindings/java/lib/sqlite-jdbc-3.42.0.0.jar" tofile="${ext.dir}/sqlite-jdbc-3.42.0.0.jar"/>
+        <copy file="${env.TSK_HOME}/bindings/java/lib/postgresql-42.3.5.jar" tofile="${ext.dir}/postgresql-42.3.5.jar"/>
+        <copy file="${env.TSK_HOME}/bindings/java/lib/c3p0-0.9.5.5.jar" tofile="${ext.dir}/c3p0-0.9.5.5.jar"/>
+        <copy file="${env.TSK_HOME}/bindings/java/lib/mchange-commons-java-0.2.20.jar" tofile="${ext.dir}/mchange-commons-java-0.2.20.jar"/>
+        <copy file="${env.TSK_HOME}/bindings/java/lib/SparseBitSet-1.1.jar" tofile="${ext.dir}/SparseBitSet-1.1.jar"/>
+        <copy file="${env.TSK_HOME}/case-uco/java/dist/sleuthkit-caseuco-${TSK_VERSION}.jar" tofile="${ext.dir}/sleuthkit-caseuco-${TSK_VERSION}.jar"/>
     </target>
 
     <target name="download-binlist">
-        <get src="https://raw.githubusercontent.com/binlist/data/master/ranges.csv" 
-             dest="src\org\sleuthkit\autopsy\datamodel" 
-             ignoreerrors="true"
-             verbose="true"/>
+        <get src="https://raw.githubusercontent.com/binlist/data/master/ranges.csv" dest="src\org\sleuthkit\autopsy\datamodel" ignoreerrors="true" verbose="true"/>
     </target>
 
     <target name="getTestDataFiles">
@@ -147,7 +76,7 @@
         <get src="https://drive.google.com/uc?id=1gyKzqJHtaBjFBqeB29N5vSpf1oH9N0bV" dest="${test-input}/EmbeddedIM_img1_v2.vhd" skipexisting="true"/>
         <get src="https://drive.google.com/uc?id=1gvvV797dKczkwpWII4hIryBXCc0w5zL-" dest="${test-input}/BitlockerDetection_img1_v1.vhd" skipexisting="true"/>
         <get src="https://drive.google.com/uc?id=1lYzd--9YUB7yDccM7NPOo8PC1xxuOiKs" dest="${test-input}/SqlCipherDetection_img1_v1.vhd" skipexisting="true"/>
-        <get src="https://drive.google.com/uc?id=1QRNKs824kksiJLZ4qcs59Nytw0fJKEjb" dest="${test-input}/IngestFilters_img1_v1.img" skipexisting="true"/>  
+        <get src="https://drive.google.com/uc?id=1QRNKs824kksiJLZ4qcs59Nytw0fJKEjb" dest="${test-input}/IngestFilters_img1_v1.img" skipexisting="true"/>
         <get src="https://drive.google.com/uc?id=1OMTB5gD4_VuaFkLWu2I33FN8VAHoRQbW" dest="${test-input}/IngestFilters_local1_v1.zip" skipexisting="true"/>
         <get src="https://drive.google.com/uc?id=1X2DzJOJ1SjUkAtZXJ3oQHXkjF0NX_jOz" dest="${test-input}/VeracryptDetection_img1_v1.vhd" skipexisting="true"/>
         <get src="https://drive.google.com/uc?id=19gRepVVvLsDHtBwIkX2VVjsBWIub7aIV" dest="${test-input}/CommonFiles_img1_v1.vhd" skipexisting="true"/>
@@ -166,33 +95,33 @@
         <get src="https://drive.google.com/uc?id=1ns2olaWsBu_c4EoE4Seh8t_B3U5RnLKd" dest="${test-input}/CommonFilesAttrs_img1_v1.vhd" skipexisting="true"/>
 
     </target>
-    
+
     <target name="get-deps" depends="init-ivy,getTSKJars,get-thirdparty-dependencies,get-InternalPythonModules, download-binlist">
         <mkdir dir="${ext.dir}"/>
-        <copy file="${thirdparty.dir}/LICENSE-2.0.txt" todir="${ext.dir}" />        
+        <copy file="${thirdparty.dir}/LICENSE-2.0.txt" todir="${ext.dir}" />
         <!-- fetch all the dependencies from Ivy and stick them in the right places -->
         <ivy:resolve log="quiet"/>
-	    
-        <!-- Make a report that lists out the dependencies that our JARs have -->	
+
+        <!-- Make a report that lists out the dependencies that our JARs have -->
         <ivy:report todir='${basedir}/build/ivy-reports' graph='true' xml='false'/>
         <ivy:retrieve conf="core" pattern="${ext.dir}/[artifact]-[revision](-[classifier]).[ext]" />
     </target>
 
     <target name="init" depends="get-deps,harness.init"/>
-  
 
-  
+
+
     <target name="clean" depends="projectized-common.clean">
         <!--Override clean to delete jars, etc downloaded with Ivy, 
         or copied in from thirdparty folder.  This way we don't end up with 
         out-of-date/unneeded stuff in the installer-->
         <delete dir="${basedir}/release/"/>
     </target>
-    
+
     <target name="compile" depends="projectized-common.compile">
         <antcall target="copy-bundle" />
     </target>
-    
+
     <target name="copy-bundle">
         <!-- the externalized strings in 'src' are in both the java files as annotations and in the Bundle.property files.
         The strings get merged during compilation.  This target copies that merged file into src so that it can be checked
@@ -208,37 +137,27 @@
     <!--sets up integration test system properties, calls underlying test-init, 
     get test data files if they have not been retrieved, and then sets up the pathing jar and unit test simplification -->
     <target name="test-init" depends="setup-integration-props,projectized-common.test-init,getTestDataFiles,qa-functional-pathing-jar,unit-test-path-simplification" />
-        
-    
+
+
     <target name="test-qa-functional">
         <!--We don't want integration testing to run from standard qa functional-->
         <property name="test.excludes" value="**/org/sleuthkit/autopsy/integrationtesting/TestRunner.class"/>
         <antcall target="projectized-common.test-qa-functional" />
-    </target>   
-    
-     
+    </target>
+
+
     <!--map from integration-test variables to test-qa-functional-sys-prop so they will be used as system properties-->
-    <target name="setup-integration-props" depends="init">   
-        <propertyselector 
-            property="integration-test-sys-props" 
-            match="^integration-test\.(.*)" 
-            select="\1" 
-            delimiter="," 
-            casesensitive="true" 
-            distinct="true"
-        />
+    <target name="setup-integration-props" depends="init">
+        <propertyselector property="integration-test-sys-props" match="^integration-test\.(.*)" select="\1" delimiter="," casesensitive="true" distinct="true" />
 
         <for list="${integration-test-sys-props}" param="integration-test-sys-prop">
             <sequential>
-                <property 
-                    name="test-qa-functional-sys-prop.integration-test.@{integration-test-sys-prop}" 
-                    value="${integration-test.@{integration-test-sys-prop}}" 
-                />
+                <property name="test-qa-functional-sys-prop.integration-test.@{integration-test-sys-prop}" value="${integration-test.@{integration-test-sys-prop}}" />
             </sequential>
         </for>
     </target>
 
-        
+
     <!--    
         The paths specified in 'module.run.classpath' are incorporated into the manifest of a jar and then the path to the 
         jar is used as part of the classpath for '-do-junit' instead of 'module.run.classpath'.  This was done to prevent 
@@ -256,12 +175,12 @@
                     <attribute name="Class-Path" value="${test.qa-functional.pathing-jar.module-cp.classpathstr}"/>
                 </manifest>
             </jar>
-             
+
             <!--grab properties from common.xml:test-init so that "test.qa-functional.run.cp" can be properly formed-->
             <property name="build.test.qa-functional.dir" location="${build.dir}/test/qa-functional"/>
             <property name="build.test.qa-functional.classes.dir" location="${build.test.qa-functional.dir}/classes"/>
             <property name="test.qa-functional.cp.extra" value=""/>
-                
+
             <!--set up "test.qa-functional.run.cp" to be used by common.xml:-do-junit-->
             <path id="test.qa-functional.run.cp">
                 <pathelement path="${build.test.qa-functional.classes.dir}"/>
@@ -282,16 +201,16 @@
     <target name="integration-test">
         <!--We want only integration testing to run from this-->
         <sequential>
-            <property name="test.includes" value="**/org/sleuthkit/autopsy/integrationtesting/TestRunner.class"/>   
+            <property name="test.includes" value="**/org/sleuthkit/autopsy/integrationtesting/TestRunner.class"/>
             <!-- This overrides the value in common.xml:test-init that sets each test lasting 10 minutes maximum.
             More information on the timeout can be found here: http://bits.netbeans.org/dev/javadoc/org-netbeans-modules-nbjunit/org/netbeans/junit/NbTestCase.html 
             under timeout() or in the harness README. Current value is 4 hours (4 * 60 * 60 * 1000) -->
-            <property name="test.timeout" value="14400000"/>     
+            <property name="test.timeout" value="14400000"/>
             <antcall target="projectized-common.test-qa-functional" />
         </sequential>
-    </target>    
-    
- 
+    </target>
+
+
     <!--  
     This specifies the classpath for unit tests using * notation 
     (i.e. https://stackoverflow.com/questions/219585/including-all-the-jars-in-a-directory-within-the-java-classpath).  
@@ -302,19 +221,18 @@
     More information in Jira: 6970.
     -->
     <target name="unit-test-path-simplification" depends="projectized-common.test-init">
-        <property name="unit-test-path-simplification.dir.path" value="${thirdparty.dir}/ClasspathSimplification/target"/>
+        <property name="unit-test-path-simplification.dir.path" value="${thirdparty.dir}/ClasspathSimplification/${thirdparty.ext-rel-path}"/>
         <property name="unit-test-path-simplification.jar.path" value="${unit-test-path-simplification.dir.path}/ClasspathSimplification-1.0-jar-with-dependencies.jar"/>
         <taskdef name="classpathsimplify" classname="org.sleuthkit.autopsy.classpathsimplification.ClasspathSimplification" classpath="${unit-test-path-simplification.jar.path}"/>
-        
-        
+
         <sequential>
             <classpathsimplify classpath="${module.run.classpath}" outputprop="test.unit.abbreviatedModuleRunClassPath" />
-            
+
             <!--grab properties from common.xml:test-init so that "test.unit.run.cp" can be properly formed-->
             <property name="build.test.unit.dir" location="${build.dir}/test/unit"/>
             <property name="build.test.unit.classes.dir" location="${build.test.unit.dir}/classes"/>
             <property name="test.unit.cp.extra" value=""/>
-                
+
             <!--set up "test.unit.run.cp" to be used by common.xml:-do-junit-->
             <path id="test.unit.run.cp">
                 <pathelement path="${build.test.unit.classes.dir}"/>
@@ -330,5 +248,5 @@
                 <pathelement path="${test.extra.nb.javac.deps}"/>
             </path>
         </sequential>
-    </target>     
+    </target>
 </project>

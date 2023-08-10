@@ -40,14 +40,12 @@
      
     <import file="build-${os.family}.xml"/> 
     
-    <!-- Third party tools dependencies -->
-    <!-- import ant-contrib tools -->
-    <property name="thirdparty.dir" value="${basedir}/thirdparty" />
     
+    <!-- TODO I don't think this should be needed
     <target name="getJunit">
         <property name="junit.dir" value="${thirdparty.dir}/junit/${netbeans-plat-version}" />
         <unzip src="${junit.dir}/junit.zip" dest="${nbplatform.active.dir}"/>
-    </target>
+    </target> -->
 
 
     <!-- Verify that the TSK_HOME env variable is set -->
