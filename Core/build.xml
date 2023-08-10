@@ -9,7 +9,7 @@
     <import file="../BootstrapIvy.xml"/>
     <import file="../TSKVersion.xml"/>
     <import file="${basedir}/../build-include-ant-contrib.xml"/>
-    <import file="${basedir}/build-thirdparty.xml"/>
+    <import file="${basedir}/../build-thirdparty.xml"/>
 
     <property name="modules.dir" value="${basedir}/release/modules/" />
     <property name="ext.dir" value="${modules.dir}/ext" />

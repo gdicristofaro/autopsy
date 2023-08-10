@@ -216,7 +216,7 @@
     </target>
     
     
-    <target name="-init" depends="-taskdefs,-convert-old-project,getProps,getJunit,copyLibsToBaseDir">
+    <target name="-init" depends="-taskdefs,-convert-old-project,getProps,copyLibsToBaseDir">
         <convertclusterpath from="${cluster.path.evaluated}" to="cluster.path.final" id="cluster.path.id"/>
         <sortsuitemodules unsortedmodules="${modules}" sortedmodulesproperty="modules.sorted"/>
         <property name="cluster" location="build/cluster"/>
