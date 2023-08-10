@@ -282,7 +282,7 @@ def main():
     repo_path = args.repo_path if args.repo_path else script_path
     output_path = args.output_path if args.output_path else os.path.join(script_path, "apidiff_output")
     jdiff_path = args.jdiff_path if args.jdiff_path else os.path.join(script_path,
-                                                                      "thirdparty/jdiff/v-custom/jdiff.jar")
+                                                                      "thirdparty/jdiff/dist/ext/jdiff.jar")
     run_compare(output_path=output_path,
                 jdiff_path=jdiff_path,
                 repo_path=repo_path,

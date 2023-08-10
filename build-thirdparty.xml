@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="Autopsy 4 Third Party Build Utilities" basedir=".">
+    <description>Utilities for building third party structured folders</description>
+
+    <import file="${basedir}/build-include-ant-contrib.xml"/>
+    <property name="thirdparty.dir" value="${basedir}/thirdparty" />
+
+    <!-- get path -->
+
+    <!-- copy resources to loc -->
+
+    <target name="copy-thirdparty-folders">
+        <fail message="The variable 'thirdparty-folders' must be defined." unless="thirdparty-folders"/>
+
+        <for list="${thirdparty-folders}" param="thirdparty-folder" delimiter=",">
+            <sequential>
+                <antcall target="copy-thirdparty-folder" inheritAll="true" />
+            </sequential>
+        </for>
+    </target>
+
+
+    <target name="copy-thirdparty-folder" depends="build-thirdparty-folder">
+        <fail message="The variable 'thirdparty-folder' must be defined." unless="thirdparty-folder"/>
+        <property name="build-thirdparty" value="true" />
+
+    </target>
+
+    <target name="build-thirdparty-folder">
+        <fail message="The variable 'thirdparty-folder' must be defined." unless="thirdparty-folder"/>
+        <if>
+            <and>
+                <equals arg1="${build-thirdparty}" arg2="true" />
+                <available file="${thirdparty.dir}/${thidparty-folder}/build.xml" />
+            </and>
+            <then>
+                <subant antfile="${thirdparty.dir}/${thidparty-folder}/build.xml" target="build" />
+            </then>
+        </if>
+    </target>
+</project>

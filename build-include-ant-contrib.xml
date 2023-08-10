@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="Ant Contrib Include" basedir=".">
+    <description>Loads Ant Contrib</description>
+
+    <!-- Third party tools dependencies -->
+    <!-- import ant-contrib tools -->
+    <property name="thirdparty.dir" value="${basedir}/thirdparty" />
+    <property name="ant-contrib.dir" value="${thirdparty.dir}/ant-contrib/dist/ext" />
+    <property name="ant.contrib.jar" value="${ant-contrib.dir}/ant-contrib.jar" />
+    <taskdef resource="net/sf/antcontrib/antlib.xml">
+        <classpath>
+            <pathelement location="${ant.contrib.jar}"/>
+        </classpath>
+    </taskdef>
+
+</project>

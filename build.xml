@@ -5,6 +5,8 @@
 <project name="Autopsy 4" default="build" basedir=".">
     <description>Builds the module suite Autopsy 4.</description>
 
+    <import file="${basedir}/build-include-ant-contrib.xml"/>
+    <import file="${basedir}/build-thirdparty.xml"/>
     <import file="nbproject/build-impl.xml"/>
     <import file="${basedir}/TSKVersion.xml"/>
     <!-- IMPORTANT: nbproject/platform.properties has a netbeans-plat-version property that MUST be kept in sync (manually) -->
@@ -41,13 +43,6 @@
     <!-- Third party tools dependencies -->
     <!-- import ant-contrib tools -->
     <property name="thirdparty.dir" value="${basedir}/thirdparty" />
-    <property name="ant-contrib.dir" value="${thirdparty.dir}/ant-contrib/1.0b3" />
-    <property name="ant.contrib.jar" value="${ant-contrib.dir}/ant-contrib.jar" />
-    <taskdef resource="net/sf/antcontrib/antlib.xml">
-        <classpath>
-            <pathelement location="${ant.contrib.jar}"/>
-        </classpath>
-    </taskdef>
     
     <target name="getJunit">
         <property name="junit.dir" value="${thirdparty.dir}/junit/${netbeans-plat-version}" />

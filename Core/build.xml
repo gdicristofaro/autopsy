@@ -7,19 +7,11 @@
     <import file="nbproject/build-impl.xml"/>
     <import file="../BootstrapIvy.xml"/>
     <import file="../TSKVersion.xml"/>
-     
+    <import file="${basedir}/../build-include-ant-contrib.xml"/> 
+    <import file="${basedir}/build-thirdparty.xml"/>
      
     <property name="thirdparty.dir" value="${basedir}/../thirdparty" />
     
-    <!-- import ant-contrib tools -->
-    <property name="ant-contrib.dir" value="${thirdparty.dir}/ant-contrib/1.0b3" />
-    <property name="ant.contrib.jar" value="${ant-contrib.dir}/ant-contrib.jar" />
-    <taskdef resource="net/sf/antcontrib/antlib.xml">
-        <classpath>
-            <pathelement location="${ant.contrib.jar}"/>
-        </classpath>
-    </taskdef>
-
     <property name="modules.dir" value="${basedir}/release/modules/" />
     <property name="ext.dir" value="${modules.dir}/ext" />
     <property name="test-input" location="test/qa-functional/data"/>

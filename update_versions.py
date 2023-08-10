@@ -190,8 +190,8 @@ class Spec:
 def compare_xml(module, apiname_tag, apiname_cur):
     global docdir
     make_dir(docdir)
-    null_file = fix_path(os.path.abspath("./thirdparty/jdiff/v-custom/lib/Null.java"))
-    jdiff = fix_path(os.path.abspath("./thirdparty/jdiff/v-custom/jdiff.jar"))
+    null_file = fix_path(os.path.abspath("./thirdparty/jdiff/dist/ext/lib/Null.java"))
+    jdiff = fix_path(os.path.abspath("./thirdparty/jdiff/dist/ext/jdiff.jar"))
     oldapi = fix_path("build/jdiff-xml/" + apiname_tag + "-" + module.name)
     newapi = fix_path("build/jdiff-xml/" + apiname_cur + "-" + module.name)
     docs = fix_path(docdir + "/" + module.name)
@@ -256,7 +256,7 @@ def gen_xml(path, modules, name):
             src = os.path.join(path, module.name, "src")
         # xerces = os.path.abspath("./lib/xerces.jar")
         xml_out = fix_path(os.path.abspath("./build/jdiff-xml/" + name + "-" + module.name))
-        jdiff = fix_path(os.path.abspath("./thirdparty/jdiff/v-custom/jdiff.jar"))
+        jdiff = fix_path(os.path.abspath("./thirdparty/jdiff/dist/ext/jdiff.jar"))
         make_dir("build/jdiff-xml")
         make_dir("jdiff-logs")
         log = open("jdiff-logs/GEN_XML-" + name + "-" + module.name + ".log", "w")
@@ -876,7 +876,7 @@ def main():
     printinfo()
 
     # Check if javadoc and jdiff are present.
-    jdiff = fix_path(os.path.abspath("./thirdparty/jdiff/v-custom/jdiff.jar"))
+    jdiff = fix_path(os.path.abspath("./thirdparty/jdiff/dist/ext/jdiff.jar"))
     if(not os.path.isfile(jdiff)):
         printt("jdiff not found. Exiting...")
         return 1
