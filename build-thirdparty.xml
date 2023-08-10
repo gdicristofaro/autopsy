@@ -25,6 +25,7 @@
         <fail message="The variable 'thirdparty-folder' must be defined." unless="thirdparty-folder"/>
         <property name="build-thirdparty" value="true" />
 
+        <!-- TODO -->
     </target>
 
     <target name="build-thirdparty-folder">
