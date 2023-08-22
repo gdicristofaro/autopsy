@@ -6,16 +6,20 @@
     <description>Builds, tests, and runs the project org.sleuthkit.autopsy.scalpel.</description>
     <import file="nbproject/build-impl.xml"/>
     
-    <property name="thirdparty.dir" value="${basedir}/../thirdparty" />
-    <property name="lib.dir" value="release/modules/lib" />
+    <property name="project.basedir" value="${basedir}/../" />
+    <import file="${project.basedir}/thirdparty/build-thirdparty.xml"/>
+
+    <property name="modules.dir" value="${basedir}/release/modules/" />
+    <property name="ext.dir" value="${modules.dir}/ext" />
+    <property name="lib.dir" value="${modules.dir}/lib" />
     
      <target name="get-native-libs" description="get native library dependencies"> 
-        <mkdir dir="${lib.dir}"/>
-        <unzip src="${thirdparty.dir}/libscalpel_jni/current/libscalpel_jni.zip" dest="${lib.dir}" >
-           <!-- get all, rely on jna to locate <patternset>
-                <include name="**/*.dll"/>
-            </patternset> -->
-        </unzip>
+        <antcall target="copy-thirdparty-folders" inheritAll="true">
+            <param name="thirdparty.folders" value="libscalpel_jni" />
+            <param name="thirdparty.target-dir" value="${basedir}/release"/>
+            <param name="thirdparty.target-ext-dir" value="${ext.dir}"/>
+            <param name="thirdparty.target-lib-dir" value="${lib.dir}"/>
+        </antcall>
     </target>
     
     

@@ -43,7 +43,7 @@
     <import file="build-${os.family}.xml"/> 
     
     
-    <!-- TODO I don't think this should be needed
+    <!-- TODO GVD I don't think this should be needed
     <target name="getJunit">
         <property name="junit.dir" value="${thirdparty.dir}/junit/${netbeans-plat-version}" />
         <unzip src="${junit.dir}/junit.zip" dest="${nbplatform.active.dir}"/>

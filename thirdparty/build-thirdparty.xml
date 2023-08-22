@@ -14,7 +14,9 @@
 
         <for list="${thirdparty.folders}" param="thirdparty.folder" delimiter=",">
             <sequential>
-                <antcall target="copy-thirdparty-folder" inheritAll="true" />
+                <antcall target="copy-thirdparty-folder" inheritAll="true">
+                    <param name="thirdparty.folder" value="@{thirdparty.folder}" />
+                </antcall>
             </sequential>
         </for>
     </target>

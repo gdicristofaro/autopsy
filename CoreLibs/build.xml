@@ -7,34 +7,25 @@
     <import file="nbproject/build-impl.xml"/>
     <import file="../BootstrapIvy.xml"/>
     
-    <condition property="os.family" value="unix">  
-        <os family="unix"/>  
-    </condition> 
-    <condition property="os.family" value="mac">  
-        <os family="mac"/>  
-    </condition> 
-    <condition property="os.family" value="windows">  
-        <os family="windows"/>  
-    </condition>  
-    <import file="build-${os.family}.xml"/> 
-
-    <property name="thirdparty.dir" value="${basedir}/../thirdparty" />
-    <property name="lib.dir" value="${basedir}/release/modules/lib" />
+    
+    <!-- will assume root if ran from root build.xml or take this rel path -->
+    <property name="project.basedir" value="${basedir}/../" />
+    <import file="${project.basedir}/thirdparty/build-thirdparty.xml"/>
+    
     <property name="modules.dir" value="${basedir}/release/modules/" />
+    <property name="ext.dir" value="${modules.dir}/ext" />
+    <property name="lib.dir" value="${modules.dir}/lib" />
      
     <target name="get-thirdparty-dependencies" description="get third-party dependencies"> 
-        <!--Copy openCV dependencies to release-->
-        <copy todir="${modules.dir}" >
-            <fileset dir="${thirdparty.dir}/opencv" />
-        </copy>
-
-        <!--Copy libheif dependencies to release-->
-        <copy todir="${modules.dir}" >
-            <fileset dir="${thirdparty.dir}/libheif/Release" />
-        </copy>
+        <antcall target="copy-thirdparty-folders" inheritAll="true">
+            <param name="thirdparty.folders" value="opencv,libheif" />
+            <param name="thirdparty.target-dir" value="${basedir}/release"/>
+            <param name="thirdparty.target-ext-dir" value="${ext.dir}"/>
+            <param name="thirdparty.target-lib-dir" value="${lib.dir}"/>
+        </antcall>
     </target>
     
-    <target name="get-deps" description="retrieve dependencies using ivy" depends="init-ivy,build-native-libs,get-thirdparty-dependencies">
+    <target name="get-deps" description="retrieve dependencies using ivy" depends="init-ivy,get-thirdparty-dependencies">
         <ivy:settings file="ivysettings.xml" />
         <ivy:resolve log="quiet"/>
         

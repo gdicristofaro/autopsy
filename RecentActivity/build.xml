@@ -7,24 +7,21 @@
     <import file="nbproject/build-impl.xml"/>
     <import file="../BootstrapIvy.xml"/>
     
-    <property name="thirdparty.dir" value="${basedir}/../thirdparty"/>
-    
+    <!-- will assume root if ran from root build.xml or take this rel path -->
+    <property name="project.basedir" value="${basedir}/../" />
+    <import file="${project.basedir}/thirdparty/build-thirdparty.xml"/>
+            
+    <property name="modules.dir" value="${basedir}/release/modules/" />
+    <property name="ext.dir" value="${modules.dir}/ext" />
+    <property name="lib.dir" value="${modules.dir}/lib" />
+
     <target name="get-thirdparty-tools" >
-        <copy todir="${basedir}/release/pasco2">
-            <fileset dir="${thirdparty.dir}/pasco2/lib/" />
-        </copy>
-        <copy todir="${basedir}/release/rr">
-            <fileset dir="${thirdparty.dir}/rr/" />
-        </copy>
-        <copy todir="${basedir}/release/rr-full" >
-            <fileset dir="${thirdparty.dir}/rr-full/" />
-        </copy>
-        <copy todir="${basedir}/release/ESEDatabaseView" >
-            <fileset dir="${thirdparty.dir}/ESEDatabaseView/" />
-        </copy>
-        <copy todir="${basedir}/release/markmckinnon/" >
-            <fileset dir="${thirdparty.dir}/markmckinnon/" />
-        </copy>
+        <antcall target="copy-thirdparty-folders" inheritAll="true">
+            <param name="thirdparty.folders" value="pasco2,rr,rr-full,ESEDatabaseView,markmckinnon" />
+            <param name="thirdparty.target-dir" value="${basedir}/release"/>
+            <param name="thirdparty.target-ext-dir" value="${ext.dir}"/>
+            <param name="thirdparty.target-lib-dir" value="${lib.dir}"/>
+        </antcall>
     </target>
     
     

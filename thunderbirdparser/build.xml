@@ -7,8 +7,12 @@
     <import file="nbproject/build-impl.xml"/>
         <import file="../BootstrapIvy.xml"/>
    
-    <property name="thirdparty.dir" value="${basedir}/../thirdparty" />
-    <property name="ext.dir" value="release/modules/ext" />
+    <property name="project.basedir" value="${basedir}/../" />
+    <import file="${project.basedir}/thirdparty/build-thirdparty.xml"/>
+
+    <property name="modules.dir" value="${basedir}/release/modules/" />
+    <property name="ext.dir" value="${modules.dir}/ext" />
+    <property name="lib.dir" value="${modules.dir}/lib" />
     
     <target name="clean" depends="projectized-common.clean">
         <!--Override clean to delete jars, etc downloaded with Ivy, 
@@ -18,8 +22,12 @@
     </target>
     
     <target name="get-thirdparty-jars" description="get third-party jar dependencies"> 
-        <mkdir dir="${ext.dir}"/>
-        <copy file="${thirdparty.dir}/java-libpst/java-libpst-0.9.5-SNAPSHOT.jar" todir="${ext.dir}" />
+        <antcall target="copy-thirdparty-folders" inheritAll="true">
+            <param name="thirdparty.folders" value="java-libpst" />
+            <param name="thirdparty.target-dir" value="${basedir}/release"/>
+            <param name="thirdparty.target-ext-dir" value="${ext.dir}"/>
+            <param name="thirdparty.target-lib-dir" value="${lib.dir}"/>
+        </antcall>
     </target>
 
     <target name="get-deps" depends="init-ivy, get-thirdparty-jars">
