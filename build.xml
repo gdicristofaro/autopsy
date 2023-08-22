@@ -5,8 +5,10 @@
 <project name="Autopsy 4" default="build" basedir=".">
     <description>Builds the module suite Autopsy 4.</description>
 
-    <import file="${basedir}/build-include-ant-contrib.xml"/>
-    <import file="${basedir}/build-thirdparty.xml"/>
+    <property name="project.basedir" value="${basedir}" />
+    <import file="${project.basedir}/thirdparty/build-thirdparty.xml"/>
+    <import file="${project.basedir}/build-include-ant-contrib.xml"/>
+    
     <import file="nbproject/build-impl.xml"/>
     <import file="${basedir}/TSKVersion.xml"/>
     <!-- IMPORTANT: nbproject/platform.properties has a netbeans-plat-version property that MUST be kept in sync (manually) -->

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <project name="Autopsy 4 Third Party Build Utilities" basedir=".">
-    <description>Utilities for building third party structured folders</description>
+    <description>Utilities for building third party structured folders.  Requires project.basedir to be set</description>
 
-    <import file="${basedir}/build-include-ant-contrib.xml"/>
+    <import file="${project.basedir}/build-include-ant-contrib.xml"/>
 
-    <property name="thirdparty.dir" value="${basedir}/thirdparty" />
+    <property name="thirdparty.dir" value="${project.basedir}/thirdparty" />
     <property name="thirdparty.ext-rel-path" value="dist/ext" />
 
     <!-- copy resources to loc -->
