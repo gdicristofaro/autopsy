@@ -36,6 +36,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -54,6 +56,10 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.NTCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -89,6 +95,15 @@ class CTCloudHttpClient {
     private static final Logger LOGGER = Logger.getLogger(CTCloudHttpClient.class.getName());
     private static final String HOST_URL = Version.getBuildType() == Version.Type.RELEASE ? Constants.CT_CLOUD_SERVER : Constants.CT_CLOUD_DEV_SERVER;
     private static final String NB_PROXY_SELECTOR_NAME = "org.netbeans.core.NbProxySelector";
+
+    private static final List<String> DEFAULT_SCHEME_PRIORITY = new ArrayList<>(Arrays.asList(
+            AuthSchemes.SPNEGO,
+            AuthSchemes.KERBEROS,
+            AuthSchemes.NTLM,
+            AuthSchemes.CREDSSP,
+            AuthSchemes.DIGEST,
+            AuthSchemes.BASIC
+    ));
 
     private static final int CONNECTION_TIMEOUT_MS = 58 * 1000; // milli sec
 
@@ -191,7 +206,7 @@ class CTCloudHttpClient {
         if (fileUploadRequest == null) {
             throw new CTCloudException(ErrorCode.BAD_REQUEST, new IllegalArgumentException("fileUploadRequest cannot be null"));
         }
-                
+
         String fullUrlPath = fileUploadRequest.getFullUrlPath();
         String fileName = fileUploadRequest.getFileName();
         InputStream fileInputStream = fileUploadRequest.getFileInputStream();
@@ -200,7 +215,7 @@ class CTCloudHttpClient {
         if (StringUtils.isBlank(fullUrlPath) || fileInputStream == null || contentLength == null || contentLength <= 0) {
             throw new CTCloudException(ErrorCode.BAD_REQUEST, new IllegalArgumentException("fullUrlPath, fileInputStream, contentLength must not be empty, null or less than 0"));
         }
-        
+
         URI putUri;
         try {
             putUri = new URI(fullUrlPath);
@@ -386,6 +401,20 @@ class CTCloudHttpClient {
     private static CloseableHttpClient createConnection(ProxySelector proxySelector, SSLContext sslContext) throws SSLInitializationException {
         HttpClientBuilder builder;
 
+        
+                        if (Objects.isNull(proxyCredsProvider) && WinHttpClients.isWinAuthAvailable()) {
+                    builder = WinHttpClients.custom();
+                    builder.useSystemProperties();
+                    LOGGER.debug("Using Win HTTP Client");
+                } else {
+                    builder = HttpClients.custom();
+                    builder.setDefaultRequestConfig(config);
+                    if (Objects.nonNull(proxyCredsProvider)) { // make sure non null proxycreds before setting it 
+                        builder.setDefaultCredentialsProvider(proxyCredsProvider);
+                    }
+                    LOGGER.debug("Using default http client");
+                }
+                        
         if (ProxySettings.getProxyType() != ProxySettings.DIRECT_CONNECTION
                 && StringUtils.isBlank(ProxySettings.getAuthenticationUsername())
                 && ArrayUtils.isEmpty(ProxySettings.getAuthenticationPassword())
@@ -408,9 +437,55 @@ class CTCloudHttpClient {
             builder.setRoutePlanner(new SystemDefaultRoutePlanner(proxySelector));
         }
 
+        if (ProxySettings.useAuthentication()) {
+            RequestConfig config = RequestConfig.custom().setProxyPreferredAuthSchemes(DEFAULT_SCHEME_PRIORITY).build();
+            
+        }
+        
         return builder.build();
     }
 
+    
+    /**
+     * Returns a CredentialsProvider for proxy, if one is configured.
+     * 
+     * @return CredentialsProvider, if a proxy is configured with credentials, null otherwise
+     */
+    private static CredentialsProvider getProxyCredentialsProvider() {
+        
+        CredentialsProvider proxyCredsProvider = null;
+
+
+                String proxyUserId = ProxySettings.getAuthenticationUsername();
+
+
+                 if (ProxySettings.getProxyType() != ProxySettings.DIRECT_CONNECTION
+                         && StringUtils.isNotBlank(proxyUserId)) {
+                     
+                        char[] proxyPassword = ProxySettings.getAuthenticationPassword();
+                        if (null != proxyPassword && proxyPassword.length > 0) { // Password will be blank for KERBEROS / NEGOTIATE schemes.
+
+                            proxyCredsProvider = new SystemDefaultCredentialsProvider();
+
+                            String domain = null;
+                            if (proxyUserId.contains("\\")) {
+                                domain = proxyUserId.split("\\\\")[0];
+                                proxyUserId = proxyUserId.split("\\\\")[1];
+                            }
+//                            String workStation = rc.getHostName();
+
+                            String proxyHostname = ProxySettings.get
+
+                            proxyCredsProvider.setCredentials(new AuthScope(proxyHostname, proxyPort),
+                                    new NTCredentials(proxyUserId, new String(proxyPassword), workStation, domain));
+                        }
+                    }
+        
+        
+        return proxyCredsProvider;
+    }
+    
+    
     private static class LoggingProxySelector extends ProxySelector {
 
         private final ProxySelector delegate;
