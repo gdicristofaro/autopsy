@@ -7,7 +7,14 @@
 
     <property name="thirdparty.dir" value="${project.basedir}/thirdparty" />
     <property name="thirdparty.ext-rel-path" value="dist/ext" />
+    
+    <mapper id="thirdparty.lib-mapper">
+        <globmapper from="*_amd64/**" to="amd64/**" casesensitive="no" />
+        <globmapper from="*_x86_64/**" to="x86_64/**" casesensitive="no" />
+    </mapper>
 
+    <mapper id="thirdparty.bin-mapper" type="identity"/>
+    
     <!-- copy resources to loc -->
     <target name="copy-thirdparty-folders">
         <fail message="The variable 'thirdparty.folders' must be defined." unless="thirdparty.folders"/>
@@ -32,12 +39,14 @@
         
         <!-- copy bin dir if exists -->
         <antcall target="-copy-thirdparty-os-dependent" inheritAll="true">
+            <param name="thirdparty.os-dependent-mapper" refid="thirdparty.bin-mapper" />
             <param name="thirdparty.os-dependent-target-dir" value="${thirdparty.target-dir}/${thirdparty.folder}" />
             <param name="thirdparty.os-dependent-src-dir" value="${thirdparty.dir}/${thirdparty.folder}/dist/bin" />
         </antcall>
 
         <!-- copy lib dir if exists -->
         <antcall target="-copy-thirdparty-os-dependent" inheritAll="true">
+            <param name="thirdparty.os-dependent-mapper" refid="thirdparty.lib-mapper" />
             <param name="thirdparty.os-dependent-target-dir" value="${thirdparty.target-lib-dir}" />
             <param name="thirdparty.os-dependent-src-dir" value="${thirdparty.dir}/${thirdparty.folder}/dist/lib" />
         </antcall>
@@ -65,7 +74,7 @@
 
     <target name="-copy-thirdparty-os-dependent">
         <if>
-            <available file="${thidparty.os-dependent-src-dir}" type="dir"/>
+            <available file="${thirdparty.os-dependent-src-dir}" type="dir"/>
             <then>
                 <if>
                     <and>
@@ -73,6 +82,8 @@
                         <isset property="thirdparty.target-processor-architectures"/>
                     </and>
                     <then>
+                        <!--filter to precise directories-->
+                        <var name="thirdparty.os-dependent.included-directories" value=""/>          
                         <for list="${thirdparty.target-os-versions}" param="thirdparty.os-version" delimiter=",">
                             <sequential>
                                 <for list="${thirdparty.target-processor-architectures}" param="thirdparty.processor-architecture" delimiter=",">
@@ -80,19 +91,26 @@
                                         <if>
                                             <available file="${thirdparty.os-dependent-target-dir}/${thirdparty.os-version}_${thirdparty.processor-architecture}" type="dir"/>
                                             <then>
-                                                <copy todir="${thirdparty.os-dependent-target-dir}/${thirdparty.os-version}_${thirdparty.processor-architecture}">
-                                                    <fileset dir="${thidparty.os-dependent-src-dir}/${thirdparty.os-version}_${thirdparty.processor-architecture}"/>
-                                                </copy>
+                                                <var name="thirdparty.os-dependent.included-directories" value="${thirdparty.os-dependent.included-directories}${thirdparty.os-version}_${thirdparty.processor-architecture}/,"/>
                                             </then>
                                         </if>
                                     </sequential>
                                 </for>
                             </sequential>
                         </for>
+                        
+                        <!--copy to location but filtered on relevant directories-->
+                        <copy todir="${thirdparty.os-dependent-target-dir}/${thirdparty.os-version}_${thirdparty.processor-architecture}">
+                            <fileset dir="${thirdparty.os-dependent-src-dir}" includes="${thirdparty.os-dependent.included-directories}"/>
+                            <mapper refid="thirdparty.os-dependent-mapper"/>
+                        </copy>
+
                     </then>
                     <else>
+                        <!--copy any to location-->
                         <copy todir="${thirdparty.os-dependent-target-dir}">
-                            <fileset dir="${thidparty.os-dependent-src-dir}"/>
+                            <fileset dir="${thirdparty.os-dependent-src-dir}"/>
+                            <mapper refid="thirdparty.os-dependent-mapper"/>
                         </copy>
                     </else>
                 </if>
