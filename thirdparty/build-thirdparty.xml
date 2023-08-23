@@ -31,31 +31,31 @@
         <!-- copy bin dir if exists -->
         <antcall target="-copy-thirdparty-os-dependent" inheritAll="true">
             <param name="thirdparty.os-dependent-target-dir" value="${thirdparty.target-dir}/${thirdparty.folder}" />
-            <param name="thirdparty.os-dependent-src-dir" value="${thirdparty.dir}/${thirdparty-folder}/dist/bin" />
+            <param name="thirdparty.os-dependent-src-dir" value="${thirdparty.dir}/${thirdparty.folder}/dist/bin" />
         </antcall>
 
         <!-- copy lib dir if exists -->
         <antcall target="-copy-thirdparty-os-dependent" inheritAll="true">
             <param name="thirdparty.os-dependent-target-dir" value="${thirdparty.target-lib-dir}" />
-            <param name="thirdparty.os-dependent-src-dir" value="${thirdparty.dir}/${thirdparty-folder}/dist/lib" />
+            <param name="thirdparty.os-dependent-src-dir" value="${thirdparty.dir}/${thirdparty.folder}/dist/lib" />
         </antcall>
 
         <!-- copy resources dir if exists -->
         <if>
-            <available file="${thirdparty.dir}/${thirdparty-folder}/dist/resources}" type="dir"/>
+            <available file="${thirdparty.dir}/${thirdparty.folder}/dist/resources}" type="dir"/>
             <then>
-                <copy todir="${thirdparty.target-dir}/${thirdparty-folder}">
-                    <fileset dir="${thirdparty.dir}/${thirdparty-folder}/dist/resources/**"/>
+                <copy todir="${thirdparty.target-dir}/${thirdparty.folder}">
+                    <fileset dir="${thirdparty.dir}/${thirdparty.folder}/dist/resources"/>
                 </copy>
             </then>
         </if>
 
         <!-- copy ext dir if exists -->
         <if>
-            <available file="${thirdparty.dir}/${thirdparty-folder}/${thirdparty.ext-rel-path}" type="dir"/>
+            <available file="${thirdparty.dir}/${thirdparty.folder}/${thirdparty.ext-rel-path}" type="dir"/>
             <then>
                 <copy todir="${thirdparty.target-ext-dir}">
-                    <fileset dir="${thirdparty.dir}/${thirdparty-folder}/${thirdparty.ext-rel-path}/**"/>
+                    <fileset dir="${thirdparty.dir}/${thirdparty.folder}/${thirdparty.ext-rel-path}"/>
                 </copy>
             </then>
         </if>
@@ -79,7 +79,7 @@
                                             <available file="${thirdparty.os-dependent-target-dir}/${thirdparty.os-version}_${thirdparty.processor-architecture}" type="dir"/>
                                             <then>
                                                 <copy todir="${thirdparty.os-dependent-target-dir}/${thirdparty.os-version}_${thirdparty.processor-architecture}">
-                                                    <fileset dir="${thidparty.os-dependent-src-dir}/${thirdparty.os-version}_${thirdparty.processor-architecture}/**"/>
+                                                    <fileset dir="${thidparty.os-dependent-src-dir}/${thirdparty.os-version}_${thirdparty.processor-architecture}"/>
                                                 </copy>
                                             </then>
                                         </if>
@@ -90,7 +90,7 @@
                     </then>
                     <else>
                         <copy todir="${thirdparty.os-dependent-target-dir}">
-                            <fileset dir="${thidparty.os-dependent-src-dir}/**"/>
+                            <fileset dir="${thidparty.os-dependent-src-dir}"/>
                         </copy>
                     </else>
                 </if>

@@ -19,7 +19,7 @@
     <target name="get-thirdparty-dependencies" description="get third-party dependencies"> 
         <antcall target="copy-thirdparty-folders" inheritAll="true">
             <param name="thirdparty.folders" value="opencv,libheif" />
-            <param name="thirdparty.target-dir" value="${basedir}/release"/>
+            <param name="thirdparty.target-dir" value="${project.basedir}/release"/>
             <param name="thirdparty.target-ext-dir" value="${ext.dir}"/>
             <param name="thirdparty.target-lib-dir" value="${lib.dir}"/>
         </antcall>

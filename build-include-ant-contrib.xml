@@ -5,7 +5,7 @@
 
     <!-- Third party tools dependencies -->
     <!-- import ant-contrib tools -->
-    <property name="thirdparty.dir" value="${basedir}/thirdparty" />
+    <property name="thirdparty.dir" value="${project.basedir}/thirdparty" />
     <property name="ant-contrib.dir" value="${thirdparty.dir}/ant-contrib/dist/ext" />
     <property name="ant.contrib.jar" value="${ant-contrib.dir}/ant-contrib.jar" />
     <taskdef resource="net/sf/antcontrib/antlib.xml">
