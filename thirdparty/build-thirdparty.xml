@@ -28,6 +28,8 @@
         <fail message="The variable 'thirdparty.target-ext-dir' must be defined." unless="thirdparty.target-ext-dir"/>
         <fail message="The variable 'thirdparty.target-lib-dir' must be defined." unless="thirdparty.target-lib-dir"/>
 
+        <echo level="info">Building third party directory: ${thirdparty.dir}/${thirdparty.folder}</echo>
+        
         <!-- copy bin dir if exists -->
         <antcall target="-copy-thirdparty-os-dependent" inheritAll="true">
             <param name="thirdparty.os-dependent-target-dir" value="${thirdparty.target-dir}/${thirdparty.folder}" />
