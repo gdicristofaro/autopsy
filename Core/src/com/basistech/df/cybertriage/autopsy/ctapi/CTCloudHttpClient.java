@@ -24,11 +24,13 @@ import com.basistech.df.cybertriage.autopsy.ctapi.util.ObjectMapperUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
 import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -43,6 +45,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.stream.Stream;
 import javax.net.ssl.KeyManager;
@@ -52,7 +55,6 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
@@ -74,6 +76,7 @@ import org.apache.http.entity.StringEntity;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.SystemDefaultCredentialsProvider;
 import org.apache.http.impl.client.WinHttpClients;
 import org.apache.http.impl.conn.SystemDefaultRoutePlanner;
 import org.apache.http.ssl.SSLInitializationException;
@@ -108,6 +111,7 @@ class CTCloudHttpClient {
     private static final int CONNECTION_TIMEOUT_MS = 58 * 1000; // milli sec
 
     private static final CTCloudHttpClient instance = new CTCloudHttpClient();
+    private static String workStation = null;
 
     public static CTCloudHttpClient getInstance() {
         return instance;
@@ -391,6 +395,18 @@ class CTCloudHttpClient {
         }
     }
 
+    private static int getProxyPort() {
+        String proxyPortStr = ProxySettings.getHttpPort();
+        if (!StringUtils.isBlank(proxyPortStr)) {
+            try {
+                return Integer.parseInt(proxyPortStr);
+            } catch (NumberFormatException ex) {
+                LOGGER.log(Level.WARNING, "Unable to parse port number: " + proxyPortStr, ex);
+            }
+        }
+        return 0;
+    }
+
     /**
      * Creates a connection to CT Cloud with the given arguments.
      *
@@ -399,34 +415,35 @@ class CTCloudHttpClient {
      * @return The connection to CT Cloud.
      */
     private static CloseableHttpClient createConnection(ProxySelector proxySelector, SSLContext sslContext) throws SSLInitializationException {
+
         HttpClientBuilder builder;
+        if (ProxySettings.getProxyType() != ProxySettings.DIRECT_CONNECTION) {
 
-        
-                        if (Objects.isNull(proxyCredsProvider) && WinHttpClients.isWinAuthAvailable()) {
-                    builder = WinHttpClients.custom();
-                    builder.useSystemProperties();
-                    LOGGER.debug("Using Win HTTP Client");
-                } else {
-                    builder = HttpClients.custom();
-                    builder.setDefaultRequestConfig(config);
-                    if (Objects.nonNull(proxyCredsProvider)) { // make sure non null proxycreds before setting it 
-                        builder.setDefaultCredentialsProvider(proxyCredsProvider);
-                    }
-                    LOGGER.debug("Using default http client");
+            CredentialsProvider proxyCredsProvider = null;
+            RequestConfig config = null;
+
+            String proxyHostname = ProxySettings.getHttpHost();
+
+            int proxyPort = getProxyPort();
+            if (Objects.nonNull(proxyHostname) && proxyPort > 0) {
+                proxyCredsProvider = getProxyCredentialsProvider();
+                config = RequestConfig.custom().setProxyPreferredAuthSchemes(DEFAULT_SCHEME_PRIORITY).build();
+            }
+
+            if (Objects.isNull(proxyCredsProvider) && WinHttpClients.isWinAuthAvailable()) {
+                builder = WinHttpClients.custom();
+                builder.useSystemProperties();
+                LOGGER.log(Level.INFO, "Using Win HTTP Client");
+            } else {
+                builder = HttpClients.custom();
+                builder.setDefaultRequestConfig(config);
+                if (Objects.nonNull(proxyCredsProvider)) { // make sure non null proxycreds before setting it 
+                    builder.setDefaultCredentialsProvider(proxyCredsProvider);
                 }
-                        
-        if (ProxySettings.getProxyType() != ProxySettings.DIRECT_CONNECTION
-                && StringUtils.isBlank(ProxySettings.getAuthenticationUsername())
-                && ArrayUtils.isEmpty(ProxySettings.getAuthenticationPassword())
-                && WinHttpClients.isWinAuthAvailable()) {
-
-            builder = WinHttpClients.custom();
-            builder.useSystemProperties();
-            LOGGER.log(Level.WARNING, "Using Win HTTP Client");
+                LOGGER.log(Level.INFO, "Using default http client");
+            }
         } else {
             builder = HttpClients.custom();
-            // builder.setDefaultRequestConfig(config);
-            LOGGER.log(Level.WARNING, "Using default http client");
         }
 
         if (sslContext != null) {
@@ -437,55 +454,51 @@ class CTCloudHttpClient {
             builder.setRoutePlanner(new SystemDefaultRoutePlanner(proxySelector));
         }
 
-        if (ProxySettings.useAuthentication()) {
-            RequestConfig config = RequestConfig.custom().setProxyPreferredAuthSchemes(DEFAULT_SCHEME_PRIORITY).build();
-            
-        }
-        
         return builder.build();
     }
 
-    
+    private static String getWorkstation() {
+        if (workStation == null) {
+            try {
+                workStation = InetAddress.getLocalHost().getCanonicalHostName();
+            } catch (UnknownHostException ex) {
+                LOGGER.log(Level.WARNING, "Unable to determine workstation host name", ex);
+            }
+        }
+        return workStation;
+    }
+
     /**
      * Returns a CredentialsProvider for proxy, if one is configured.
-     * 
-     * @return CredentialsProvider, if a proxy is configured with credentials, null otherwise
+     *
+     * @return CredentialsProvider, if a proxy is configured with credentials,
+     * null otherwise
      */
     private static CredentialsProvider getProxyCredentialsProvider() {
-        
         CredentialsProvider proxyCredsProvider = null;
+        String proxyUserId = ProxySettings.getAuthenticationUsername();
 
+        if (ProxySettings.getProxyType() != ProxySettings.DIRECT_CONNECTION
+                && StringUtils.isNotBlank(proxyUserId)) {
 
-                String proxyUserId = ProxySettings.getAuthenticationUsername();
+            char[] proxyPassword = ProxySettings.getAuthenticationPassword();
+            if (null != proxyPassword && proxyPassword.length > 0) { // Password will be blank for KERBEROS / NEGOTIATE schemes.
+                proxyCredsProvider = new SystemDefaultCredentialsProvider();
+                String domain = null;
+                if (proxyUserId.contains("\\")) {
+                    domain = proxyUserId.split("\\\\")[0];
+                    proxyUserId = proxyUserId.split("\\\\")[1];
+                }
 
+                String proxyHostname = ProxySettings.getHttpHost();
+                proxyCredsProvider.setCredentials(new AuthScope(proxyHostname, getProxyPort()),
+                        new NTCredentials(proxyUserId, new String(proxyPassword), getWorkstation(), domain));
+            }
+        }
 
-                 if (ProxySettings.getProxyType() != ProxySettings.DIRECT_CONNECTION
-                         && StringUtils.isNotBlank(proxyUserId)) {
-                     
-                        char[] proxyPassword = ProxySettings.getAuthenticationPassword();
-                        if (null != proxyPassword && proxyPassword.length > 0) { // Password will be blank for KERBEROS / NEGOTIATE schemes.
-
-                            proxyCredsProvider = new SystemDefaultCredentialsProvider();
-
-                            String domain = null;
-                            if (proxyUserId.contains("\\")) {
-                                domain = proxyUserId.split("\\\\")[0];
-                                proxyUserId = proxyUserId.split("\\\\")[1];
-                            }
-//                            String workStation = rc.getHostName();
-
-                            String proxyHostname = ProxySettings.get
-
-                            proxyCredsProvider.setCredentials(new AuthScope(proxyHostname, proxyPort),
-                                    new NTCredentials(proxyUserId, new String(proxyPassword), workStation, domain));
-                        }
-                    }
-        
-        
         return proxyCredsProvider;
     }
-    
-    
+
     private static class LoggingProxySelector extends ProxySelector {
 
         private final ProxySelector delegate;
