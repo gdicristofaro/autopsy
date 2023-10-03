@@ -18,18 +18,20 @@
  */
 package com.basistech.df.cybertriage.autopsy.ctoptions.ctcloud;
 
+import java.awt.Color;
 import java.util.regex.Pattern;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import org.apache.commons.lang3.StringUtils;
 import org.openide.util.NbBundle.Messages;
+import org.sleuthkit.autopsy.corecomponents.TextPrompt;
 
 /**
  * License dialog
  */
-public class CTLicenseDialog extends javax.swing.JDialog {
+class CTLicenseDialog extends javax.swing.JDialog {
 
-    private static final Pattern LICENSE_PATTERN = Pattern.compile("^\\s*[a-zA-Z0-9\\-]+?\\s*$");
+    private static final Pattern LICENSE_PATTERN = Pattern.compile("^\\s*[a-zA-Z0-9-_]+?\\s*$");
     private String licenseString = null;
 
     /**
@@ -38,6 +40,7 @@ public class CTLicenseDialog extends javax.swing.JDialog {
     public CTLicenseDialog(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
         initComponents();
+        configureHintText();
         this.licenseNumberTextField.getDocument().putProperty("filterNewlines", Boolean.TRUE);
         this.licenseNumberTextField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
@@ -55,14 +58,29 @@ public class CTLicenseDialog extends javax.swing.JDialog {
                 verifyInput();
             }
         });
+        
+        // set ok button as primary button
+        this.getRootPane().setDefaultButton(okButton);
+        // request focus for entering license string
+        this.licenseNumberTextField.requestFocusInWindow();
     }
-
+    
+    private void configureHintText() {
+        TextPrompt textPrompt = new TextPrompt(
+                StringUtils.defaultString(this.licenseNumberTextField.getToolTipText()),
+                this.licenseNumberTextField);
+        
+        textPrompt.setForeground(Color.LIGHT_GRAY);
+        float alpha = 0.9f; // Mostly opaque
+        textPrompt.changeAlpha(alpha);
+    }
+    
     String getValue() {
         return licenseString;
     }
 
     @Messages({
-        "CTLicenseDialog_verifyInput_licenseNumberError=<html>Please verify license number format of 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX'</html>"
+        "CTLicenseDialog_verifyInput_licenseNumberError=<html>Please enter a license number</html>"
     })
     private void verifyInput() {
         String licenseInput = StringUtils.defaultString(this.licenseNumberTextField.getText());
@@ -86,11 +104,12 @@ public class CTLicenseDialog extends javax.swing.JDialog {
         java.awt.GridBagConstraints gridBagConstraints;
 
         javax.swing.JLabel licenseNumberLabel = new javax.swing.JLabel();
+        licenseNumberTextField = new javax.swing.JTextField();
         warningLabel = new javax.swing.JLabel();
         javax.swing.JPanel buttonPadding = new javax.swing.JPanel();
+        javax.swing.JPanel buttonPanel = new javax.swing.JPanel();
         okButton = new javax.swing.JButton();
         cancelButton = new javax.swing.JButton();
-        licenseNumberTextField = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle(org.openide.util.NbBundle.getMessage(CTLicenseDialog.class, "CTLicenseDialog.title")); // NOI18N
@@ -107,6 +126,16 @@ public class CTLicenseDialog extends javax.swing.JDialog {
         gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         getContentPane().add(licenseNumberLabel, gridBagConstraints);
+
+        licenseNumberTextField.setText(org.openide.util.NbBundle.getMessage(CTLicenseDialog.class, "CTLicenseDialog.licenseNumberTextField.text")); // NOI18N
+        licenseNumberTextField.setToolTipText(org.openide.util.NbBundle.getMessage(CTLicenseDialog.class, "CTLicenseDialog.licenseNumberTextField.toolTipText")); // NOI18N
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(0, 5, 5, 5);
+        getContentPane().add(licenseNumberTextField, gridBagConstraints);
 
         warningLabel.setForeground(java.awt.Color.RED);
         org.openide.awt.Mnemonics.setLocalizedText(warningLabel, org.openide.util.NbBundle.getMessage(CTLicenseDialog.class, "CTLicenseDialog.warningLabel.text")); // NOI18N
@@ -138,6 +167,8 @@ public class CTLicenseDialog extends javax.swing.JDialog {
         gridBagConstraints.weightx = 1.0;
         getContentPane().add(buttonPadding, gridBagConstraints);
 
+        buttonPanel.setLayout(new java.awt.GridBagLayout());
+
         org.openide.awt.Mnemonics.setLocalizedText(okButton, org.openide.util.NbBundle.getMessage(CTLicenseDialog.class, "CTLicenseDialog.okButton.text")); // NOI18N
         okButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -145,11 +176,13 @@ public class CTLicenseDialog extends javax.swing.JDialog {
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
-        gridBagConstraints.insets = new java.awt.Insets(0, 5, 5, 5);
-        getContentPane().add(okButton, gridBagConstraints);
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 5, 10, 5);
+        buttonPanel.add(okButton, gridBagConstraints);
 
         org.openide.awt.Mnemonics.setLocalizedText(cancelButton, org.openide.util.NbBundle.getMessage(CTLicenseDialog.class, "CTLicenseDialog.cancelButton.text")); // NOI18N
         cancelButton.addActionListener(new java.awt.event.ActionListener() {
@@ -159,25 +192,25 @@ public class CTLicenseDialog extends javax.swing.JDialog {
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 3;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
-        gridBagConstraints.insets = new java.awt.Insets(0, 5, 5, 5);
-        getContentPane().add(cancelButton, gridBagConstraints);
-
-        licenseNumberTextField.setText(org.openide.util.NbBundle.getMessage(CTLicenseDialog.class, "CTLicenseDialog.licenseNumberTextField.text")); // NOI18N
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 1;
-        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.insets = new java.awt.Insets(0, 5, 5, 5);
-        getContentPane().add(licenseNumberTextField, gridBagConstraints);
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 0, 10, 10);
+        buttonPanel.add(cancelButton, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridwidth = 2;
+        getContentPane().add(buttonPanel, gridBagConstraints);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void okButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_okButtonActionPerformed
-        this.licenseString = this.licenseNumberTextField.getText();
+        String inputText = this.licenseNumberTextField.getText();
+        this.licenseString = inputText == null ? null : inputText.trim();
         this.dispose();
     }//GEN-LAST:event_okButtonActionPerformed
 
