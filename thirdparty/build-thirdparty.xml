@@ -8,6 +8,7 @@
     <property name="thirdparty.dir" value="${project.basedir}/thirdparty" />
     <property name="thirdparty.ext-rel-path" value="dist/ext" />
     
+    <!--converts thirdparty lib directory to expected format for java/netbeans classloader-->
     <mapper id="thirdparty.lib-mapper">
         <globmapper from="*_amd64/**" to="amd64/**" casesensitive="no" />
         <globmapper from="*_x86_64/**" to="x86_64/**" casesensitive="no" />
@@ -15,7 +16,7 @@
 
     <mapper id="thirdparty.bin-mapper" type="identity"/>
     
-    <!-- copy resources to loc -->
+    <!-- copy resources to location -->
     <target name="copy-thirdparty-folders">
         <fail message="The variable 'thirdparty.folders' must be defined." unless="thirdparty.folders"/>
 
@@ -39,14 +40,14 @@
         
         <!-- copy bin dir if exists -->
         <antcall target="-copy-thirdparty-os-dependent" inheritAll="true">
-            <param name="thirdparty.os-dependent-mapper" refid="thirdparty.bin-mapper" />
+            <param name="thirdparty.os-dependent-mapper" value="thirdparty.bin-mapper" />
             <param name="thirdparty.os-dependent-target-dir" value="${thirdparty.target-dir}/${thirdparty.folder}" />
             <param name="thirdparty.os-dependent-src-dir" value="${thirdparty.dir}/${thirdparty.folder}/dist/bin" />
         </antcall>
 
         <!-- copy lib dir if exists -->
         <antcall target="-copy-thirdparty-os-dependent" inheritAll="true">
-            <param name="thirdparty.os-dependent-mapper" refid="thirdparty.lib-mapper" />
+            <param name="thirdparty.os-dependent-mapper" value="thirdparty.lib-mapper" />
             <param name="thirdparty.os-dependent-target-dir" value="${thirdparty.target-lib-dir}" />
             <param name="thirdparty.os-dependent-src-dir" value="${thirdparty.dir}/${thirdparty.folder}/dist/lib" />
         </antcall>
@@ -110,7 +111,7 @@
                         <!--copy any to location-->
                         <copy todir="${thirdparty.os-dependent-target-dir}">
                             <fileset dir="${thirdparty.os-dependent-src-dir}"/>
-                            <mapper refid="thirdparty.os-dependent-mapper"/>
+                            <mapper refid="${thirdparty.os-dependent-mapper}"/>
                         </copy>
                     </else>
                 </if>
