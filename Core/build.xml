@@ -35,14 +35,14 @@
         -->
         <antcall target="copy-thirdparty-folders" inheritAll="true">
             <param name="thirdparty.folders" value="NetbeansLocalization" />
-            <param name="thirdparty.target-dir" value="${project.basedir}/release"/>
+            <param name="thirdparty.target-dir" value="${basedir}/release"/>
             <param name="thirdparty.target-ext-dir" value="${modules.dir}/locale"/>
             <param name="thirdparty.target-lib-dir" value="${lib.dir}"/>
         </antcall>
 
         <antcall target="copy-thirdparty-folders" inheritAll="true">
-            <param name="thirdparty.folders" value="photorec_exec,ewfexport_exec,Volatility,Tesseract-OCR,plaso,gstreamer,iLeapp,aLeapp,7-Zip,InterestingFileSetRules,OfficialHashSets,DomainCategorization,rejistry,DatCon,sevenzip,yara" />
-            <param name="thirdparty.target-dir" value="${project.basedir}/release"/>
+            <param name="thirdparty.folders" value="jai,photorec_exec,ewfexport_exec,Volatility,Tesseract-OCR,plaso,gstreamer,iLeapp,aLeapp,7-Zip,InterestingFileSetRules,OfficialHashSets,DomainCategorization,rejistry,DatCon,sevenzip,yara" />
+            <param name="thirdparty.target-dir" value="${basedir}/release"/>
             <param name="thirdparty.target-ext-dir" value="${ext.dir}"/>
             <param name="thirdparty.target-lib-dir" value="${lib.dir}"/>
         </antcall>
