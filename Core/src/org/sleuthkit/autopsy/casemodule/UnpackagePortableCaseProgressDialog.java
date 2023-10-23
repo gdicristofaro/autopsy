@@ -40,6 +40,7 @@ import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.coreutils.MessageNotifyUtil;
 import org.sleuthkit.autopsy.coreutils.ModuleSettings;
 import org.sleuthkit.autopsy.coreutils.PlatformUtil;
+import org.sleuthkit.autopsy.coreutils.ThirdPartyLocator;
 import org.sleuthkit.autopsy.coreutils.TimeStampUtils;
 import org.sleuthkit.datamodel.TskCoreException;
 
@@ -53,6 +54,9 @@ class UnpackagePortableCaseProgressDialog extends javax.swing.JDialog implements
     private final static String CASES_OPENED_LOG_FILE = "portable_cases_opened"; //NON-NLS
     private final static String PORTABLE_CASE_NAME = "portable_case_name"; //NON-NLS
     private final static String PORTABLE_CASE_DIR = "portable_case_dir_opened"; //NON-NLS
+    
+    private final static String SEVEN_ZIP_DIR = "7-zip";
+    private final static String SEVEN_ZIP_EXECUTABLE = "7z";
 
     /**
      * Creates new form UnpackagePortableCaseProgressDialog
@@ -280,8 +284,8 @@ class UnpackagePortableCaseProgressDialog extends javax.swing.JDialog implements
                 return null;
             }
 
-            String executableToFindName = Paths.get("7-Zip", "7z.exe").toString(); // NON-NLS
-            File exeFile = InstalledFileLocator.getDefault().locate(executableToFindName, UnpackagePortableCaseProgressDialog.class.getPackage().getName(), false);
+            //String executableToFindName = Paths.get("7-Zip", "7z.exe").toString(); // NON-NLS
+            File exeFile = ThirdPartyLocator.getBinPath(SEVEN_ZIP_DIR, SEVEN_ZIP_EXECUTABLE);
             if (null == exeFile) {
                 return null;
             }

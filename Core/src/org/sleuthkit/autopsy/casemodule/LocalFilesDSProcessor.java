@@ -41,6 +41,7 @@ import org.sleuthkit.autopsy.corecomponentinterfaces.DataSourceProcessor;
 import org.sleuthkit.autopsy.coreutils.ExecUtil;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.coreutils.PlatformUtil;
+import org.sleuthkit.autopsy.coreutils.ThirdPartyLocator;
 import org.sleuthkit.autopsy.datasourceprocessors.AutoIngestDataSourceProcessor;
 import org.sleuthkit.datamodel.Host;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -66,9 +67,7 @@ public class LocalFilesDSProcessor implements DataSourceProcessor, AutoIngestDat
     private static final String L01_EXTRACTION_DIR = "L01";
     private static final String UNIQUENESS_CONSTRAINT_SEPERATOR = "_";
     private static final String EWFEXPORT_DIR = "ewfexport_exec"; // NON-NLS
-    private static final String EWFEXPORT_32_BIT_DIR = "32-bit"; // NON-NLS
-    private static final String EWFEXPORT_64_BIT_DIR = "64-bit"; // NON-NLS
-    private static final String EWFEXPORT_WINDOWS_EXE = "ewfexport.exe"; // NON-NLS
+    private static final String EWF_EXPORT_EXECUTABLE = "ewfexport"; // NON-NLS
     private static final String LOG_FILE_EXTENSION = ".txt";
     private static final List<String> LOGICAL_EVIDENCE_EXTENSIONS = Arrays.asList(".l01");
     private static final String LOGICAL_EVIDENCE_DESC = Bundle.LocalFilesDSProcessor_logicalEvidenceFilter_desc();
@@ -274,31 +273,9 @@ public class LocalFilesDSProcessor implements DataSourceProcessor, AutoIngestDat
      * org.sleuthkit.autopsy.casemodule.LocalFilesDSProcessor.L01Exception
      */
     private Path locateEwfexportExecutable() throws L01Exception {
-        // Must be running under a Windows operating system.
-        if (!PlatformUtil.isWindowsOS()) {
-            throw new L01Exception("L01 files are only supported on windows currently");
-        }
-
-        // Build the expected path to either the 32-bit or 64-bit version of the 
-        // ewfexport executable.
-        final File ewfRoot = InstalledFileLocator.getDefault().locate(EWFEXPORT_DIR, LocalFilesDSProcessor.class.getPackage().getName(), false);
-
-        Path executablePath;
-        if (PlatformUtil.is64BitOS()) {
-            executablePath = Paths.get(
-                    ewfRoot.getAbsolutePath(),
-                    EWFEXPORT_64_BIT_DIR,
-                    EWFEXPORT_WINDOWS_EXE);
-        } else {
-            executablePath = Paths.get(
-                    ewfRoot.getAbsolutePath(),
-                    EWFEXPORT_32_BIT_DIR,
-                    EWFEXPORT_WINDOWS_EXE);
-        }
-
         // Make sure the executable exists at the expected location and that it  
         // can be run.
-        final File ewfexport = executablePath.toFile();
+        final File ewfexport = ThirdPartyLocator.getBinPath(EWFEXPORT_DIR, EWF_EXPORT_EXECUTABLE);
         if (null == ewfexport || !ewfexport.exists()) {
             throw new LocalFilesDSProcessor.L01Exception("EWF export executable was not found");
         }
@@ -306,7 +283,7 @@ public class LocalFilesDSProcessor implements DataSourceProcessor, AutoIngestDat
             throw new LocalFilesDSProcessor.L01Exception("EWF export executable can not be executed");
         }
 
-        return executablePath;
+        return ewfexport.toPath();
     }
 
     /**
