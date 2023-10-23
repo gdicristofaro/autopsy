@@ -54,7 +54,7 @@
 
         <!-- copy resources dir if exists -->
         <if>
-            <available file="${thirdparty.dir}/${thirdparty.folder}/dist/resources}" type="dir"/>
+            <available file="${thirdparty.dir}/${thirdparty.folder}/dist/resources" type="dir"/>
             <then>
                 <copy todir="${thirdparty.target-dir}/${thirdparty.folder}">
                     <fileset dir="${thirdparty.dir}/${thirdparty.folder}/dist/resources"/>
