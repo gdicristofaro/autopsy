@@ -582,6 +582,10 @@
                 <binary-origin>release/modules/ext/jaxb-runtime-2.3.3.jar</binary-origin>
             </class-path-extension>
             <class-path-extension>
+                <runtime-relative-path>ext/jdom-1.1.3.jar</runtime-relative-path>
+                <binary-origin>release/modules/ext/jdom-1.1.3.jar</binary-origin>
+            </class-path-extension>
+            <class-path-extension>
                 <runtime-relative-path>ext/jdom-contrib-1.1.3.jar</runtime-relative-path>
                 <binary-origin>release/modules/ext/jdom-contrib-1.1.3.jar</binary-origin>
             </class-path-extension>
@@ -704,10 +708,6 @@
             <class-path-extension>
                 <runtime-relative-path>ext/Rejistry-1.1-SNAPSHOT.jar</runtime-relative-path>
                 <binary-origin>release/modules/ext/Rejistry-1.1-SNAPSHOT.jar</binary-origin>
-            </class-path-extension>
-            <class-path-extension>
-                <runtime-relative-path>ext/serializer-2.7.2.jar</runtime-relative-path>
-                <binary-origin>release/modules/ext/serializer-2.7.2.jar</binary-origin>
             </class-path-extension>
             <class-path-extension>
                 <runtime-relative-path>ext/sevenzipjbinding-AllPlatforms.jar</runtime-relative-path>
