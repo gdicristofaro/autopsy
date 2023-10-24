@@ -50,20 +50,27 @@ public class ThirdPartyLocator {
         }
     }
 
-    public static File getBinPath(String thirdPartyLib, String executableRelPath) {
-        return getBinPath(thirdPartyLib, executableRelPath, true);
+    public static File getBin(String thirdPartyLib, String executableName) {
+        //return getBin(thirdPartyLib, executableRelPath, true);
     }
     
-    public static File getBinPath(String thirdPartyLib, String executableRelPath, boolean checkPath) {
-        return _getPath(Paths.get(thirdPartyLib, OS_DEPENDENT_FOLDER, executableRelPath));
+    public static File getBin(String thirdPartyLib, String executableName, boolean checkPath) {
+        //return _getPath(Paths.get(thirdPartyLib, OS_DEPENDENT_FOLDER, executableRelPath));
     }
     
+    
+    // TODO should handle null for folderRelPath
     public static File getBinDir(String thirdPartyLib, String folderRelPath) {
         
     }
 
+    public static File getPath(String thirdPartyLib) {
+        return getPath(thirdPartyLib, null);
+    }
+    
+    // TODO should handle null
     public static File getPath(String thirdPartyLib, String itemRelPath) {
-        return _getPath(Paths.get(thirdPartyLib, itemRelPath));
+        //return _getPath(Paths.get(thirdPartyLib, itemRelPath));
     }
 
     private static File _getPath(Path p) {

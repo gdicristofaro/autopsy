@@ -43,7 +43,6 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.netbeans.api.progress.ProgressHandle;
-import org.openide.modules.InstalledFileLocator;
 import org.openide.util.NbBundle;
 import org.openide.util.NbBundle.Messages;
 import org.openide.windows.WindowManager;
@@ -65,6 +64,7 @@ import org.sleuthkit.datamodel.SleuthkitJNI;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskData;
 import org.sleuthkit.autopsy.centralrepository.datamodel.CentralRepository;
+import org.sleuthkit.autopsy.coreutils.ThirdPartyLocator;
 import org.sleuthkit.autopsy.guiutils.JFileChooserFactory;
 import org.sleuthkit.autopsy.modules.hashdatabase.HashDbManager.HashDb.KnownFilesType;
 
@@ -670,9 +670,7 @@ public class HashDbManager implements PropertyChangeListener {
      * @throws HashDbManagerException If folder does not exist.
      */
     private List<HashDb> loadOfficialHashSetsFromFolder(String folder) throws HashDbManagerException {
-        File configFolder = InstalledFileLocator.getDefault().locate(
-                folder, HashDbManager.class.getPackage().getName(), false);
-
+        File configFolder = ThirdPartyLocator.getPath(folder);
         if (configFolder == null || !configFolder.exists() || !configFolder.isDirectory()) {
             throw new HashDbManagerException("Folder provided: " + folder + " does not exist.");
         }

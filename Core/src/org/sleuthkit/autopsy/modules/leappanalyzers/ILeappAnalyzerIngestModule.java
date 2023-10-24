@@ -44,6 +44,7 @@ import org.sleuthkit.autopsy.casemodule.services.FileManager;
 import org.sleuthkit.autopsy.coreutils.ExecUtil;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.coreutils.PlatformUtil;
+import org.sleuthkit.autopsy.coreutils.ThirdPartyLocator;
 import org.sleuthkit.autopsy.datamodel.ContentUtils;
 import org.sleuthkit.autopsy.ingest.DataSourceIngestModule;
 import org.sleuthkit.autopsy.ingest.DataSourceIngestModuleProcessTerminator;
@@ -68,7 +69,7 @@ public class ILeappAnalyzerIngestModule implements DataSourceIngestModule {
 
     private static final String ILEAPP = "iLeapp"; //NON-NLS
     private static final String ILEAPP_FS = "fs_"; //NON-NLS
-    private static final String ILEAPP_EXECUTABLE = "ileapp.exe";//NON-NLS
+    private static final String ILEAPP_EXECUTABLE = "ileapp";//NON-NLS
     private static final String ILEAPP_PATHS_FILE = "iLeapp_paths.txt"; //NON-NLS
 
     private static final String XMLFILE = "ileapp-artifact-attribute-reference.xml"; //NON-NLS
@@ -331,9 +332,7 @@ public class ILeappAnalyzerIngestModule implements DataSourceIngestModule {
     }
 
     private static File locateExecutable(String executableName) throws FileNotFoundException {
-        String executableToFindName = Paths.get(ILEAPP, executableName).toString();
-
-        File exeFile = InstalledFileLocator.getDefault().locate(executableToFindName, ILeappAnalyzerIngestModule.class.getPackage().getName(), false);
+        File exeFile = ThirdPartyLocator.getBin(ILEAPP, executableName);
         if (null == exeFile || exeFile.canExecute() == false) {
             throw new FileNotFoundException(executableName + " executable not found.");
         }

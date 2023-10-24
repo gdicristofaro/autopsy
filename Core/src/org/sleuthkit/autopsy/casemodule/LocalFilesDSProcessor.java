@@ -30,7 +30,6 @@ import java.util.logging.Level;
 import javax.swing.JPanel;
 import javax.swing.filechooser.FileFilter;
 import org.apache.commons.io.FilenameUtils;
-import org.openide.modules.InstalledFileLocator;
 import org.openide.util.NbBundle;
 import org.openide.util.NbBundle.Messages;
 import org.openide.util.lookup.ServiceProvider;
@@ -40,11 +39,9 @@ import org.sleuthkit.autopsy.corecomponentinterfaces.DataSourceProcessorProgress
 import org.sleuthkit.autopsy.corecomponentinterfaces.DataSourceProcessor;
 import org.sleuthkit.autopsy.coreutils.ExecUtil;
 import org.sleuthkit.autopsy.coreutils.Logger;
-import org.sleuthkit.autopsy.coreutils.PlatformUtil;
 import org.sleuthkit.autopsy.coreutils.ThirdPartyLocator;
 import org.sleuthkit.autopsy.datasourceprocessors.AutoIngestDataSourceProcessor;
 import org.sleuthkit.datamodel.Host;
-import org.sleuthkit.datamodel.TskCoreException;
 
 /**
  * A local/logical files/logical evidence file(.lo1)/or directories data source
@@ -275,7 +272,7 @@ public class LocalFilesDSProcessor implements DataSourceProcessor, AutoIngestDat
     private Path locateEwfexportExecutable() throws L01Exception {
         // Make sure the executable exists at the expected location and that it  
         // can be run.
-        final File ewfexport = ThirdPartyLocator.getBinPath(EWFEXPORT_DIR, EWF_EXPORT_EXECUTABLE);
+        final File ewfexport = ThirdPartyLocator.getBin(EWFEXPORT_DIR, EWF_EXPORT_EXECUTABLE);
         if (null == ewfexport || !ewfexport.exists()) {
             throw new LocalFilesDSProcessor.L01Exception("EWF export executable was not found");
         }

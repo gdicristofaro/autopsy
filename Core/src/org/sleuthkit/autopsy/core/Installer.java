@@ -20,7 +20,6 @@ package org.sleuthkit.autopsy.core;
 
 import com.sun.jna.platform.win32.Kernel32;
 import java.awt.Cursor;
-import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -36,12 +35,10 @@ import java.util.logging.Level;
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
 import javax.imageio.ImageIO;
-import javax.swing.JOptionPane;
 import net.sf.sevenzipjbinding.SevenZip;
 import net.sf.sevenzipjbinding.SevenZipNativeInitializationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.openide.modules.InstalledFileLocator;
 import org.openide.modules.ModuleInstall;
 import org.openide.util.NbBundle;
 import org.openide.util.NbBundle.Messages;
@@ -54,6 +51,7 @@ import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.coreutils.MessageNotifyUtil;
 import org.sleuthkit.autopsy.coreutils.ModuleSettings;
 import org.sleuthkit.autopsy.coreutils.PlatformUtil;
+import org.sleuthkit.autopsy.coreutils.ThirdPartyLocator;
 import org.sleuthkit.autopsy.modules.filetypeid.FileTypeDetector;
 import org.sleuthkit.autopsy.python.JythonModuleLoader;
 import org.sleuthkit.autopsy.texttranslation.TextTranslationService;
@@ -304,10 +302,10 @@ public class Installer extends ModuleInstall {
             System.setProperty("jna.nosys", "true");
         }
 
-        Path gstreamerPath = InstalledFileLocator.getDefault().locate("gstreamer", Installer.class.getPackage().getName(), false).toPath();
-
+        File gstreamerFile = ThirdPartyLocator.getBinDir("gstreamer", null);
+        Path gstreamerPath = gstreamerFile == null ? null : gstreamerFile.toPath();
         if (gstreamerPath == null) {
-            logger.log(Level.SEVERE, "Failed to find GStreamer.");
+            logger.log(Level.INFO, "Did not find gstreamer folder for OS.");
         } else {
             String arch = "x86_64";
             if (!PlatformUtil.is64BitJVM()) {
@@ -364,12 +362,13 @@ public class Installer extends ModuleInstall {
         //If the directory did not exist, copy the tessdata folder over so we 
         //support english.
         if (createDirectory) {
-            File tessdataDir = InstalledFileLocator.getDefault().locate(
-                    "Tesseract-OCR/tessdata", Installer.class.getPackage().getName(), false);
-            try {
-                FileUtils.copyDirectory(tessdataDir, ocrLanguagePacksDir);
-            } catch (IOException ex) {
-                logger.log(Level.SEVERE, "Copying over default language packs for Tesseract failed.", ex);
+            File tessdataDir = ThirdPartyLocator.getBinDir("Tesseract-OCR", "tessdata");
+            if (tessdataDir != null && tessdataDir.exists()) {
+                try {
+                    FileUtils.copyDirectory(tessdataDir, ocrLanguagePacksDir);
+                } catch (IOException ex) {
+                    logger.log(Level.SEVERE, "Copying over default language packs for Tesseract failed.", ex);
+                }
             }
         }
     }

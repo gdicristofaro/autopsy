@@ -26,12 +26,12 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
-import org.openide.modules.InstalledFileLocator;
 import org.openide.modules.OnStart;
 import org.openide.util.NbBundle.Messages;
 import org.sleuthkit.autopsy.core.RuntimeProperties;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.coreutils.MessageNotifyUtil;
+import org.sleuthkit.autopsy.coreutils.ThirdPartyLocator;
 
 /**
  * When the interesting items module loads, this runnable loads standard
@@ -123,9 +123,7 @@ public class StandardInterestingFilesSetsLoader implements Runnable {
     private static Map<String, FilesSet> readStandardFileXML() throws FilesSetsManager.FilesSetsManagerException {
         Map<String, FilesSet> standardInterestingFileSets = new HashMap<>();
 
-        File configFolder = InstalledFileLocator.getDefault().locate(
-                CONFIG_DIR, StandardInterestingFilesSetsLoader.class.getPackage().getName(), false);
-
+        File configFolder = ThirdPartyLocator.getPath(CONFIG_DIR);
         if (configFolder == null || !configFolder.exists() || !configFolder.isDirectory()) {
             throw new FilesSetsManager.FilesSetsManagerException("No standard interesting files set folder exists.");
         }

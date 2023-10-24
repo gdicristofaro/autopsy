@@ -35,7 +35,6 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.io.FilenameUtils;
-import org.openide.modules.InstalledFileLocator;
 import org.openide.util.NbBundle;
 import org.sleuthkit.autopsy.casemodule.Case;
 import static org.sleuthkit.autopsy.casemodule.Case.getCurrentCase;
@@ -44,6 +43,7 @@ import org.sleuthkit.autopsy.casemodule.services.FileManager;
 import org.sleuthkit.autopsy.coreutils.ExecUtil;
 import org.sleuthkit.autopsy.coreutils.Logger;
 import org.sleuthkit.autopsy.coreutils.PlatformUtil;
+import org.sleuthkit.autopsy.coreutils.ThirdPartyLocator;
 import org.sleuthkit.autopsy.datamodel.ContentUtils;
 import org.sleuthkit.autopsy.ingest.DataSourceIngestModule;
 import org.sleuthkit.autopsy.ingest.DataSourceIngestModuleProcessTerminator;
@@ -68,7 +68,7 @@ public class ALeappAnalyzerIngestModule implements DataSourceIngestModule {
 
     private static final String ALEAPP = "aLeapp"; //NON-NLS
     private static final String ALEAPP_FS = "fs_"; //NON-NLS
-    private static final String ALEAPP_EXECUTABLE = "aleapp.exe";//NON-NLS
+    private static final String ALEAPP_EXECUTABLE = "aleapp";//NON-NLS
     private static final String ALEAPP_PATHS_FILE = "aLeapp_paths.txt"; //NON-NLS
 
     private static final String XMLFILE = "aleapp-artifact-attribute-reference.xml"; //NON-NLS
@@ -325,9 +325,7 @@ public class ALeappAnalyzerIngestModule implements DataSourceIngestModule {
     }
 
     private static File locateExecutable(String executableName) throws FileNotFoundException {
-        String executableToFindName = Paths.get(ALEAPP, executableName).toString();
-
-        File exeFile = InstalledFileLocator.getDefault().locate(executableToFindName, ALeappAnalyzerIngestModule.class.getPackage().getName(), false);
+        File exeFile = ThirdPartyLocator.getBin(ALEAPP, executableName);
         if (null == exeFile || exeFile.canExecute() == false) {
             throw new FileNotFoundException(executableName + " executable not found.");
         }
