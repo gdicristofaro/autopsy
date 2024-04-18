@@ -2557,7 +2557,7 @@ public class Case {
         // Create the Sleuthkit case
         SleuthkitCase portableSleuthkitCase;
         String dbFilePath = Paths.get(portableCaseFolder.toString(), SINGLE_USER_CASE_DB_NAME).toString();
-        portableSleuthkitCase = SleuthkitCase.newCase(dbFilePath);
+        portableSleuthkitCase = SleuthkitCase.newCase(dbFilePath, null, true);
 
         return portableSleuthkitCase;
     }
@@ -2736,7 +2736,7 @@ public class Case {
                  * with a standard name, physically located in the case
                  * directory.
                  */
-                caseDb = SleuthkitCase.newCase(Paths.get(metadata.getCaseDirectory(), SINGLE_USER_CASE_DB_NAME).toString());
+                caseDb = SleuthkitCase.newCase(Paths.get(metadata.getCaseDirectory(), SINGLE_USER_CASE_DB_NAME).toString(), null, true);
                 metadata.setCaseDatabaseName(SINGLE_USER_CASE_DB_NAME);
             } else {
                 /*
@@ -2744,7 +2744,7 @@ public class Case {
                  * database with a name derived from the case display name,
                  * physically located on the PostgreSQL database server.
                  */
-                caseDb = SleuthkitCase.newCase(metadata.getCaseDisplayName(), UserPreferences.getDatabaseConnectionInfo(), metadata.getCaseDirectory());
+                caseDb = SleuthkitCase.newCase(metadata.getCaseDisplayName(), UserPreferences.getDatabaseConnectionInfo(), metadata.getCaseDirectory(), null, true);
                 metadata.setCaseDatabaseName(caseDb.getDatabaseName());
             }
         } catch (TskCoreException ex) {
@@ -2788,9 +2788,9 @@ public class Case {
             }
             
             if (CaseType.SINGLE_USER_CASE == metadata.getCaseType()) {
-                caseDb = SleuthkitCase.openCase(metadata.getCaseDatabasePath(), contentProvider);
+                caseDb = SleuthkitCase.openCase(metadata.getCaseDatabasePath(), contentProvider, true);
             } else if (UserPreferences.getIsMultiUserModeEnabled()) {
-                caseDb = SleuthkitCase.openCase(databaseName, UserPreferences.getDatabaseConnectionInfo(), metadata.getCaseDirectory(), contentProvider);
+                caseDb = SleuthkitCase.openCase(databaseName, UserPreferences.getDatabaseConnectionInfo(), metadata.getCaseDirectory(), contentProvider, true);
             } else {
                 throw new CaseActionException(Bundle.Case_open_exception_multiUserCaseNotEnabled());
             }
