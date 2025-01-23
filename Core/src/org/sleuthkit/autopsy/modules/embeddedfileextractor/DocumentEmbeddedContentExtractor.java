@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Level;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.poi.hwpf.usermodel.Picture;
@@ -41,7 +42,9 @@ import org.apache.poi.hslf.usermodel.HSLFPictureData;
 import org.apache.poi.hslf.usermodel.HSLFSlideShow;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.hwpf.HWPFDocument;
+import org.apache.poi.hwpf.HWPFOldDocument;
 import org.apache.poi.hwpf.model.PicturesTable;
+import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.sl.usermodel.PictureData.PictureType;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.tika.config.TikaConfig;
@@ -303,6 +306,7 @@ class DocumentEmbeddedContentExtractor {
         return ((EmbeddedContentExtractor) extractor).getExtractedImages();
     }
 
+
     /**
      * Extract embedded images from doc format files.
      *
@@ -312,35 +316,55 @@ class DocumentEmbeddedContentExtractor {
      *         extracted.
      */
     private List<ExtractedFile> extractEmbeddedImagesFromDoc(AbstractFile af) {
-        List<Picture> listOfAllPictures;
+        // IOException:
+        // Thrown when the document has issues being read.
 
-        try {
-            HWPFDocument doc = new HWPFDocument(new ReadContentInputStream(af));
+        // IllegalArgumentException:
+        // This will catch OldFileFormatException, which is thrown when the
+        // document's format is Word 95 or older. Alternatively, this is
+        // thrown when attempting to load an RTF file as a DOC file.
+        // However, our code verifies the file format before ever running it
+        // through the EmbeddedContentExtractor. This exception gets thrown in the
+        // "IN10-0137.E01" image regardless. The reason is unknown.
+        // IndexOutOfBoundsException:
+        // NullPointerException:
+        // These get thrown in certain images. The reason is unknown. It is
+        // likely due to problems with the file formats that POI is poorly
+        // handling.
+        //Any runtime exception escaping 
+
+        try (ReadContentInputStream rcis = new ReadContentInputStream(af); 
+                HWPFDocument doc = new HWPFDocument(rcis)) {
             PicturesTable pictureTable = doc.getPicturesTable();
-            listOfAllPictures = pictureTable.getAllPictures();
+            List<Picture> listOfAllPictures = pictureTable.getAllPictures();
+            return writeDocPictures(af, listOfAllPictures);
         } catch (Exception ex) {
-            // IOException:
-            // Thrown when the document has issues being read.
+            LOGGER.log(Level.INFO, "Word document container could not be initialized.  Trying older format. Reason: {0}", ex.getMessage()); //NON-NLS
+        }
+        
+        try (ReadContentInputStream rcis = new ReadContentInputStream(af); 
+                POIFSFileSystem poiFs = new POIFSFileSystem(rcis);
+                HWPFOldDocument doc = new HWPFOldDocument(poiFs)) {
 
-            // IllegalArgumentException:
-            // This will catch OldFileFormatException, which is thrown when the
-            // document's format is Word 95 or older. Alternatively, this is
-            // thrown when attempting to load an RTF file as a DOC file.
-            // However, our code verifies the file format before ever running it
-            // through the EmbeddedContentExtractor. This exception gets thrown in the
-            // "IN10-0137.E01" image regardless. The reason is unknown.
-            // IndexOutOfBoundsException:
-            // NullPointerException:
-            // These get thrown in certain images. The reason is unknown. It is
-            // likely due to problems with the file formats that POI is poorly
-            // handling.
-            //Any runtime exception escaping 
+            return null;
+//            return writeDocPictures(af, listOfAllPictures);
+        } catch (Exception ex) {
             LOGGER.log(Level.WARNING, "Word document container could not be initialized. Reason: {0}", ex.getMessage()); //NON-NLS
             return null;
         }
-
+        
+        
+    }
+    
+    /**
+     * Write embedded pictures in a doc to the case.
+     * @param af The abstract file representing the doc.
+     * @param listOfAllPictures The list of the pictures to write.
+     * @return The list of extracted files.
+     */
+    private List<ExtractedFile> writeDocPictures(AbstractFile af, List<Picture> listOfAllPictures) {
         Path outputFolderPath;
-        if (listOfAllPictures.isEmpty()) {
+        if (CollectionUtils.isEmpty(listOfAllPictures)) {
             return null;
         } else {
             outputFolderPath = getOutputFolderPath(this.parentFileName);
