@@ -20,13 +20,11 @@ package org.sleuthkit.autopsy.coreutils;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -41,6 +39,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import static java.util.stream.Collectors.toCollection;
 import java.util.stream.Stream;
 import javax.swing.filechooser.FileSystemView;
 import org.apache.commons.io.FilenameUtils;
@@ -607,7 +606,7 @@ public class PlatformUtil {
             String sigarRegexQuery = convertSqlLikeToRegex(argsSubQuery);
             ProcessBuilder pb = new ProcessBuilder("sh", "-c", "ps -ef | grep -E 'java.*" + sigarRegexQuery + ".*'");
             String output = IOUtils.toString(pb.start().getInputStream(), StandardCharsets.UTF_8);
-            List<String> lines = Arrays.asList(output.split("\\r?\\n"));
+            List<String> lines = Arrays.stream(output.split("\\r?\\n")).collect(toCollection(() -> new ArrayList<>()));
             
             if (lines.size() > 0) {
                 // ignore last one as it will be the same as this command
