@@ -75,7 +75,6 @@ public class Installer extends ModuleInstall {
     private static volatile boolean javaFxInit = false;
 
     static {
-        System.out.println("MESSAGE MESSAGE MESSAGE: property: " + System.getProperty("java.awt.headles") + " is headless: " + GraphicsEnvironment.isHeadless());
         setTskTemp();
         
         loadDynLibraries();
